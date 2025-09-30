@@ -283,11 +283,11 @@ class AdaptivePatternLearner:
     
     def _learn_from_new_data(self) -> None:
         """Aprende novos padrões dos dados recentes."""
-        if len(self.data_history) < 20:
+        if len(self.data_history) < 5:  # Era 20
             return
         
         # Extrair sequências de cores
-        colors = [r.get('color') for r in list(self.data_history)[-50:]]
+        colors = [r.get('color') for r in list(self.data_history)[-15:]]  # Era -50
         
         # Detectar padrões de sequência
         self._detect_sequence_patterns(colors)
@@ -303,7 +303,7 @@ class AdaptivePatternLearner:
     
     def _detect_sequence_patterns(self, colors: List[str]) -> None:
         """Detecta padrões de sequência."""
-        for length in range(3, 8):
+        for length in range(2, 5):  # Era range(3, 8)
             for i in range(len(colors) - length):
                 sequence = colors[i:i+length]
                 pattern_key = ''.join(sequence)
@@ -314,7 +314,7 @@ class AdaptivePatternLearner:
                 
                 # Verificar frequência
                 frequency = self._count_pattern_frequency(pattern_key, colors)
-                if frequency >= self.min_pattern_frequency:
+                if frequency >= 1:  # Era self.min_pattern_frequency (que é 2)
                     confidence = min(0.9, frequency / len(colors))
                     
                     pattern = LearnedPattern(
@@ -338,6 +338,9 @@ class AdaptivePatternLearner:
                     self.learned_patterns[pattern_key] = pattern
                     self.pattern_counter += 1
                     logger.info(f"Novo padrão de sequência aprendido: {pattern_key}")
+                    
+                    # Notificar padrão detectado
+                    self._notify_pattern_detected(pattern, pattern_key)
     
     def _detect_alternation_patterns(self, colors: List[str]) -> None:
         """Detecta padrões de alternação."""
@@ -359,7 +362,7 @@ class AdaptivePatternLearner:
             pattern_key = f"alt_{len(alt)}"
             if pattern_key not in self.learned_patterns:
                 frequency = len(alternations)
-                confidence = min(0.8, frequency / len(colors))
+                confidence = min(0.8, frequency / len(colors)) if len(colors) > 0 else 0.5
                 
                 pattern = LearnedPattern(
                     pattern_id=f"alt_{self.pattern_counter}",
@@ -381,6 +384,9 @@ class AdaptivePatternLearner:
                 self.learned_patterns[pattern_key] = pattern
                 self.pattern_counter += 1
                 logger.info(f"Novo padrão de alternação aprendido: {pattern_key}")
+                
+                # Notificar padrão detectado
+                self._notify_pattern_detected(pattern, pattern_key)
     
     def _detect_frequency_patterns(self, colors: List[str]) -> None:
         """Detecta padrões de frequência."""
@@ -390,8 +396,8 @@ class AdaptivePatternLearner:
         for color, count in color_counts.items():
             frequency = count / total
             
-            # Padrão de alta frequência
-            if frequency > 0.5:
+            # Padrão de alta frequência - REDUZIDO
+            if frequency > 0.3:  # Era 0.5
                 pattern_key = f"freq_high_{color}"
                 if pattern_key not in self.learned_patterns:
                     pattern = LearnedPattern(
@@ -415,6 +421,9 @@ class AdaptivePatternLearner:
                     self.learned_patterns[pattern_key] = pattern
                     self.pattern_counter += 1
                     logger.info(f"Novo padrão de frequência aprendido: {pattern_key}")
+                    
+                    # Notificar padrão detectado
+                    self._notify_pattern_detected(pattern, pattern_key)
     
     def _detect_temporal_patterns(self) -> None:
         """Detecta padrões temporais."""
@@ -613,3 +622,48 @@ class AdaptivePatternLearner:
             'reasoning': 'Predição padrão - dados insuficientes',
             'timestamp': datetime.now().isoformat()
         }
+    
+    def _notify_pattern_detected(self, pattern: 'LearnedPattern', pattern_key: str) -> None:
+        """Notifica quando um padrão adaptativo é detectado."""
+        try:
+            # Importar notificador
+            from ..notifications.pattern_notifier import notify_pattern
+            
+            # Determinar cor prevista baseada no padrão
+            predicted_color = "red"  # Padrão padrão
+            if pattern.pattern_type == PatternType.FREQUENCY:
+                # Para padrões de frequência, usar a cor mais frequente
+                color_data = pattern.pattern_data.get('color', 'red')
+                predicted_color = color_data
+            elif pattern.pattern_type == PatternType.ALTERNATION:
+                # Para alternação, usar a cor oposta à última
+                if self.data_history:
+                    last_result = list(self.data_history)[-1]
+                    last_color = last_result.get('color', 'red')
+                    predicted_color = 'black' if last_color == 'red' else 'red'
+            
+            # Obter último número que saiu
+            last_number = 0
+            if self.data_history:
+                last_result = list(self.data_history)[-1]
+                last_number = last_result.get('roll', 0)
+            
+            # Gerar explicação do padrão
+            reasoning = f"Padrão adaptativo detectado: {pattern_key} (confiança: {pattern.confidence:.1%})"
+            
+            # Notificar padrão detectado
+            notify_pattern(
+                pattern_type=f"Adaptive Pattern - {pattern.pattern_type.value}",
+                detected_number=last_number,
+                predicted_color=predicted_color,
+                confidence=pattern.confidence,
+                reasoning=reasoning,
+                pattern_id=pattern.pattern_id
+            )
+            
+            logger.info(f"Notificação de padrão adaptativo enviada: {pattern_key} -> {predicted_color}")
+            
+        except Exception as e:
+            logger.error(f"Erro ao notificar padrão adaptativo detectado: {e}")
+            import traceback
+            traceback.print_exc()

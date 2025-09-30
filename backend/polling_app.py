@@ -19,6 +19,19 @@ from flask_cors import CORS
 # Adicionar o diretório shared ao path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
 
+# Importar sistema de notificações
+try:
+    from src.notifications.pattern_notifier import notify_pattern, notify_result, get_notifier
+    from src.database.local_storage_db import local_db
+    NOTIFICATIONS_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️  Aviso: Sistema de notificações não disponível: {e}")
+    NOTIFICATIONS_AVAILABLE = False
+    def notify_pattern(*args, **kwargs): return False
+    def notify_result(*args, **kwargs): pass
+    def get_notifier(): return None
+    local_db = None
+
 try:
     from blaze_analyzer_enhanced import BlazeAnalyzerEnhanced
     analyzer_available = True
@@ -53,14 +66,53 @@ ws_thread = None
 last_results = []
 last_analysis = {}
 clients = set()  # Para rastrear clientes conectados
+web_notifications = []  # Para armazenar notificações para o frontend
 
-def init_analyzer():
+def web_notification_callback(notification_data):
+    """Callback para receber notificações do sistema de notificações"""
+    global web_notifications
+    print(f"🔔 Callback web recebeu notificação: {notification_data.get('type')} - {notification_data.get('pattern_type', 'N/A')}")
+    web_notifications.append(notification_data)
+    # Manter apenas as últimas 50 notificações
+    if len(web_notifications) > 50:
+        web_notifications = web_notifications[-50:]
+    print(f"📊 Total de notificações web: {len(web_notifications)} (padrões: {len([n for n in web_notifications if n.get('type') == 'pattern_detected'])})")
+
+def init_analyzer(clear_session_data=True):
     """Inicializa o analyzer."""
     global analyzer
     try:
         if analyzer_available:
             analyzer = BlazeAnalyzerEnhanced(use_official_api=False)
             print("Analyzer inicializado com sucesso!")
+            
+            # Limpar dados da sessão anterior se solicitado
+            if clear_session_data:
+                print("Limpando dados da sessao anterior...")
+                # Limpar listas globais
+                last_results.clear()
+                last_analysis.clear()
+                web_notifications.clear()
+                print("Dados da sessao limpos com sucesso!")
+            
+            # Configurar callback para notificações web
+            if NOTIFICATIONS_AVAILABLE:
+                notifier = get_notifier()
+                if notifier:
+                    print("Configurando callback de notificacoes web...")
+                    notifier.set_web_callback(web_notification_callback)
+                    print("Callback de notificacoes web configurado!")
+                    print(f"Notificador - Enabled: {notifier.enabled}, Min Confidence: {notifier.min_confidence}")
+                    
+                    # Garantir que o notificador está habilitado
+                    if not notifier.enabled:
+                        notifier.set_enabled(True)
+                        print("Notificador habilitado automaticamente!")
+                else:
+                    print("Notificador nao disponivel!")
+            else:
+                print("Sistema de notificacoes nao disponivel!")
+            
             return True
         else:
             print("Analyzer nao disponivel")
@@ -68,6 +120,36 @@ def init_analyzer():
     except Exception as e:
         print(f"Erro ao inicializar analyzer: {e}")
         return False
+
+def clear_session_data():
+    """Limpa dados da sessão atual."""
+    global last_results, last_analysis, web_notifications
+    
+    try:
+        # Limpar listas globais
+        last_results.clear()
+        last_analysis.clear()
+        web_notifications.clear()
+        
+        # Limpar dados do analyzer se disponível
+        if analyzer:
+            # Limpar dados manuais e da API
+            analyzer.manual_data.clear()
+            analyzer.data.clear()
+            
+            # Resetar sistemas de análise se disponíveis
+            if hasattr(analyzer, 'dual_pattern_detector'):
+                analyzer.dual_pattern_detector.reset()
+            
+            if hasattr(analyzer, 'adaptive_integrator'):
+                analyzer.adaptive_integrator.reset()
+            
+            print("✅ Dados da sessão limpos com sucesso!")
+        else:
+            print("⚠️  Analyzer não disponível para limpeza")
+            
+    except Exception as e:
+        print(f"❌ Erro ao limpar dados da sessão: {e}")
 
 def init_playnabets_integrator(analyzer_instance):
     """Inicializa o integrador PlayNabets."""
@@ -89,12 +171,13 @@ def start_websocket_connection():
     global ws_connected, ws_thread
     
     if ws_connected:
+        print("[AVISO] Conexão WebSocket já está ativa")
         return
     
     def ws_worker():
         global ws_connected, last_results, last_analysis
         try:
-            print("Iniciando conexao PlayNabets...")
+            print("🔌 Iniciando conexão PlayNabets...")
             ws_connected = True
             
             if playnabets_integrator:
@@ -103,45 +186,74 @@ def start_websocket_connection():
                 # Loop para processar dados
                 while ws_connected and playnabets_integrator.running:
                     try:
+                        # Verificar status da conexão
+                        status = playnabets_integrator.get_status()
+                        
+                        # Se não está conectado há muito tempo, tentar reconectar
+                        if not status['connected'] and status.get('time_since_last_heartbeat', 0) > 60:
+                            print("⚠️  Conexão perdida há mais de 60s. Tentando reconectar...")
+                            playnabets_integrator.stop()
+                            time.sleep(2)
+                            playnabets_integrator.start()
+                        
                         # Obter último resultado
                         if hasattr(playnabets_integrator, 'last_result') and playnabets_integrator.last_result:
                             result = playnabets_integrator.last_result
                             
-                            # Adicionar à lista de resultados
-                            last_results.append(result)
-                            if len(last_results) > 100:  # Manter apenas últimos 100
-                                last_results = last_results[-100:]
-                            
-                            # Atualizar análise
-                            if analyzer:
-                                analysis = analyzer.analyze_comprehensive()
-                                if analysis:
-                                    last_analysis = analysis
+                            # Verificar se é um resultado novo
+                            if not last_results or result != last_results[-1]:
+                                # Adicionar à lista de resultados
+                                last_results.append(result)
+                                if len(last_results) > 100:  # Manter apenas últimos 100
+                                    last_results = last_results[-100:]
+                                
+                                print(f"📊 Novo resultado: {result.get('number', 'N/A')} ({result.get('color', 'N/A')})")
+                                
+                                # Atualizar análise
+                                if analyzer:
+                                    try:
+                                        analysis = analyzer.analyze_comprehensive()
+                                        if analysis:
+                                            last_analysis = analysis
+                                    except Exception as e:
+                                        print(f"⚠️  Erro na análise: {e}")
                         
                         time.sleep(2)  # Atualizar a cada 2 segundos
                         
                     except Exception as e:
-                        print(f"Erro no loop WebSocket: {e}")
+                        print(f"❌ Erro no loop WebSocket: {e}")
                         time.sleep(5)
                         
             else:
-                print("Integrador PlayNabets nao disponivel")
+                print("❌ Integrador PlayNabets não disponível")
                 
         except Exception as e:
-            print(f"Erro na conexao WebSocket: {e}")
+            print(f"❌ Erro na conexão WebSocket: {e}")
         finally:
             ws_connected = False
+            print("🔌 Conexão WebSocket finalizada")
     
-    ws_thread = threading.Thread(target=ws_worker, daemon=True)
+    ws_thread = threading.Thread(target=ws_worker, name="WebSocketWorker")
     ws_thread.start()
+    print("✅ Thread WebSocket iniciada")
 
 def stop_websocket_connection():
     """Para a conexão WebSocket."""
-    global ws_connected
+    global ws_connected, ws_thread
+    print("🛑 Parando conexão WebSocket...")
     ws_connected = False
     
     if playnabets_integrator:
         playnabets_integrator.stop()
+    
+    # Aguardar thread terminar
+    if ws_thread and ws_thread.is_alive():
+        print("⏳ Aguardando thread WebSocket terminar...")
+        ws_thread.join(timeout=10)
+        if ws_thread.is_alive():
+            print("⚠️  Thread WebSocket não terminou em 10s")
+    
+    print("✅ Conexão WebSocket parada")
 
 # ===== ROTAS PRINCIPAIS =====
 
@@ -170,41 +282,61 @@ def playnabets():
 @app.route('/api/status')
 def get_status():
     """Status do sistema."""
-    return jsonify({
+    status = {
         'analyzer_ready': analyzer is not None,
         'playnabets_connected': ws_connected,
         'timestamp': int(time.time())
+    }
+    
+    # Adicionar status detalhado do PlayNabets
+    if playnabets_integrator:
+        playnabets_status = playnabets_integrator.get_status()
+        status.update({
+            'playnabets_status': playnabets_status,
+            'last_result': playnabets_status.get('last_result'),
+            'reconnect_attempts': playnabets_status.get('reconnect_attempts', 0),
+            'max_reconnect_attempts': playnabets_status.get('max_reconnect_attempts', 10),
+            'time_since_last_heartbeat': playnabets_status.get('time_since_last_heartbeat')
+        })
+    
+    # Adicionar estatísticas de resultados
+    status.update({
+        'total_results': len(last_results),
+        'last_analysis_available': bool(last_analysis),
+        'web_notifications_count': len(web_notifications)
     })
+    
+    return jsonify(status)
 
 @app.route('/api/results')
 def get_results():
-    """Obtém resultados recentes."""
+    """Obtém resultados recentes da sessão atual."""
     try:
-        if analyzer:
-            # Combinar dados manuais e da API
-            all_data = analyzer.manual_data + analyzer.data
-            
-            # Converter para formato JSON serializável
-            results = []
-            for item in all_data[-50:]:  # Últimos 50 resultados
-                if isinstance(item, dict):
-                    results.append({
-                        'id': item.get('id', 'unknown'),
-                        'number': item.get('roll', item.get('number', 0)),
-                        'color': item.get('color', 'unknown'),
-                        'timestamp': item.get('timestamp', int(time.time()))
-                    })
-            
-            # Ordenar por timestamp (mais recentes primeiro)
-            results.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
-            
-            return jsonify({
-                'results': results,
-                'total': len(results),
-                'timestamp': int(time.time())
-            })
-        else:
-            return jsonify({'results': [], 'total': 0, 'error': 'Analyzer não disponível'})
+        # Usar apenas os resultados da sessão atual (last_results)
+        # Não usar dados históricos do analyzer
+        results = []
+        
+        # Converter last_results para formato JSON serializável
+        for item in last_results:
+            if isinstance(item, dict):
+                results.append({
+                    'id': item.get('id', f'result_{len(results)}'),
+                    'roll': item.get('roll', item.get('number', 0)),
+                    'number': item.get('roll', item.get('number', 0)),
+                    'color': item.get('color', 'unknown'),
+                    'timestamp': item.get('timestamp', int(time.time()))
+                })
+        
+        # Ordenar por timestamp (mais recentes primeiro)
+        results.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+        
+        return jsonify({
+            'results': results,
+            'total': len(results),
+            'session_only': True,  # Indica que são apenas dados da sessão
+            'timestamp': int(time.time())
+        })
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -252,9 +384,14 @@ def add_result():
                 'color': color or ('white' if number == 0 else 'red' if 1 <= number <= 7 else 'black'),
                 'timestamp': int(time.time())
             }
+            
+            # Usar a lista global de resultados
+            global last_results
             last_results.append(result)
             if len(last_results) > 100:
                 last_results = last_results[-100:]
+            
+            # Resultado adicionado com sucesso (notificações de padrão são feitas automaticamente)
             
             return jsonify({'success': True, 'result': result})
         else:
@@ -431,6 +568,364 @@ def playnabets_stop():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/playnabets/reconnect', methods=['POST'])
+def playnabets_reconnect():
+    """Força reconexão PlayNabets."""
+    try:
+        if not playnabets_integrator:
+            return jsonify({'error': 'Integrador PlayNabets não disponível'}), 500
+        
+        print("🔄 Forçando reconexão PlayNabets...")
+        
+        # Parar conexão atual
+        stop_websocket_connection()
+        time.sleep(2)
+        
+        # Reiniciar conexão
+        start_websocket_connection()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Reconexão PlayNabets iniciada'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ===== NOTIFICAÇÕES =====
+
+@app.route('/api/notifications/status', methods=['GET'])
+def notifications_status():
+    """Status do sistema de notificações."""
+    try:
+        if not NOTIFICATIONS_AVAILABLE:
+            return jsonify({
+                'available': False,
+                'message': 'Sistema de notificações não disponível'
+            })
+        
+        notifier = get_notifier()
+        if notifier:
+            stats = notifier.get_stats()
+            return jsonify({
+                'available': True,
+                'enabled': notifier.enabled,
+                'min_confidence': notifier.min_confidence,
+                'stats': stats
+            })
+        else:
+            return jsonify({
+                'available': True,
+                'enabled': False,
+                'message': 'Notificador não inicializado'
+            })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/notifications/config', methods=['POST'])
+def notifications_config():
+    """Configura sistema de notificações."""
+    try:
+        if not NOTIFICATIONS_AVAILABLE:
+            return jsonify({'error': 'Sistema de notificações não disponível'}), 500
+        
+        data = request.get_json()
+        notifier = get_notifier()
+        
+        if not notifier:
+            return jsonify({'error': 'Notificador não disponível'}), 500
+        
+        # Atualizar configurações
+        if 'enabled' in data:
+            notifier.set_enabled(bool(data['enabled']))
+        
+        if 'min_confidence' in data:
+            confidence = float(data['min_confidence'])
+            notifier.set_min_confidence(confidence)
+        
+        return jsonify({
+            'success': True,
+            'enabled': notifier.enabled,
+            'min_confidence': notifier.min_confidence
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/notifications/clear', methods=['POST'])
+def notifications_clear():
+    """Limpa a tela de notificações."""
+    try:
+        if not NOTIFICATIONS_AVAILABLE:
+            return jsonify({'error': 'Sistema de notificações não disponível'}), 500
+        
+        notifier = get_notifier()
+        if notifier:
+            notifier.clear_screen()
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Notificador não disponível'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/notifications/web')
+def get_web_notifications():
+    """Obtém notificações para o frontend."""
+    try:
+        global web_notifications
+        
+        # Retornar todas as notificações (padrões e resultados)
+        # O frontend decide qual exibir
+        return jsonify({
+            'notifications': web_notifications[-20:],  # Últimas 20 notificações
+            'total': len(web_notifications),
+            'timestamp': int(time.time())
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/notifications/web/clear', methods=['POST'])
+def clear_web_notifications():
+    """Limpa notificações web."""
+    try:
+        global web_notifications
+        web_notifications = []
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ===== BANCO DE DADOS LOCAL =====
+
+@app.route('/api/db/stats', methods=['GET'])
+def get_db_stats():
+    """Estatísticas do banco de dados local."""
+    try:
+        if not local_db:
+            return jsonify({'error': 'Banco de dados local não disponível'}), 500
+        
+        stats = local_db.get_statistics()
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/db/patterns', methods=['GET'])
+def get_db_patterns():
+    """Padrões salvos no banco local."""
+    try:
+        if not local_db:
+            return jsonify({'error': 'Banco de dados local não disponível'}), 500
+        
+        count = request.args.get('count', 20, type=int)
+        patterns = local_db.get_recent_patterns(count)
+        return jsonify({'patterns': patterns})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/db/results', methods=['GET'])
+def get_db_results():
+    """Resultados salvos no banco local."""
+    try:
+        if not local_db:
+            return jsonify({'error': 'Banco de dados local não disponível'}), 500
+        
+        count = request.args.get('count', 50, type=int)
+        results = local_db.get_recent_results(count)
+        return jsonify({'results': results})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/db/clear', methods=['POST'])
+def clear_db():
+    """Limpa banco de dados local."""
+    try:
+        if not local_db:
+            return jsonify({'error': 'Banco de dados local não disponível'}), 500
+        
+        data_type = request.json.get('type', 'all') if request.json else 'all'
+        success = local_db.clear_data(data_type)
+        
+        if success:
+            return jsonify({'success': True, 'message': f'Dados {data_type} limpos'})
+        else:
+            return jsonify({'error': 'Erro ao limpar dados'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/db/export', methods=['POST'])
+def export_db():
+    """Exporta banco de dados local."""
+    try:
+        if not local_db:
+            return jsonify({'error': 'Banco de dados local não disponível'}), 500
+        
+        file_path = local_db.export_data()
+        if file_path:
+            return jsonify({'success': True, 'file_path': file_path})
+        else:
+            return jsonify({'error': 'Erro ao exportar dados'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/debug/pattern_status', methods=['GET'])
+def debug_pattern_status():
+    """Endpoint de debug para verificar status da detecção de padrões."""
+    try:
+        status = {
+            'analyzer_available': analyzer is not None,
+            'manual_data_count': len(analyzer.manual_data) if analyzer else 0,
+            'api_data_count': len(analyzer.data) if analyzer else 0,
+            'total_web_notifications': len(web_notifications),
+            'pattern_notifications': len([n for n in web_notifications if n.get('type') == 'pattern_detected']),
+            'notifier_enabled': False,
+            'notifier_min_confidence': 0.6,
+            'web_callback_configured': False
+        }
+        
+        # Verificar notificador
+        try:
+            from src.notifications.pattern_notifier import get_notifier
+            notifier = get_notifier()
+            if notifier:
+                status['notifier_enabled'] = notifier.enabled
+                status['notifier_min_confidence'] = notifier.min_confidence
+                status['notifier_history_count'] = len(notifier.notifications_history)
+                status['web_callback_configured'] = notifier.web_callback is not None
+        except Exception as e:
+            status['notifier_error'] = str(e)
+        
+        # Obter últimos resultados
+        if analyzer and analyzer.manual_data:
+            status['last_5_results'] = [
+                {'number': r.get('roll', r.get('number', 0)), 'color': r.get('color', 'unknown')}
+                for r in analyzer.manual_data[-5:]
+            ]
+        
+        return jsonify(status)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/debug/force_pattern_detection', methods=['POST'])
+def force_pattern_detection():
+    """Força detecção de padrões e envia notificação de teste."""
+    try:
+        if not analyzer:
+            return jsonify({'error': 'Analyzer não disponível'}), 500
+        
+        # Forçar análise
+        analyzer.analyze_comprehensive()
+        
+        # Enviar notificação de teste
+        from src.notifications.pattern_notifier import get_notifier
+        notifier = get_notifier()
+        if notifier and notifier.web_callback:
+            test_notification = {
+                'type': 'pattern_detected',
+                'pattern_type': 'Teste Manual',
+                'detected_number': 999,
+                'predicted_color': 'red',
+                'confidence': 0.8,
+                'reasoning': 'Notificação de teste enviada manualmente',
+                'timestamp': '2025-09-30T16:30:00',
+                'pattern_id': 'test_manual'
+            }
+            notifier.web_callback(test_notification)
+            return jsonify({'success': True, 'message': 'Notificação de teste enviada'})
+        else:
+            return jsonify({'error': 'Notificador ou callback não disponível'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/debug/force_analysis', methods=['POST'])
+def force_analysis():
+    """Força nova análise completa do sistema."""
+    try:
+        if not analyzer:
+            return jsonify({'error': 'Analyzer não disponível'}), 500
+        
+        # Limpar notificações antigas
+        global web_notifications
+        web_notifications = []
+        
+        # Forçar análise completa
+        analysis = analyzer.analyze_comprehensive()
+        
+        # Forçar detecção de padrões
+        if hasattr(analyzer, '_detect_and_notify_patterns'):
+            analyzer._detect_and_notify_patterns()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Análise forçada executada',
+            'analysis_available': analysis is not None,
+            'notifications_cleared': True
+        })
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/debug/reset_system', methods=['POST'])
+def reset_system():
+    """Reseta o sistema após detecção de padrão."""
+    try:
+        if not analyzer:
+            return jsonify({'error': 'Analyzer não disponível'}), 500
+        
+        # Obter parâmetros da requisição
+        data = request.get_json() or {}
+        keep_context = data.get('keep_context', True)  # Padrão: manter contexto
+        
+        # Limpar notificações web
+        global web_notifications
+        web_notifications = []
+        
+        # Resetar sistema no analyzer
+        if hasattr(analyzer, '_reset_system_after_pattern'):
+            analyzer._reset_system_after_pattern(keep_context=keep_context)
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Sistema resetado {"com contexto" if keep_context else "completamente"}',
+            'notifications_cleared': True,
+            'keep_context': keep_context
+        })
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/session/clear', methods=['POST'])
+def clear_session():
+    """Limpa todos os dados da sessão atual."""
+    try:
+        print("🧹 Limpeza de sessão solicitada via API...")
+        clear_session_data()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Sessão limpa com sucesso',
+            'timestamp': int(time.time())
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/session/status', methods=['GET'])
+def session_status():
+    """Status da sessão atual."""
+    try:
+        status = {
+            'total_results': len(last_results),
+            'last_analysis_available': bool(last_analysis),
+            'web_notifications_count': len(web_notifications),
+            'analyzer_manual_data': len(analyzer.manual_data) if analyzer else 0,
+            'analyzer_api_data': len(analyzer.data) if analyzer else 0,
+            'session_start_time': int(time.time()),
+            'playnabets_connected': ws_connected
+        }
+        
+        return jsonify(status)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     print("Iniciando Blaze Web Backend (Versao Polling)...")
     
@@ -441,13 +936,17 @@ if __name__ == '__main__':
     if analyzer_ready:
         init_playnabets_integrator(analyzer)
         print("Integrador PlayNabets inicializado!")
+        
+        # Iniciar conexão PlayNabets automaticamente
+        print("Iniciando conexão automática com PlayNabets...")
+        start_websocket_connection()
     else:
         print("Aviso: Integrador PlayNabets nao inicializado - analyzer nao disponivel")
     
     print("Sistema pronto!")
     print("Servidor iniciando em http://localhost:5000")
     print("Polling ativo para atualizacoes em tempo real")
-    print("Para conectar com PlayNabets, use: POST /api/playnabets/start")
+    print("Conexão PlayNabets iniciada automaticamente")
     
     # Iniciar servidor
     app.run(debug=True, host='0.0.0.0', port=5000)

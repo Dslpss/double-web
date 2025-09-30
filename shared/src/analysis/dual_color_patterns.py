@@ -55,11 +55,11 @@ class DualColorPatternDetector:
         """
         self.config = config or {}
         
-        # Configurações
-        self.min_pattern_frequency = self.config.get('min_pattern_frequency', 3)
-        self.min_confidence_threshold = self.config.get('min_confidence_threshold', 0.6)
+        # Configurações - REDUZIDAS PARA TESTE
+        self.min_pattern_frequency = self.config.get('min_pattern_frequency', 2)  # Era 3
+        self.min_confidence_threshold = self.config.get('min_confidence_threshold', 0.3)  # Era 0.6
         self.max_patterns = self.config.get('max_patterns', 200)
-        self.sequence_length_range = self.config.get('sequence_length_range', (3, 8))
+        self.sequence_length_range = self.config.get('sequence_length_range', (2, 5))  # Era (3, 8)
         self.history_size = self.config.get('history_size', 1000)
         
         # Armazenamento de padrões
@@ -281,7 +281,7 @@ class DualColorPatternDetector:
     
     def _detect_dual_sequence_patterns(self) -> None:
         """Detecta padrões de sequência dual."""
-        colors = [r.get('color') for r in list(self.data_history)[-50:]]
+        colors = [r.get('color') for r in list(self.data_history)[-20:]]  # Era -50
         
         for length in range(self.sequence_length_range[0], self.sequence_length_range[1] + 1):
             for i in range(len(colors) - length):
@@ -291,7 +291,7 @@ class DualColorPatternDetector:
                 red_sequence = [c for c in sequence if c == 'red']
                 black_sequence = [c for c in sequence if c == 'black']
                 
-                if len(red_sequence) >= 2 and len(black_sequence) >= 2:
+                if len(red_sequence) >= 1 and len(black_sequence) >= 1:  # Era >= 2
                     # Padrão dual válido
                     pattern_key = f"dual_seq_{length}_{i}"
                     
@@ -325,10 +325,13 @@ class DualColorPatternDetector:
                             self.dual_patterns[pattern_key] = pattern
                             self.pattern_counter += 1
                             logger.info(f"Novo padrão dual de sequência detectado: {pattern_key}")
+                            
+                            # Notificar padrão detectado
+                            self._notify_pattern_detected(pattern, pattern_key)
     
     def _detect_dual_frequency_patterns(self) -> None:
         """Detecta padrões de frequência dual."""
-        colors = [r.get('color') for r in list(self.data_history)[-30:]]
+        colors = [r.get('color') for r in list(self.data_history)[-15:]]  # Era -30
         total = len(colors)
         
         red_count = colors.count('red')
@@ -337,8 +340,8 @@ class DualColorPatternDetector:
         red_frequency = red_count / total if total > 0 else 0
         black_frequency = black_count / total if total > 0 else 0
         
-        # Detectar padrões de alta frequência dual
-        if red_frequency > 0.6 and black_frequency > 0.3:
+        # Detectar padrões de alta frequência dual - REDUZIDO
+        if red_frequency > 0.4 and black_frequency > 0.2:  # Era 0.6 e 0.3
             pattern_key = "dual_freq_high_red_black"
             if pattern_key not in self.dual_patterns:
                 confidence = min(0.8, (red_frequency + black_frequency) / 2)
@@ -369,6 +372,9 @@ class DualColorPatternDetector:
                 self.dual_patterns[pattern_key] = pattern
                 self.pattern_counter += 1
                 logger.info(f"Novo padrão dual de frequência detectado: {pattern_key}")
+                
+                # Notificar padrão detectado
+                self._notify_pattern_detected(pattern, pattern_key)
     
     def _detect_dual_alternation_patterns(self) -> None:
         """Detecta padrões de alternação dual."""
@@ -411,6 +417,9 @@ class DualColorPatternDetector:
                         self.dual_patterns[pattern_key] = pattern
                         self.pattern_counter += 1
                         logger.info(f"Novo padrão dual de alternação detectado: {pattern_key}")
+                        
+                        # Notificar padrão detectado
+                        self._notify_pattern_detected(pattern, pattern_key)
     
     def _detect_hot_cold_number_patterns(self) -> None:
         """Detecta padrões de números quentes/frios."""
@@ -450,6 +459,9 @@ class DualColorPatternDetector:
                     self.dual_patterns[pattern_key] = pattern
                     self.pattern_counter += 1
                     logger.info(f"Novo padrão dual de números quentes vermelhos detectado: {pattern_key}")
+                    
+                    # Notificar padrão detectado
+                    self._notify_pattern_detected(pattern, pattern_key)
         
         # Análise similar para preto
         if len(black_numbers) >= 10:
@@ -483,6 +495,9 @@ class DualColorPatternDetector:
                     self.dual_patterns[pattern_key] = pattern
                     self.pattern_counter += 1
                     logger.info(f"Novo padrão dual de números quentes pretos detectado: {pattern_key}")
+                    
+                    # Notificar padrão detectado
+                    self._notify_pattern_detected(pattern, pattern_key)
     
     def _calculate_sequence_confidence(self, sequence: List[str]) -> float:
         """Calcula confiança de uma sequência."""
@@ -672,3 +687,43 @@ class DualColorPatternDetector:
             'patterns_used': [],
             'reasoning': f'Predição padrão para {color} - dados insuficientes'
         }
+    
+    def _notify_pattern_detected(self, pattern: 'DualPattern', pattern_key: str) -> None:
+        """Notifica quando um padrão dual é detectado."""
+        try:
+            # Importar notificador
+            from ..notifications.pattern_notifier import notify_pattern
+            
+            # Determinar cor prevista baseada no padrão
+            predicted_color = "red"  # Padrão padrão
+            if pattern.black_pattern and not pattern.red_pattern:
+                predicted_color = "black"
+            elif pattern.red_pattern and pattern.black_pattern:
+                # Se é dual, usar a cor com maior confiança
+                predicted_color = "red" if pattern.confidence > 0.5 else "black"
+            
+            # Obter último número que saiu
+            last_number = 0
+            if self.data_history:
+                last_result = list(self.data_history)[-1]
+                last_number = last_result.get('roll', 0)
+            
+            # Gerar explicação do padrão
+            reasoning = f"Padrão dual detectado: {pattern_key} (confiança: {pattern.confidence:.1%})"
+            
+            # Notificar padrão detectado
+            notify_pattern(
+                pattern_type=f"Dual Pattern - {pattern.category.value}",
+                detected_number=last_number,
+                predicted_color=predicted_color,
+                confidence=pattern.confidence,
+                reasoning=reasoning,
+                pattern_id=pattern.pattern_id
+            )
+            
+            logger.info(f"Notificação de padrão dual enviada: {pattern_key} -> {predicted_color}")
+            
+        except Exception as e:
+            logger.error(f"Erro ao notificar padrão dual detectado: {e}")
+            import traceback
+            traceback.print_exc()

@@ -19,6 +19,9 @@ from src.database.db_manager import DatabaseManager
 from src.analysis.pattern_analyzer import PatternAnalyzer
 from src.models.prediction_model import PredictionModel
 from src.notifications.alert_system import AlertSystem
+from src.notifications.pattern_notifier import notify_pattern, notify_result, get_notifier
+from src.database.local_storage_db import local_db
+from src.analysis.double_patterns import DoublePatternDetector
 from src.ml.adaptive_integrator import AdaptiveIntegrator
 from src.ml.prediction_validator import PredictionValidator
 from src.ml.prediction_feedback import PredictionFeedback
@@ -68,6 +71,9 @@ class BlazeAnalyzerEnhanced:
         
         # Inicializar modelo de predição
         self.prediction_model = PredictionModel()
+        
+        # Inicializar detector de padrões Double
+        self.double_pattern_detector = DoublePatternDetector()
         
         # Inicializar sistema de alertas
         self.alert_system = AlertSystem({
@@ -169,11 +175,17 @@ class BlazeAnalyzerEnhanced:
     def _load_existing_data(self) -> None:
         """Carrega dados existentes do banco de dados na inicialização."""
         try:
-            # Carregar apenas os últimos 50 resultados para performance
-            # (suficiente para análise de padrões sem sobrecarregar)
-            recent_results = self.db_manager.get_recent_results(50)
+            # MODIFICAÇÃO: Não carregar dados históricos para cada sessão começar limpa
+            # Isso evita interferência de dados antigos na análise atual
+            logger.info("Sessão iniciada com dados limpos (sem histórico persistente)")
+            
+            # Opcional: Carregar apenas os últimos 5 resultados para contexto mínimo
+            # (apenas se necessário para inicialização de sistemas)
+            recent_results = self.db_manager.get_recent_results(5)
             
             if recent_results:
+                logger.info(f"Carregados apenas {len(recent_results)} resultados para contexto mínimo")
+                
                 # Converter para formato esperado pelo analisador
                 for result in recent_results:
                     # Adicionar aos dados manuais (formato compatível)
@@ -184,9 +196,7 @@ class BlazeAnalyzerEnhanced:
                         'id': result.get('id')
                     })
                 
-                logger.info(f"Carregados {len(recent_results)} resultados existentes do banco")
-                
-                # Alimentar os sistemas de análise com os dados existentes
+                # Alimentar os sistemas de análise com os dados existentes (apenas contexto mínimo)
                 for result in recent_results:
                     # Alimentar detector de padrões dual
                     if hasattr(self, 'dual_pattern_detector'):
@@ -204,12 +214,12 @@ class BlazeAnalyzerEnhanced:
                             'timestamp': result.get('timestamp') or result.get('created_at')
                         })
                 
-                logger.info("Sistemas de análise alimentados com dados existentes")
-                
-                # Verificar se precisa de limpeza automática
-                self._check_and_cleanup_database()
+                logger.info("Sistemas de análise inicializados com contexto mínimo")
             else:
-                logger.info("Nenhum dado existente encontrado no banco")
+                logger.info("Nenhum dado histórico encontrado - sessão completamente limpa")
+                
+            # Verificar se precisa de limpeza automática
+            self._check_and_cleanup_database()
                 
         except Exception as e:
             logger.error(f"Erro ao carregar dados existentes: {e}")
@@ -625,6 +635,12 @@ class BlazeAnalyzerEnhanced:
         print(f"Resultado adicionado: Número {number}, Cor {color}")
         logger.info(f"Resultado manual adicionado: {number} ({color})")
         
+        # Notificar resultado no console (apenas para debug)
+        try:
+            notify_result(number, color)
+        except Exception as e:
+            logger.exception(f'Erro ao notificar resultado: {e}')
+        
         # Atualizar modelo de predição em tempo real
         try:
             if hasattr(self, 'prediction_model') and self.prediction_model:
@@ -645,6 +661,30 @@ class BlazeAnalyzerEnhanced:
                 validation_result = self.prediction_validator.validate_prediction(color)
                 if validation_result.get('validated_count', 0) > 0:
                     logger.info(f"Validadas {validation_result['validated_count']} predições com resultado {color}")
+                    
+                    # Enviar notificação web sobre o resultado
+                    try:
+                        predictions = validation_result.get('predictions', [])
+                        for pred in predictions:
+                            was_correct = pred.get('status') == 'correct'
+                            predicted_color = pred.get('predicted_color', '')
+                            
+                            # Enviar notificação de resultado via pattern notifier
+                            from src.notifications.pattern_notifier import get_notifier
+                            notifier = get_notifier()
+                            if notifier and notifier.web_callback:
+                                notifier.web_callback({
+                                    'type': 'prediction_result',
+                                    'predicted_color': predicted_color,
+                                    'actual_color': color,
+                                    'actual_number': number,
+                                    'was_correct': was_correct,
+                                    'confidence': pred.get('confidence', 0),
+                                    'timestamp': datetime.now().isoformat()
+                                })
+                                logger.info(f"Notificação de resultado enviada para web: {predicted_color} -> {color} ({'ACERTOU' if was_correct else 'ERROU'})")
+                    except Exception as e:
+                        logger.exception(f'Erro ao enviar notificação de resultado: {e}')
         except Exception:
             logger.exception('Erro ao validar predições pendentes')
         
@@ -776,6 +816,12 @@ class BlazeAnalyzerEnhanced:
         except Exception:
             logger.exception('Erro ao verificar previsões pendentes')
         
+        # NOVO: Após adicionar resultado, tentar detectar padrões e gerar sinal
+        try:
+            self._detect_and_notify_patterns()
+        except Exception as e:
+            logger.exception(f'Erro ao detectar padrões após adicionar resultado: {e}')
+        
         return self.manual_data
 
     def register_prediction_update_callback(self, func):
@@ -797,7 +843,442 @@ class BlazeAnalyzerEnhanced:
         except Exception:
             logger.exception('Erro ao notificar callbacks de previsão')
     
-    def analyze_comprehensive(self, use_manual_data: bool = False) -> dict:
+    def _reset_system_after_pattern(self, keep_context=True):
+        """
+        Reseta sistema após detectar um padrão, mantendo contexto suficiente.
+        
+        Args:
+            keep_context (bool): Se True, mantém últimos 3-5 resultados para contexto
+        """
+        try:
+            logger.info("[RESET] RESETANDO SISTEMA após detecção de padrão")
+            
+            # 1. Limpar dados manuais mantendo contexto
+            if self.manual_data and len(self.manual_data) > 0:
+                if keep_context:
+                    # Manter últimos 3-5 resultados para contexto
+                    context_size = min(5, max(3, len(self.manual_data) // 3))
+                    self.manual_data = self.manual_data[-context_size:]
+                    logger.info(f"[DADOS] Mantidos {context_size} resultados para contexto")
+                else:
+                    # Reset total - apenas último resultado
+                    last_result = self.manual_data[-1]
+                    self.manual_data = [last_result]
+                    logger.info(f"[DADOS] Reset total - mantido apenas último resultado: {last_result}")
+            
+            # 2. Limpar dados da API (manter alguns recentes se disponível)
+            if self.data:
+                if keep_context and len(self.data) > 3:
+                    # Manter últimos 3 da API também
+                    self.data = self.data[-3:]
+                    logger.info("[DADOS] Mantidos 3 resultados da API para contexto")
+                else:
+                    self.data = []
+                    logger.info("[DADOS] Dados da API limpos")
+            
+            # 3. Limpar apenas padrões muito antigos (não todos)
+            try:
+                if hasattr(self, 'local_db') and self.local_db:
+                    # Limpar apenas padrões antigos (mais de 1 hora)
+                    current_time = time.time()
+                    if hasattr(self.local_db, 'clear_old_patterns'):
+                        self.local_db.clear_old_patterns(older_than=current_time - 3600)  # 1 hora
+                        logger.info("[LIMPEZA] Padrões antigos (>1h) removidos")
+                    else:
+                        # Fallback: limpar todos se não tiver método específico
+                        self.local_db.clear_data('patterns')
+                        logger.info("[LIMPEZA] Todos os padrões removidos (fallback)")
+            except Exception as e:
+                logger.warning(f"Erro ao limpar padrões antigos: {e}")
+            
+            # 4. Resetar contadores gradualmente
+            if hasattr(self, 'pattern_detector'):
+                # Resetar detector de padrões se possível
+                if hasattr(self.pattern_detector, 'reset'):
+                    self.pattern_detector.reset()
+                    logger.info("[RESET] Detector de padrões resetado")
+            
+            # 5. Limpar notificações antigas (manter recentes)
+            try:
+                if hasattr(self, 'notifier') and self.notifier:
+                    # Limpar apenas notificações antigas
+                    if hasattr(self.notifier, 'notifications_history'):
+                        # Manter apenas últimas 3 notificações
+                        if len(self.notifier.notifications_history) > 3:
+                            self.notifier.notifications_history = self.notifier.notifications_history[-3:]
+                            logger.info("[LIMPEZA] Notificações antigas removidas - mantidas últimas 3")
+            except Exception as e:
+                logger.warning(f"Erro ao limpar notificações: {e}")
+            
+            logger.info("[SUCESSO] Sistema resetado com contexto preservado")
+            
+        except Exception as e:
+            logger.error(f"Erro ao resetar sistema: {e}")
+    
+    def _should_detect_patterns(self):
+        """
+        Verifica se deve detectar padrões agora.
+        Lógica inteligente baseada na frequência real do jogo e qualidade dos dados.
+        """
+        try:
+            # Verificar se há dados suficientes
+            data_to_analyze = self.manual_data if self.manual_data else self.data
+            if not data_to_analyze or len(data_to_analyze) < 3:
+                return False
+            
+            current_time = time.time()
+            
+            # 1. Verificar se há dados muito recentes (cooldown básico)
+            if len(data_to_analyze) >= 3:
+                recent_results = data_to_analyze[-3:]
+                
+                # Calcular tempo médio entre resultados
+                time_diffs = []
+                for i in range(1, len(recent_results)):
+                    if isinstance(recent_results[i], dict) and isinstance(recent_results[i-1], dict):
+                        ts1 = recent_results[i].get('timestamp', current_time)
+                        ts2 = recent_results[i-1].get('timestamp', current_time)
+                        if ts1 > ts2:
+                            time_diffs.append(ts1 - ts2)
+                
+                if time_diffs:
+                    avg_interval = sum(time_diffs) / len(time_diffs)
+                    # Cooldown baseado na frequência real (2x o intervalo médio)
+                    cooldown_time = max(10, min(60, avg_interval * 2))
+                    
+                    # Verificar se último resultado é muito recente
+                    last_result = recent_results[-1]
+                    if isinstance(last_result, dict):
+                        last_timestamp = last_result.get('timestamp', current_time)
+                        time_since_last = current_time - last_timestamp
+                        
+                        if time_since_last < cooldown_time:
+                            logger.debug(f"Cooldown ativo: {time_since_last:.1f}s < {cooldown_time:.1f}s")
+                            return False
+            
+            # 2. Verificar qualidade dos dados
+            if len(data_to_analyze) >= 5:
+                # Verificar se há diversidade suficiente nas cores
+                recent_colors = [r.get('color', '') for r in data_to_analyze[-5:] if isinstance(r, dict)]
+                unique_colors = len(set(recent_colors))
+                
+                # Se todas as cores são iguais nos últimos 5, pode ser um padrão válido
+                if unique_colors == 1 and len(recent_colors) >= 3:
+                    logger.debug("Dados uniformes detectados - permitindo detecção")
+                    return True
+                
+                # Se há diversidade, verificar se não é muito aleatório
+                if unique_colors >= 3:
+                    # Verificar se há algum padrão emergente
+                    color_counts = {}
+                    for color in recent_colors:
+                        color_counts[color] = color_counts.get(color, 0) + 1
+                    
+                    # Se uma cor aparece mais de 60%, pode ser um padrão
+                    max_count = max(color_counts.values())
+                    if max_count / len(recent_colors) > 0.6:
+                        logger.debug("Predominância de cor detectada - permitindo detecção")
+                        return True
+                    
+                    # Se muito aleatório, aguardar mais dados
+                    if max_count / len(recent_colors) < 0.4:
+                        logger.debug("Dados muito aleatórios - aguardando mais dados")
+                        return False
+            
+            # 3. Verificar se já detectou padrão muito recentemente
+            if hasattr(self, '_last_pattern_time'):
+                time_since_last_pattern = current_time - self._last_pattern_time
+                if time_since_last_pattern < 30:  # 30 segundos mínimo entre padrões
+                    logger.debug(f"Padrão detectado recentemente - aguardando {30 - time_since_last_pattern:.1f}s")
+                    return False
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Erro ao verificar se deve detectar padrões: {e}")
+            return True
+    
+    def _validate_pattern_quality(self, data_to_analyze):
+        """
+        Valida a qualidade de um padrão detectado antes de aceitar.
+        
+        Args:
+            data_to_analyze: Dados usados para detectar o padrão
+            
+        Returns:
+            bool: True se o padrão é de qualidade suficiente
+        """
+        try:
+            if not data_to_analyze or len(data_to_analyze) < 3:
+                return False
+            
+            # 1. Verificar consistência temporal
+            current_time = time.time()
+            recent_results = data_to_analyze[-5:] if len(data_to_analyze) >= 5 else data_to_analyze
+            
+            # Verificar se os dados não são muito antigos
+            old_data_count = 0
+            for result in recent_results:
+                if isinstance(result, dict):
+                    timestamp = result.get('timestamp', current_time)
+                    if current_time - timestamp > 300:  # 5 minutos
+                        old_data_count += 1
+            
+            # Se mais de 50% dos dados são antigos, rejeitar
+            if old_data_count / len(recent_results) > 0.5:
+                logger.debug("Padrão rejeitado: dados muito antigos")
+                return False
+            
+            # 2. Verificar diversidade de cores
+            colors = [r.get('color', '') for r in recent_results if isinstance(r, dict)]
+            unique_colors = len(set(colors))
+            
+            # Se há apenas 1 cor, verificar se é realmente um padrão válido
+            if unique_colors == 1:
+                if len(colors) < 4:  # Sequência muito curta
+                    logger.debug("Padrão rejeitado: sequência muito curta")
+                    return False
+                # Sequência longa de mesma cor é válida
+                return True
+            
+            # 3. Verificar se há predominância real
+            if unique_colors >= 2:
+                color_counts = {}
+                for color in colors:
+                    color_counts[color] = color_counts.get(color, 0) + 1
+                
+                max_count = max(color_counts.values())
+                predominance_ratio = max_count / len(colors)
+                
+                # Precisa de pelo menos 60% de predominância
+                if predominance_ratio < 0.6:
+                    logger.debug(f"Padrão rejeitado: predominância insuficiente ({predominance_ratio:.2f})")
+                    return False
+            
+            # 4. Verificar se não é muito aleatório
+            if len(colors) >= 5:
+                # Calcular entropia das cores
+                color_probs = {}
+                for color in colors:
+                    color_probs[color] = color_probs.get(color, 0) + 1
+                
+                # Normalizar probabilidades
+                total = len(colors)
+                for color in color_probs:
+                    color_probs[color] /= total
+                
+                # Calcular entropia
+                entropy = 0
+                for prob in color_probs.values():
+                    if prob > 0:
+                        entropy -= prob * (prob.bit_length() - 1)  # Aproximação de log2
+                
+                # Se entropia é muito alta (muito aleatório), rejeitar
+                max_entropy = (len(color_probs) - 1).bit_length() - 1  # Entropia máxima
+                if entropy > max_entropy * 0.8:  # 80% da entropia máxima
+                    logger.debug(f"Padrão rejeitado: muito aleatório (entropia: {entropy:.2f})")
+                    return False
+            
+            logger.debug("Padrão validado com sucesso")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Erro ao validar qualidade do padrão: {e}")
+            return True  # Em caso de erro, aceitar o padrão
+    
+    def _detect_and_notify_patterns(self):
+        """
+        Detecta padrões nos dados atuais e gera notificações.
+        Após detectar um padrão, reseta completamente o sistema para reiniciar análise.
+        """
+        try:
+            # Verificar se deve detectar padrões agora
+            if not self._should_detect_patterns():
+                return
+            
+            # Usar dados manuais (que incluem dados do PlayNabets)
+            data_to_analyze = self.manual_data if self.manual_data else self.data
+            
+            # Reduzir requisito mínimo para 3 resultados
+            if not data_to_analyze or len(data_to_analyze) < 3:
+                logger.debug(f"Dados insuficientes para detecção de padrões: {len(data_to_analyze) if data_to_analyze else 0} resultados")
+                return
+            
+            logger.info(f"Detectando padrões em {len(data_to_analyze)} resultados")
+            
+            # Flag para controlar se detectou algum padrão
+            pattern_detected = False
+            
+            # 1. Detectar padrões Double específicos
+            try:
+                double_patterns = self.double_pattern_detector.detect_all_patterns(data_to_analyze)
+                if double_patterns and 'patterns' in double_patterns and double_patterns['patterns']:
+                    for pattern_name, pattern_data in double_patterns['patterns'].items():
+                        if pattern_data.get('confidence', 0) >= 0.6 and pattern_data.get('detected', False):
+                            # Obter último número que saiu
+                            last_number = 0
+                            if isinstance(data_to_analyze, list) and data_to_analyze:
+                                last_result = data_to_analyze[-1]
+                                if isinstance(last_result, dict):
+                                    last_number = last_result.get('roll', last_result.get('number', 0))
+                            
+                            # Usar cor predita do padrão
+                            predicted_color = pattern_data.get('predicted_color', 'red')
+                            
+                            # Notificar padrão Double detectado
+                            pattern_sent = notify_pattern(
+                                pattern_type=pattern_data.get('pattern_type', pattern_name),
+                                detected_number=last_number,
+                                predicted_color=predicted_color,
+                                confidence=pattern_data.get('confidence', 0.6),
+                                reasoning=pattern_data.get('description', 'Padrão Double detectado'),
+                                pattern_id=f"double_{pattern_name}_{int(time.time())}"
+                            )
+                            logger.info(f"Notificação de padrão Double enviada: {pattern_sent}")
+                            
+                            # Salvar no banco local
+                            try:
+                                local_db.add_pattern({
+                                    'pattern_type': pattern_data.get('pattern_type', pattern_name),
+                                    'detected_number': last_number,
+                                    'predicted_color': predicted_color,
+                                    'confidence': pattern_data.get('confidence', 0.6),
+                                    'reasoning': pattern_data.get('description', ''),
+                                    'risk_level': pattern_data.get('risk_level', 'medium')
+                                })
+                            except Exception as e:
+                                logger.exception(f'Erro ao salvar padrão no banco local: {e}')
+                            
+                            logger.info(f"Padrão Double detectado: {pattern_name} -> {predicted_color}")
+                            pattern_detected = True
+                            break  # Sair do loop após detectar um padrão
+            except Exception as e:
+                logger.exception(f'Erro ao detectar padrões Double: {e}')
+            
+            # 2. Detectar padrões gerais usando PatternAnalyzer
+            try:
+                # Obter gatilhos de padrão
+                triggers = self.pattern_analyzer.get_triggers(data_to_analyze)
+                
+                if triggers and len(triggers) > 0:
+                    # Gerar sinal baseado nos gatilhos
+                    signal = self.generate_pattern_only_signal(triggers, data_to_analyze)
+                    
+                    if signal and signal.get('recommended_color'):
+                        # Obter último número que saiu
+                        last_number = 0
+                        if isinstance(data_to_analyze, list) and data_to_analyze:
+                            last_result = data_to_analyze[-1]
+                            if isinstance(last_result, dict):
+                                last_number = last_result.get('roll', last_result.get('number', 0))
+                        
+                        # Notificar padrão detectado
+                        pattern_sent = notify_pattern(
+                            pattern_type="Análise de Padrões",
+                            detected_number=last_number,
+                            predicted_color=signal.get('recommended_color'),
+                            confidence=signal.get('confidence', 0.5),
+                            reasoning=signal.get('reasoning', 'Padrão detectado por análise'),
+                            pattern_id=f"pattern_{int(time.time())}"
+                        )
+                        
+                        logger.info(f"Padrão geral detectado e notificado: {signal.get('recommended_color')} (conf: {signal.get('confidence', 0):.2f}) - Enviado: {pattern_sent}")
+                        pattern_detected = True
+            except Exception as e:
+                logger.exception(f'Erro ao detectar padrões gerais: {e}')
+            
+            # 3. Detectar padrões usando análise estatística simples
+            try:
+                # Reduzir requisito para 3 resultados
+                if len(data_to_analyze) >= 3:
+                    recent_data = data_to_analyze[-10:]  # Até 10 resultados
+                    recent_colors = [r.get('color', '') for r in recent_data]
+                    
+                    # Detectar sequências (reduzir requisito para 3 da mesma cor)
+                    if len(set(recent_colors)) == 1 and len(recent_colors) >= 3:
+                        # Sequência de mesma cor
+                        color = recent_colors[0]
+                        opposite_color = 'black' if color == 'red' else 'red' if color in ['red', 'black'] else 'red'
+                        
+                        # Calcular confiança baseada no tamanho da sequência
+                        confidence = min(0.85, 0.35 + (len(recent_colors) - 2) * 0.12)
+                        
+                        # Obter último número
+                        last_number = 0
+                        if recent_data:
+                            last_result = recent_data[-1]
+                            if isinstance(last_result, dict):
+                                last_number = last_result.get('roll', last_result.get('number', 0))
+                        
+                        # Notificar sequência detectada
+                        pattern_sent = notify_pattern(
+                            pattern_type="Sequência Repetitiva",
+                            detected_number=last_number,
+                            predicted_color=opposite_color,
+                            confidence=confidence,
+                            reasoning=f"Sequência de {len(recent_colors)} {color}s consecutivos. Recomenda-se apostar na cor oposta.",
+                            pattern_id=f"sequence_{int(time.time())}"
+                        )
+                        
+                        logger.info(f"Sequência detectada e notificada: {len(recent_colors)} {color}s -> recomendar {opposite_color} - Enviado: {pattern_sent}")
+                        pattern_detected = True
+                    
+                    # Se não há sequência uniforme, detectar predominância de cor
+                    if len(recent_colors) >= 5:
+                        color_count = {}
+                        for c in recent_colors:
+                            color_count[c] = color_count.get(c, 0) + 1
+                        
+                        # Encontrar cor predominante
+                        dominant_color = max(color_count, key=color_count.get)
+                        dominant_count = color_count[dominant_color]
+                        
+                        # Se uma cor apareceu em mais de 60% dos últimos resultados
+                        if dominant_count / len(recent_colors) > 0.6:
+                            opposite_color = 'black' if dominant_color == 'red' else 'red' if dominant_color in ['red', 'black'] else 'red'
+                            confidence = min(0.75, 0.3 + (dominant_count / len(recent_colors) - 0.6) * 1.5)
+                            
+                            # Obter último número
+                            last_number = 0
+                            if recent_data:
+                                last_result = recent_data[-1]
+                                if isinstance(last_result, dict):
+                                    last_number = last_result.get('roll', last_result.get('number', 0))
+                            
+                            # Notificar padrão de predominância
+                            pattern_sent = notify_pattern(
+                                pattern_type="Predominância de Cor",
+                                detected_number=last_number,
+                                predicted_color=opposite_color,
+                                confidence=confidence,
+                                reasoning=f"Cor {dominant_color} apareceu {dominant_count} vezes nos últimos {len(recent_colors)} resultados. Tendência de inversão.",
+                                pattern_id=f"dominance_{int(time.time())}"
+                            )
+                            
+                            logger.info(f"Predominância detectada e notificada: {dominant_count}/{len(recent_colors)} {dominant_color}s -> recomendar {opposite_color} - Enviado: {pattern_sent}")
+                            pattern_detected = True
+            except Exception as e:
+                logger.exception(f'Erro ao detectar sequências: {e}')
+            
+            # Se detectou algum padrão, validar e resetar o sistema
+            if pattern_detected:
+                logger.info("[PADRAO] PADRÃO DETECTADO - Validando qualidade do padrão")
+                
+                # Validar qualidade do padrão antes de resetar
+                if self._validate_pattern_quality(data_to_analyze):
+                    logger.info("[SUCESSO] Padrão validado - Iniciando reset do sistema")
+                    # Registrar tempo da última detecção
+                    self._last_pattern_time = time.time()
+                    self._reset_system_after_pattern(keep_context=True)
+                else:
+                    logger.warning("[AVISO] Padrão rejeitado por baixa qualidade - continuando análise")
+            else:
+                logger.debug("Nenhum padrão detectado nos dados atuais")
+            
+        except Exception as e:
+            logger.exception(f'Erro geral na detecção de padrões: {e}')
+    
+    def analyze_comprehensive(self, use_manual_data: bool = True) -> dict:
         """
         Realiza análise abrangente dos dados.
         
@@ -807,7 +1288,8 @@ class BlazeAnalyzerEnhanced:
         Returns:
             dict: Análise completa
         """
-        data_to_analyze = self.manual_data if use_manual_data else self.data
+        # Priorizar dados manuais (que incluem dados do PlayNabets)
+        data_to_analyze = self.manual_data if self.manual_data else self.data
         
         if not data_to_analyze:
             logger.warning("Sem dados para análise")
@@ -817,6 +1299,9 @@ class BlazeAnalyzerEnhanced:
         
         # Análise de padrões
         pattern_analysis = self.pattern_analyzer.analyze_data(data_to_analyze)
+        
+        # Análise de padrões Double específicos
+        double_patterns = self.double_pattern_detector.detect_all_patterns(data_to_analyze)
         
         # Análise estatística
         statistical_analysis = self._perform_statistical_analysis(data_to_analyze)
@@ -878,6 +1363,7 @@ class BlazeAnalyzerEnhanced:
             'data_source': 'manual' if use_manual_data else 'api',
             'total_results': len(data_to_analyze),
             'pattern_analysis': pattern_analysis,
+            'double_patterns': double_patterns,
             'statistical_analysis': statistical_analysis,
             'temporal_analysis': temporal_analysis,
             'predictions': adjusted_predictions,
@@ -889,6 +1375,12 @@ class BlazeAnalyzerEnhanced:
         
         # Cache da análise
         self.analysis_cache = comprehensive_analysis
+        
+        # Detectar padrões após análise
+        try:
+            self._detect_and_notify_patterns()
+        except Exception as e:
+            logger.exception(f'Erro ao detectar padrões após análise: {e}')
         
         logger.info("Análise abrangente concluída")
         return comprehensive_analysis
@@ -1350,6 +1842,70 @@ class BlazeAnalyzerEnhanced:
                 except Exception:
                     logger.exception('Erro ao enviar alerta do modelo')
         
+        # Verificar padrões Double específicos
+        try:
+            double_patterns = self.double_pattern_detector.detect_all_patterns(data)
+            if double_patterns and 'patterns' in double_patterns and len(data) >= 10:
+                for pattern_name, pattern_data in double_patterns['patterns'].items():
+                    if pattern_data.get('confidence', 0) >= 0.65 and pattern_data.get('detected', False):
+                        # Obter último número que saiu
+                        last_number = 0
+                        if isinstance(data, list) and data:
+                            last_result = data[-1]
+                            if isinstance(last_result, dict):
+                                last_number = last_result.get('roll', last_result.get('number', 0))
+                        
+                        # Usar cor predita do padrão se disponível
+                        predicted_color = pattern_data.get('predicted_color', recommended_color)
+                        
+                        # Notificar padrão Double detectado
+                        notify_pattern(
+                            pattern_type=pattern_data.get('pattern_type', pattern_name),
+                            detected_number=last_number,
+                            predicted_color=predicted_color,
+                            confidence=pattern_data.get('confidence', 0.6),
+                            reasoning=pattern_data.get('description', 'Padrão Double detectado'),
+                            pattern_id=f"double_{pattern_name}_{int(time.time())}"
+                        )
+                        
+                        # Salvar no banco local
+                        local_db.add_pattern({
+                            'pattern_type': pattern_data.get('pattern_type', pattern_name),
+                            'detected_number': last_number,
+                            'predicted_color': predicted_color,
+                            'confidence': pattern_data.get('confidence', 0.6),
+                            'reasoning': pattern_data.get('description', ''),
+                            'risk_level': pattern_data.get('risk_level', 'medium')
+                        })
+        except Exception as e:
+            logger.exception(f'Erro ao processar padrões Double: {e}')
+        
+        # Notificar padrão geral se não houver padrões Double específicos
+        # Só notificar padrão geral se não houver padrões Double específicos E confiança for alta
+        if not (double_patterns and 'patterns' in double_patterns and double_patterns['patterns']) and len(data) >= 15:
+            recommended_color = max(predictions.keys(), key=lambda k: predictions[k])
+            # Aumentar confiança mínima para 70% para evitar spam
+            if confidence >= 0.70:  
+                try:
+                    # Obter último número que saiu
+                    last_number = 0
+                    if isinstance(data, list) and data:
+                        last_result = data[-1]
+                        if isinstance(last_result, dict):
+                            last_number = last_result.get('roll', last_result.get('number', 0))
+                    
+                    # Notificar padrão detectado apenas com alta confiança
+                    notify_pattern(
+                        pattern_type="Análise de Padrões",
+                        detected_number=last_number,
+                        predicted_color=recommended_color,
+                        confidence=confidence,
+                        reasoning=self._generate_reasoning(data, predictions),
+                        pattern_id=f"pattern_{int(time.time())}"
+                    )
+                except Exception as e:
+                    logger.exception(f'Erro ao notificar padrão: {e}')
+        
         return {
             'next_color_probabilities': predictions,
             'recommended_color': max(predictions.keys(), key=lambda k: predictions[k]),
@@ -1506,14 +2062,14 @@ class BlazeAnalyzerEnhanced:
         warnings = []
         
         if len(data) < 10:
-            warnings.append("⚠️ Poucos dados para análise confiável")
+            warnings.append("[AVISO] Poucos dados para análise confiável")
         
         recent_colors = [result.get('color', '') for result in data[-5:]]
         if len(set(recent_colors)) == 1 and len(recent_colors) >= 4:
-            warnings.append(f"⚠️ Sequência de {len(recent_colors)} {recent_colors[0]}s consecutivos")
+            warnings.append(f"[AVISO] Sequência de {len(recent_colors)} {recent_colors[0]}s consecutivos")
         
-        warnings.append("⚠️ Lembre-se: jogos de azar são aleatórios")
-        warnings.append("⚠️ Aposte com responsabilidade")
+        warnings.append("[AVISO] Lembre-se: jogos de azar são aleatórios")
+        warnings.append("[AVISO] Aposte com responsabilidade")
         
         return warnings
     
