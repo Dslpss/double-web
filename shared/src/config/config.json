@@ -1,0 +1,79 @@
+{
+  "api": {
+    "base_url": "https://blaze.com/api",
+    "double_endpoint": "/roulette_games/recent",
+    "timeout": 10,
+    "max_retries": 3,
+    "retry_delay": 2
+  },
+  "data_collection": {
+    "results_limit": 100,
+    "update_interval": 5,
+    "save_raw_data": true,
+    "raw_data_dir": "data/raw"
+  },
+  "analysis": {
+    "pattern_lengths": [2, 3, 4, 5],
+    "min_pattern_occurrences": 3,
+    "time_analysis_enabled": true,
+    "statistical_tests_enabled": true,
+    "advanced_metrics_enabled": true
+  },
+  "prediction_model": {
+    "history_size": 100,
+    "pattern_weights": {
+      "color_pattern": 0.4,
+      "statistical": 0.3,
+      "time_pattern": 0.2,
+      "random": 0.1
+    },
+    "confidence_threshold": 0.7
+  },
+  "ui": {
+    "update_interval": 5,
+    "theme": "default",
+    "show_statistics": true,
+    "show_predictions": true,
+    "show_patterns": true,
+    "auto_start_monitoring": false
+  },
+  "notifications": {
+    "enabled": true,
+    "min_confidence": 0.7,
+    "desktop_notifications": true,
+    "sound_alerts": true,
+    "email": {
+      "enabled": false,
+      "smtp_server": "smtp.gmail.com",
+      "smtp_port": 587,
+      "sender_email": "",
+      "sender_password": "",
+      "recipient_email": ""
+    },
+    "telegram": {
+      "enabled": false,
+      "bot_token": "",
+      "chat_id": ""
+    }
+  },
+  "database": {
+    "backup_interval": 86400,
+    "max_backups": 7,
+    "auto_cleanup": true,
+    "max_results_stored": 10000
+  },
+  "monitoring": {
+    "enabled": false,
+    "continuous_mode": false,
+    "start_on_launch": false,
+    "alert_on_pattern": true,
+    "alert_on_prediction": true,
+    "min_confidence_for_alert": 0.7
+  },
+  "live_feed": {
+    "enabled": true,
+    "url": "wss://play.soline.bet:5903/Game",
+    "token": "",
+    "auto_reconnect": true
+  }
+}

@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayNabets - Controle de Conexão</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+        color: white;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .header p {
+        font-size: 1.2rem;
+        opacity: 0.9;
+      }
+
+      .control-panel {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .status-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .status-card {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      }
+
+      .status-indicator {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin: 0 auto 10px;
+        background: #f44336;
+      }
+
+      .status-indicator.connected {
+        background: #4caf50;
+      }
+
+      .status-indicator.connecting {
+        background: #ff9800;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      .control-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-bottom: 30px;
+      }
+
+      .btn {
+        padding: 15px 30px;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 150px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #4caf50, #45a049);
+        color: white;
+      }
+
+      .btn-danger {
+        background: linear-gradient(135deg, #f44336, #da190b);
+        color: white;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      }
+
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .results-section {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+
+      .results-list {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .result-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        margin: 5px 0;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.05);
+      }
+
+      .result-number {
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .result-color {
+        padding: 5px 10px;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+      }
+
+      .result-color.red {
+        background: #e74c3c;
+      }
+
+      .result-color.black {
+        background: #2c3e50;
+      }
+
+      .result-color.white {
+        background: #f39c12;
+      }
+
+      .result-time {
+        font-size: 0.9rem;
+        color: #666;
+      }
+
+      .info-section {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        padding: 20px;
+      }
+
+      .info-item {
+        display: flex;
+        justify-content: space-between;
+        margin: 10px 0;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 8px;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+      }
+
+      .error {
+        background: #ffebee;
+        color: #c62828;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+        border-left: 4px solid #c62828;
+      }
+
+      .success {
+        background: #e8f5e8;
+        color: #2e7d32;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+        border-left: 4px solid #2e7d32;
+      }
+
+      @media (max-width: 768px) {
+        .status-section {
+          grid-template-columns: 1fr;
+        }
+
+        .control-buttons {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🎯 PlayNabets</h1>
+        <p>Controle de Conexão com Dados Reais</p>
+      </div>
+
+      <div class="control-panel">
+        <div class="status-section">
+          <div class="status-card">
+            <div class="status-indicator" id="connectionStatus"></div>
+            <h3>Conexão</h3>
+            <p id="connectionText">Desconectado</p>
+          </div>
+
+          <div class="status-card">
+            <div class="status-indicator" id="dataStatus"></div>
+            <h3>Dados</h3>
+            <p id="dataText">Nenhum dado</p>
+          </div>
+        </div>
+
+        <div class="control-buttons">
+          <button
+            class="btn btn-primary"
+            id="connectBtn"
+            onclick="connectPlayNabets()"
+          >
+            Conectar
+          </button>
+          <button
+            class="btn btn-danger"
+            id="disconnectBtn"
+            onclick="disconnectPlayNabets()"
+            disabled
+          >
+            Desconectar
+          </button>
+        </div>
+
+        <div id="messageArea"></div>
+      </div>
+
+      <div class="results-section">
+        <div class="results-header">
+          <h3>📊 Últimos Resultados</h3>
+          <span id="resultsCount">0 resultados</span>
+        </div>
+        <div class="results-list" id="resultsList">
+          <div class="loading">Nenhum resultado ainda</div>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <h3>ℹ️ Informações da Conexão</h3>
+        <div class="info-item">
+          <span>URL WebSocket:</span>
+          <span>wss://play.soline.bet:5903/Game</span>
+        </div>
+        <div class="info-item">
+          <span>Status:</span>
+          <span id="wsStatus">Desconectado</span>
+        </div>
+        <div class="info-item">
+          <span>Última Atualização:</span>
+          <span id="lastUpdate">Nunca</span>
+        </div>
+        <div class="info-item">
+          <span>Total de Resultados:</span>
+          <span id="totalResults">0</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let results = [];
+      let isConnected = false;
+      let updateInterval;
+
+      // Elementos DOM
+      const connectionStatus = document.getElementById("connectionStatus");
+      const connectionText = document.getElementById("connectionText");
+      const dataStatus = document.getElementById("dataStatus");
+      const dataText = document.getElementById("dataText");
+      const connectBtn = document.getElementById("connectBtn");
+      const disconnectBtn = document.getElementById("disconnectBtn");
+      const resultsList = document.getElementById("resultsList");
+      const resultsCount = document.getElementById("resultsCount");
+      const wsStatus = document.getElementById("wsStatus");
+      const lastUpdate = document.getElementById("lastUpdate");
+      const totalResults = document.getElementById("totalResults");
+      const messageArea = document.getElementById("messageArea");
+
+      function showMessage(message, type = "info") {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = type;
+        messageDiv.textContent = message;
+        messageArea.innerHTML = "";
+        messageArea.appendChild(messageDiv);
+
+        setTimeout(() => {
+          messageArea.innerHTML = "";
+        }, 5000);
+      }
+
+      function updateStatus() {
+        fetch("/api/playnabets/status")
+          .then((response) => response.json())
+          .then((data) => {
+            isConnected = data.connected;
+
+            // Atualizar indicadores
+            connectionStatus.className = `status-indicator ${
+              isConnected ? "connected" : ""
+            }`;
+            connectionText.textContent = isConnected
+              ? "Conectado"
+              : "Desconectado";
+
+            dataStatus.className = `status-indicator ${
+              data.last_result ? "connected" : ""
+            }`;
+            dataText.textContent = data.last_result
+              ? "Recebendo dados"
+              : "Nenhum dado";
+
+            // Atualizar botões
+            connectBtn.disabled = isConnected;
+            disconnectBtn.disabled = !isConnected;
+
+            // Atualizar informações
+            wsStatus.textContent = isConnected ? "Conectado" : "Desconectado";
+
+            if (data.last_result) {
+              addResult(data.last_result);
+            }
+          })
+          .catch((error) => {
+            console.error("Erro ao obter status:", error);
+          });
+      }
+
+      function addResult(result) {
+        results.unshift(result);
+        if (results.length > 50) {
+          results = results.slice(0, 50);
+        }
+
+        updateResultsDisplay();
+        updateInfo();
+      }
+
+      function updateResultsDisplay() {
+        if (results.length === 0) {
+          resultsList.innerHTML =
+            '<div class="loading">Nenhum resultado ainda</div>';
+          return;
+        }
+
+        resultsList.innerHTML = results
+          .map(
+            (result) => `
+                <div class="result-item">
+                    <div class="result-number">${result.number}</div>
+                    <div class="result-color ${
+                      result.color
+                    }">${result.color.toUpperCase()}</div>
+                    <div class="result-time">${new Date(
+                      result.timestamp
+                    ).toLocaleTimeString()}</div>
+                </div>
+            `
+          )
+          .join("");
+
+        resultsCount.textContent = `${results.length} resultados`;
+      }
+
+      function updateInfo() {
+        totalResults.textContent = results.length;
+        lastUpdate.textContent = new Date().toLocaleTimeString();
+      }
+
+      async function connectPlayNabets() {
+        try {
+          const response = await fetch("/api/playnabets/start", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+            },
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            showMessage("Conectando à PlayNabets...", "success");
+            connectBtn.disabled = true;
+            disconnectBtn.disabled = false;
+
+            // Iniciar atualização periódica
+            if (updateInterval) {
+              clearInterval(updateInterval);
+            }
+            updateInterval = setInterval(updateStatus, 2000);
+          } else {
+            showMessage(data.error || "Erro ao conectar", "error");
+          }
+        } catch (error) {
+          showMessage("Erro de conexão: " + error.message, "error");
+        }
+      }
+
+      async function disconnectPlayNabets() {
+        try {
+          const response = await fetch("/api/playnabets/stop", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+            },
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            showMessage("Desconectado da PlayNabets", "success");
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+
+            // Parar atualização periódica
+            if (updateInterval) {
+              clearInterval(updateInterval);
+            }
+          } else {
+            showMessage(data.error || "Erro ao desconectar", "error");
+          }
+        } catch (error) {
+          showMessage("Erro de conexão: " + error.message, "error");
+        }
+      }
+
+      // Verificar autenticação
+      window.addEventListener("load", () => {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          showMessage(
+            "Você precisa fazer login para usar esta funcionalidade",
+            "error"
+          );
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 2000);
+          return;
+        }
+
+        // Atualizar status inicial
+        updateStatus();
+
+        // Atualizar a cada 5 segundos
+        updateInterval = setInterval(updateStatus, 5000);
+      });
+    </script>
+  </body>
+</html>
