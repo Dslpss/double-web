@@ -114,7 +114,7 @@ class LocalStorageDB:
             print(f"Erro ao adicionar predição: {e}")
             return False
     
-    def get_recent_results(self, count: int = 50) -> List[Dict[str, Any]]:
+    def get_recent_results(self, count: int = 20) -> List[Dict[str, Any]]:  # Era 50
         """Retorna resultados recentes"""
         return self.data['results'][-count:] if self.data['results'] else []
     

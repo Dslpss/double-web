@@ -361,9 +361,9 @@ class AdaptiveLearnerReassessmentCallback:
         """Reaprende com dados recentes."""
         try:
             # Obter dados recentes para reaprendizado
-            recent_data = list(self.adaptive_learner.data_history)[-50:]
+            recent_data = list(self.adaptive_learner.data_history)[-20:]  # Era 50
             
-            if len(recent_data) >= 20:
+            if len(recent_data) >= 5:  # Era 20
                 # Reaprender padrões com dados frescos
                 self.adaptive_learner._learn_from_new_data()
                 

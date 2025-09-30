@@ -93,7 +93,7 @@ class BlazeAnalyzerEnhanced:
         adaptive_config = {
             'auto_learning': True,
             'learning_interval': 30,
-            'min_data_for_learning': 50,
+            'min_data_for_learning': 10,  # Era 50
             'learner_config': {
                 'min_pattern_frequency': 3,
                 'min_confidence_threshold': 0.6,
@@ -767,7 +767,7 @@ class BlazeAnalyzerEnhanced:
                                 if pending is None:
                                     # coletar resultados recentes e gatilhos
                                     try:
-                                        recent = db.get_recent_results(50)
+                                        recent = db.get_recent_results(20)  # Era 50
                                     except Exception:
                                         recent = []
                                     try:
@@ -1804,7 +1804,7 @@ class BlazeAnalyzerEnhanced:
             return {'error': 'Dados insuficientes para predições'}
         
         # Atualizar modelo com dados recentes
-        self.prediction_model.update_history(data[-50:])  # Últimos 50 resultados
+        self.prediction_model.update_history(data[-20:])  # Era 50, agora 20
         
         # Gerar predições
         predictions = self.prediction_model.predict_next_color()
@@ -2186,7 +2186,7 @@ def main():
         
         if choice == "1":
             print("Obtendo dados da API...")
-            data = analyzer.fetch_recent_data(50)
+            data = analyzer.fetch_recent_data(20)  # Era 50
             if data:
                 print(f"Obtidos {len(data)} resultados")
             else:

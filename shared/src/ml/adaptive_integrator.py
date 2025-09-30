@@ -37,7 +37,7 @@ class AdaptiveIntegrator:
         # Configurações
         self.auto_learning = self.config.get('auto_learning', True)
         self.learning_interval = self.config.get('learning_interval', 30)  # segundos
-        self.min_data_for_learning = self.config.get('min_data_for_learning', 50)
+        self.min_data_for_learning = self.config.get('min_data_for_learning', 10)  # Era 50
         
         # Estado
         self.is_learning_active = False
