@@ -10,10 +10,12 @@ import logging
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass
-import tkinter as tk
-from tkinter import messagebox
 import threading
 import time
+
+# Tkinter removido para compatibilidade com ambientes headless (Railway, Docker, etc.)
+# import tkinter as tk
+# from tkinter import messagebox
 
 logger = logging.getLogger(__name__)
 
@@ -173,25 +175,22 @@ class PredictionFeedback:
             self._send_sound_feedback(message)
     
     def _send_popup_feedback(self, message: FeedbackMessage) -> None:
-        """Envia feedback via popup."""
-        def show_popup():
-            try:
-                # Aguardar um pouco para não interferir com outros popups
-                time.sleep(self.feedback_delay)
-                
-                if message.message_type == 'success':
-                    messagebox.showinfo(message.title, message.message)
-                elif message.message_type == 'error':
-                    messagebox.showerror(message.title, message.message)
-                elif message.message_type == 'warning':
-                    messagebox.showwarning(message.title, message.message)
-                else:
-                    messagebox.showinfo(message.title, message.message)
-            except Exception as e:
-                logger.error(f"Erro ao mostrar popup: {e}")
-        
-        # Executar em thread separada para não bloquear
-        threading.Thread(target=show_popup, daemon=True).start()
+        """Envia feedback via popup (desabilitado em ambientes headless)."""
+        # Popup desabilitado para compatibilidade com Railway/Docker
+        # Em vez disso, usa logging
+        try:
+            time.sleep(self.feedback_delay)
+            
+            if message.message_type == 'success':
+                logger.info(f"[POPUP] {message.title}: {message.message}")
+            elif message.message_type == 'error':
+                logger.error(f"[POPUP] {message.title}: {message.message}")
+            elif message.message_type == 'warning':
+                logger.warning(f"[POPUP] {message.title}: {message.message}")
+            else:
+                logger.info(f"[POPUP] {message.title}: {message.message}")
+        except Exception as e:
+            logger.error(f"Erro ao processar feedback: {e}")
     
     def _send_console_feedback(self, message: FeedbackMessage) -> None:
         """Envia feedback via console."""
