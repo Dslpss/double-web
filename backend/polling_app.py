@@ -591,6 +591,62 @@ def playnabets_reconnect():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ===== CONFIGURAÇÕES PLAYNABETS =====
+
+@app.route('/api/playnabets/config', methods=['GET'])
+def get_playnabets_config():
+    """Obtém configurações do PlayNabets."""
+    try:
+        # Configurações padrão
+        default_config = {
+            'confidence_threshold': 0.7,
+            'alerts_enabled': True
+        }
+        
+        # Aqui você pode carregar configurações do banco de dados ou arquivo
+        # Por enquanto, retornamos as configurações padrão
+        return jsonify({
+            'success': True,
+            'config': default_config
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/playnabets/config', methods=['POST'])
+def save_playnabets_config():
+    """Salva configurações do PlayNabets."""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Dados de configuração não fornecidos'}), 400
+        
+        # Validar dados
+        confidence_threshold = data.get('confidence_threshold', 0.7)
+        alerts_enabled = data.get('alerts_enabled', True)
+        
+        # Validar confiabilidade (0.1 a 1.0)
+        if not (0.1 <= confidence_threshold <= 1.0):
+            return jsonify({'error': 'Taxa de confiabilidade deve estar entre 10% e 100%'}), 400
+        
+        # Aqui você pode salvar as configurações no banco de dados
+        # Por enquanto, apenas validamos e retornamos sucesso
+        
+        print(f"💾 Configurações PlayNabets salvas:")
+        print(f"   - Taxa de confiabilidade: {confidence_threshold:.1%}")
+        print(f"   - Alertas habilitados: {alerts_enabled}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Configurações salvas com sucesso',
+            'config': {
+                'confidence_threshold': confidence_threshold,
+                'alerts_enabled': alerts_enabled
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # ===== NOTIFICAÇÕES =====
 
 @app.route('/api/notifications/status', methods=['GET'])

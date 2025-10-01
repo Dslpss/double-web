@@ -28,6 +28,7 @@
         text-align: center;
         margin-bottom: 30px;
         color: white;
+        position: relative;
       }
 
       .header h1 {
@@ -39,6 +40,42 @@
       .header p {
         font-size: 1.2rem;
         opacity: 0.9;
+      }
+
+      .back-button {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .back-button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      }
+
+      .back-button:active {
+        transform: translateY(0);
+      }
+
+      @media (max-width: 768px) {
+        .back-button {
+          position: static;
+          margin-bottom: 20px;
+          align-self: flex-start;
+        }
       }
 
       .control-panel {
@@ -123,6 +160,11 @@
         color: white;
       }
 
+      .btn-secondary {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: white;
+      }
+
       .btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
@@ -132,6 +174,156 @@
         opacity: 0.6;
         cursor: not-allowed;
         transform: none;
+      }
+
+      .config-section {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .config-section h3 {
+        margin-bottom: 20px;
+        color: #333;
+        font-size: 1.5rem;
+        text-align: center;
+      }
+
+      .config-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+      }
+
+      .config-item {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .config-item label {
+        font-weight: bold;
+        color: #333;
+        font-size: 1.1rem;
+      }
+
+      .slider-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .confidence-slider {
+        flex: 1;
+        height: 8px;
+        border-radius: 5px;
+        background: #ddd;
+        outline: none;
+        -webkit-appearance: none;
+      }
+
+      .confidence-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #4caf50;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      }
+
+      .confidence-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #4caf50;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      }
+
+      #confidenceValue {
+        font-weight: bold;
+        color: #4caf50;
+        font-size: 1.2rem;
+        min-width: 50px;
+        text-align: center;
+      }
+
+      .toggle-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .toggle-switch {
+        display: none;
+      }
+
+      .toggle-label {
+        position: relative;
+        width: 60px;
+        height: 30px;
+        background: #ccc;
+        border-radius: 15px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .toggle-label::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 24px;
+        height: 24px;
+        background: white;
+        border-radius: 50%;
+        transition: transform 0.3s;
+      }
+
+      .toggle-switch:checked + .toggle-label {
+        background: #4caf50;
+      }
+
+      .toggle-switch:checked + .toggle-label::after {
+        transform: translateX(30px);
+      }
+
+      .config-item small {
+        color: #666;
+        font-size: 0.9rem;
+        font-style: italic;
+      }
+
+      .config-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      @media (max-width: 768px) {
+        .config-grid {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+
+        .config-buttons {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .config-buttons .btn {
+          width: 100%;
+          max-width: 300px;
+        }
       }
 
       .results-section {
@@ -245,6 +437,10 @@
   <body>
     <div class="container">
       <div class="header">
+        <a href="/" class="back-button">
+          <span>←</span>
+          <span>Voltar</span>
+        </a>
         <h1>🎯 PlayNabets</h1>
         <p>Controle de Conexão com Dados Reais</p>
       </div>
@@ -277,6 +473,59 @@
         <div id="messageArea"></div>
       </div>
 
+      <div class="config-section">
+        <h3>⚙️ Configurações de Alertas</h3>
+        <div class="config-grid">
+          <div class="config-item">
+            <label for="confidenceThreshold"
+              >Taxa de Confiabilidade Mínima:</label
+            >
+            <div class="slider-container">
+              <input
+                type="range"
+                id="confidenceThreshold"
+                min="0.1"
+                max="1.0"
+                step="0.05"
+                value="0.7"
+                class="confidence-slider"
+              />
+              <span id="confidenceValue">70%</span>
+            </div>
+            <small
+              >Alertas serão enviados apenas para predições com confiabilidade
+              acima deste valor</small
+            >
+          </div>
+
+          <div class="config-item">
+            <label for="alertEnabled">Alertas Habilitados:</label>
+            <div class="toggle-container">
+              <input
+                type="checkbox"
+                id="alertEnabled"
+                checked
+                class="toggle-switch"
+              />
+              <label for="alertEnabled" class="toggle-label"></label>
+            </div>
+            <small>Ativar/desativar notificações de alertas</small>
+          </div>
+        </div>
+
+        <div class="config-buttons">
+          <button class="btn btn-secondary" onclick="saveConfig()">
+            Salvar Configurações
+          </button>
+          <button class="btn btn-secondary" onclick="loadConfig()">
+            Carregar Configurações
+          </button>
+          <button class="btn btn-secondary" onclick="resetConfig()">
+            Restaurar Padrão
+          </button>
+        </div>
+      </div>
+
       <div class="results-section">
         <div class="results-header">
           <h3>📊 Últimos Resultados</h3>
@@ -289,10 +538,6 @@
 
       <div class="info-section">
         <h3>ℹ️ Informações da Conexão</h3>
-        <div class="info-item">
-          <span>URL WebSocket:</span>
-          <span>wss://play.soline.bet:5903/Game</span>
-        </div>
         <div class="info-item">
           <span>Status:</span>
           <span id="wsStatus">Desconectado</span>
@@ -325,6 +570,13 @@
       const lastUpdate = document.getElementById("lastUpdate");
       const totalResults = document.getElementById("totalResults");
       const messageArea = document.getElementById("messageArea");
+
+      // Elementos de configuração
+      const confidenceThreshold = document.getElementById(
+        "confidenceThreshold"
+      );
+      const confidenceValue = document.getElementById("confidenceValue");
+      const alertEnabled = document.getElementById("alertEnabled");
 
       function showMessage(message, type = "info") {
         const messageDiv = document.createElement("div");
@@ -463,7 +715,80 @@
 
         // Atualizar a cada 5 segundos
         updateInterval = setInterval(updateStatus, 5000);
+
+        // Carregar configurações iniciais
+        loadConfig();
       });
+
+      // Funções de configuração
+      function updateConfidenceDisplay() {
+        const value = confidenceThreshold.value;
+        confidenceValue.textContent = Math.round(value * 100) + "%";
+      }
+
+      function saveConfig() {
+        const config = {
+          confidence_threshold: parseFloat(confidenceThreshold.value),
+          alerts_enabled: alertEnabled.checked,
+        };
+
+        fetch("/api/playnabets/config", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+          body: JSON.stringify(config),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              showMessage("Configurações salvas com sucesso!", "success");
+            } else {
+              showMessage(
+                "Erro ao salvar configurações: " + data.error,
+                "error"
+              );
+            }
+          })
+          .catch((error) => {
+            showMessage("Erro de conexão: " + error.message, "error");
+          });
+      }
+
+      function loadConfig() {
+        fetch("/api/playnabets/config", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              confidenceThreshold.value =
+                data.config.confidence_threshold || 0.7;
+              alertEnabled.checked = data.config.alerts_enabled !== false;
+              updateConfidenceDisplay();
+            }
+          })
+          .catch((error) => {
+            console.error("Erro ao carregar configurações:", error);
+            // Usar valores padrão
+            confidenceThreshold.value = 0.7;
+            alertEnabled.checked = true;
+            updateConfidenceDisplay();
+          });
+      }
+
+      function resetConfig() {
+        confidenceThreshold.value = 0.7;
+        alertEnabled.checked = true;
+        updateConfidenceDisplay();
+        showMessage("Configurações restauradas para o padrão", "info");
+      }
+
+      // Event listeners
+      confidenceThreshold.addEventListener("input", updateConfidenceDisplay);
     </script>
   </body>
 </html>

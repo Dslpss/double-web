@@ -30,6 +30,7 @@
         text-align: center;
         margin-bottom: 30px;
         color: white;
+        position: relative;
       }
 
       .header h1 {
@@ -41,6 +42,42 @@
       .header p {
         font-size: 1.2rem;
         opacity: 0.9;
+      }
+
+      .back-button {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .back-button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      }
+
+      .back-button:active {
+        transform: translateY(0);
+      }
+
+      @media (max-width: 768px) {
+        .back-button {
+          position: static;
+          margin-bottom: 20px;
+          align-self: flex-start;
+        }
       }
 
       .status-bar {
@@ -277,6 +314,10 @@
   <body>
     <div class="container">
       <div class="header">
+        <a href="/" class="back-button">
+          <span>←</span>
+          <span>Voltar</span>
+        </a>
         <h1>🔥 Blaze Double Analyzer</h1>
         <p>Dashboard Avançado - Análise de Padrões em Tempo Real</p>
       </div>
