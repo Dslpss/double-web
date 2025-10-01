@@ -131,7 +131,7 @@ dmypy.json
 # ===== ARQUIVOS SENSÍVEIS DO PROJETO =====
 
 # Configurações sensíveis
-config.py
+# config.py  # Comentado para permitir deploy no Railway
 .env
 .env.local
 .env.production
