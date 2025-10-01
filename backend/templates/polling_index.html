@@ -241,6 +241,36 @@
         margin-bottom: 20px;
       }
 
+      .platform-link-container {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .platform-link {
+        display: inline-block;
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        color: white;
+        text-decoration: none;
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+      }
+
+      .platform-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+        background: linear-gradient(135deg, #ee5a24, #ff6b6b);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .platform-link:active {
+        transform: translateY(0);
+      }
+
       .btn {
         padding: 12px 24px;
         border: none;
@@ -635,6 +665,17 @@
       <div class="controls">
         <a href="/playnabets" class="btn btn-success">Controle PlayNabets</a>
         <a href="/dashboard" class="btn btn-primary">Dashboard</a>
+      </div>
+
+      <!-- Link da plataforma PlayNabets -->
+      <div class="platform-link-container">
+        <a
+          href="https://playnabets.com/casino/soline/mobi_Dobrar"
+          target="_blank"
+          class="platform-link"
+        >
+          🎰 Acessar Plataforma PlayNabets
+        </a>
       </div>
 
       <div class="input-group">
