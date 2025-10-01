@@ -41,8 +41,11 @@ except ImportError as e:
 try:
     from blaze_analyzer_enhanced import BlazeAnalyzerEnhanced
     analyzer_available = True
+    print("✅ BlazeAnalyzerEnhanced importado com sucesso")
 except ImportError as e:
-    print(f"Aviso: Não foi possível importar o analyzer: {e}")
+    print(f"❌ Erro ao importar BlazeAnalyzerEnhanced: {e}")
+    import traceback
+    traceback.print_exc()
     analyzer_available = False
 
 # Importar módulos de autenticação e PlayNabets
@@ -88,6 +91,7 @@ def init_analyzer(clear_session_data=True):
     """Inicializa o analyzer."""
     global analyzer
     try:
+        print(f"🔍 Tentando inicializar analyzer - analyzer_available: {analyzer_available}")
         if analyzer_available:
             print("Tentando inicializar BlazeAnalyzerEnhanced...")
             analyzer = BlazeAnalyzerEnhanced(use_official_api=False)
@@ -162,13 +166,15 @@ def init_playnabets_integrator(analyzer_instance):
     """Inicializa o integrador PlayNabets."""
     global playnabets_integrator
     try:
+        print(f"🔍 Tentando inicializar PlayNabetsIntegrator - playnabets_available: {playnabets_available}")
+        print(f"🔍 Analyzer instance: {analyzer_instance is not None}")
         if playnabets_available and analyzer_instance:
             print("Tentando inicializar PlayNabetsIntegrator...")
             playnabets_integrator = PlayNabetsIntegrator(analyzer_instance)
             print("✅ Integrador PlayNabets inicializado com sucesso!")
             return True
         else:
-            print(f"⚠️ PlayNabets não disponível - analyzer_available: {analyzer_available}, analyzer_instance: {analyzer_instance is not None}")
+            print(f"⚠️ PlayNabets não disponível - playnabets_available: {playnabets_available}, analyzer_instance: {analyzer_instance is not None}")
             return False
     except Exception as e:
         print(f"❌ Erro ao inicializar integrador PlayNabets: {e}")
@@ -294,7 +300,11 @@ def get_status():
     """Status do sistema."""
     status = {
         'analyzer_ready': analyzer is not None,
+        'analyzer_available': analyzer_available,
         'playnabets_connected': ws_connected,
+        'playnabets_available': playnabets_available,
+        'auth_available': auth_available,
+        'notifications_available': NOTIFICATIONS_AVAILABLE,
         'timestamp': int(time.time())
     }
     
@@ -308,6 +318,8 @@ def get_status():
             'max_reconnect_attempts': playnabets_status.get('max_reconnect_attempts', 10),
             'time_since_last_heartbeat': playnabets_status.get('time_since_last_heartbeat')
         })
+    else:
+        status['playnabets_error'] = 'PlayNabets integrator not initialized'
     
     # Adicionar estatísticas de resultados
     status.update({
@@ -991,6 +1003,74 @@ def session_status():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/diagnostics')
+def get_diagnostics():
+    """Diagnóstico completo do sistema para debug."""
+    try:
+        import sys
+        import os
+        
+        diagnostics = {
+            'system': {
+                'python_version': sys.version,
+                'platform': sys.platform,
+                'cwd': os.getcwd(),
+                'python_path': sys.path[:5],  # Primeiros 5 paths
+            },
+            'modules': {
+                'analyzer_available': analyzer_available,
+                'playnabets_available': playnabets_available,
+                'auth_available': auth_available,
+                'notifications_available': NOTIFICATIONS_AVAILABLE,
+            },
+            'instances': {
+                'analyzer_initialized': analyzer is not None,
+                'playnabets_initialized': playnabets_integrator is not None,
+            },
+            'environment': {
+                'PORT': os.environ.get('PORT', 'Not set'),
+                'FLASK_ENV': os.environ.get('FLASK_ENV', 'Not set'),
+                'SECRET_KEY': 'Set' if os.environ.get('SECRET_KEY') else 'Not set',
+            },
+            'files': {
+                'config_py_exists': os.path.exists('config.py'),
+                'playnabets_integrator_exists': os.path.exists('playnabets_integrator.py'),
+                'auth_py_exists': os.path.exists('auth.py'),
+                'shared_dir_exists': os.path.exists('shared'),
+                'blaze_analyzer_exists': os.path.exists('shared/blaze_analyzer_enhanced.py'),
+                'src_init_exists': os.path.exists('shared/src/__init__.py'),
+            },
+            'errors': []
+        }
+        
+        # Tentar importar módulos e capturar erros
+        try:
+            import config
+            diagnostics['modules']['config_import'] = 'Success'
+        except Exception as e:
+            diagnostics['modules']['config_import'] = f'Error: {str(e)}'
+            diagnostics['errors'].append(f'Config import: {str(e)}')
+        
+        try:
+            from playnabets_integrator import PlayNabetsIntegrator
+            diagnostics['modules']['playnabets_import'] = 'Success'
+        except Exception as e:
+            diagnostics['modules']['playnabets_import'] = f'Error: {str(e)}'
+            diagnostics['errors'].append(f'PlayNabets import: {str(e)}')
+        
+        try:
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'shared'))
+            from blaze_analyzer_enhanced import BlazeAnalyzerEnhanced
+            diagnostics['modules']['analyzer_import'] = 'Success'
+        except Exception as e:
+            diagnostics['modules']['analyzer_import'] = f'Error: {str(e)}'
+            diagnostics['errors'].append(f'Analyzer import: {str(e)}')
+        
+        return jsonify(diagnostics)
+        
+    except Exception as e:
+        return jsonify({'error': f'Diagnostics failed: {str(e)}'}), 500
 
 if __name__ == '__main__':
     print("🚀 Iniciando Blaze Web Backend (Versao Polling)...")
