@@ -12,11 +12,12 @@ import json
 import time
 import random
 import threading
-import matplotlib
-matplotlib.use('Agg')  # Configurar backend sem GUI ANTES de qualquer import
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
+
+# IMPORTANTE: Configurar matplotlib ANTES de qualquer import que use matplotlib
+import matplotlib_config
 
 # Adicionar o diretório shared ao path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'shared'))

@@ -14,9 +14,6 @@ import pandas as pd
 import os
 from datetime import datetime, timedelta
 
-# Configurar matplotlib ANTES de importar
-import matplotlib
-matplotlib.use('Agg')  # Usar backend sem GUI para Railway
 import matplotlib.pyplot as plt
 from src.api.blaze_official_api import BlazeOfficialAPI
 from src.database.db_manager import DatabaseManager
