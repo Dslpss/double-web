@@ -1,12 +1,15 @@
 # 🚀 Debug do Railway - Blaze Web
 
 ## ❌ Problema Identificado
+
 A aplicação mostrava "Erro: Integrador PlayNabets não disponível" no Railway.
 
 ## ✅ Correções Aplicadas
 
 ### 1. Arquivos `__init__.py` Adicionados
+
 O problema principal era que o Python não reconhecia `shared/src` como um pacote:
+
 - `shared/src/__init__.py`
 - `shared/src/analysis/__init__.py`
 - `shared/src/api/__init__.py`
@@ -18,37 +21,44 @@ O problema principal era que o Python não reconhecia `shared/src` como um pacot
 - E outros módulos...
 
 ### 2. Logs Melhorados
+
 - ✅ Logs detalhados na inicialização do analyzer
 - ✅ Logs detalhados na inicialização do PlayNabets
 - ✅ Nova rota `/api/diagnostics` para debug completo
 - ✅ Melhores mensagens de erro com stack trace
 
 ### 3. Rota de Diagnóstico
+
 **Nova rota**: `/api/diagnostics`
 
 Acesse `https://seu-dominio.railway.app/api/diagnostics` para ver:
+
 - ✅ Status das importações de todos os módulos
 - ✅ Arquivos existentes no filesystem
 - ✅ Variáveis de ambiente
 - ✅ Erros detalhados com traceback
 
 ### 4. Requirements.txt Atualizado
+
 - ✅ Versões flexíveis para evitar conflitos de build
 - ✅ Gunicorn incluído para produção
 
 ## 🔍 Como Testar
 
 ### 1. Verificar Status Básico
+
 ```bash
 curl https://seu-dominio.railway.app/api/status
 ```
 
 ### 2. Verificar Diagnósticos Completos
+
 ```bash
 curl https://seu-dominio.railway.app/api/diagnostics
 ```
 
 ### 3. Verificar Página Principal
+
 ```bash
 curl https://seu-dominio.railway.app/
 ```
@@ -58,12 +68,14 @@ curl https://seu-dominio.railway.app/
 ### Opção 1: Deploy Gradual (Recomendado)
 
 1. **Teste com App Simples**:
+
    ```
    # Procfile temporário
    web: python simple_app.py
    ```
 
 2. **Se funcionar, usar App Completo**:
+
    ```
    # Procfile final
    web: python app.py
@@ -76,6 +88,7 @@ curl https://seu-dominio.railway.app/
    ```
 
 ### Opção 2: Deploy Direto
+
 ```
 # Procfile atual
 web: python app.py
@@ -84,9 +97,11 @@ web: python app.py
 ## 🛠️ Comandos de Debug no Railway
 
 ### Acessar Logs do Railway:
+
 1. Railway Dashboard → Seu Projeto → Deployments → View Logs
 
 ### Verificar Rotas de Debug:
+
 - `/api/diagnostics` - Diagnóstico completo do sistema
 - `/api/status` - Status dos módulos principais
 - `/` - Página principal da aplicação
@@ -110,6 +125,7 @@ PORT=5000  # (Railway define automaticamente)
 3. **Verificar se todos os arquivos foram enviados** com `git status`
 
 ### Comandos para re-deploy:
+
 ```bash
 git add .
 git commit -m "Fix: Railway deployment corrections"
@@ -117,6 +133,7 @@ git push origin deploy
 ```
 
 ### Se precisar reverter para teste simples:
+
 1. Alterar Procfile para: `web: python simple_app.py`
 2. Commit e push
 3. Verificar se `https://seu-dominio.railway.app/health` responde
