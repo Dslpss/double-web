@@ -6,6 +6,12 @@ Backend Web com Polling para o Blaze Double Analyzer
 Versão que simula WebSocket usando polling HTTP
 """
 
+# CRÍTICO: Configurar matplotlib ANTES de qualquer import
+import matplotlib
+matplotlib.use('Agg')  # Usar backend sem GUI para Railway
+import matplotlib.pyplot as plt
+plt.ioff()  # Desabilitar modo interativo
+
 import sys
 import os
 import json
@@ -15,9 +21,6 @@ import threading
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-
-# IMPORTANTE: Configurar matplotlib ANTES de qualquer import que use matplotlib
-import matplotlib_config
 
 # Adicionar o diretório shared ao path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'shared'))
