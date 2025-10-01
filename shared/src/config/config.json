@@ -35,13 +35,14 @@
     "show_statistics": true,
     "show_predictions": true,
     "show_patterns": true,
-    "auto_start_monitoring": false
+    "auto_start_monitoring": false,
+    "show_alerts": false
   },
   "notifications": {
-    "enabled": true,
+    "enabled": false,
     "min_confidence": 0.7,
-    "desktop_notifications": true,
-    "sound_alerts": true,
+    "desktop_notifications": false,
+    "sound_alerts": false,
     "email": {
       "enabled": false,
       "smtp_server": "smtp.gmail.com",
@@ -66,8 +67,8 @@
     "enabled": false,
     "continuous_mode": false,
     "start_on_launch": false,
-    "alert_on_pattern": true,
-    "alert_on_prediction": true,
+    "alert_on_pattern": false,
+    "alert_on_prediction": false,
     "min_confidence_for_alert": 0.7
   },
   "live_feed": {

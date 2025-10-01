@@ -41,9 +41,9 @@ class PredictionFeedback:
         self.config = config or {}
         
         # Configurações
-        self.show_popup_alerts = self.config.get('show_popup_alerts', True)
+        self.show_popup_alerts = self.config.get('show_popup_alerts', False)  # Desabilitado por padrão
         self.show_console_feedback = self.config.get('show_console_feedback', True)
-        self.play_sound = self.config.get('play_sound', True)
+        self.play_sound = self.config.get('play_sound', False)  # Desabilitado por padrão
         self.feedback_delay = self.config.get('feedback_delay', 1.0)  # segundos
         
         # Histórico de feedback

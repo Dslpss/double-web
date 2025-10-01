@@ -272,14 +272,6 @@
           >
             Conectar
           </button>
-          <button
-            class="btn btn-danger"
-            id="disconnectBtn"
-            onclick="disconnectPlayNabets()"
-            disabled
-          >
-            Desconectar
-          </button>
         </div>
 
         <div id="messageArea"></div>
@@ -327,7 +319,6 @@
       const dataStatus = document.getElementById("dataStatus");
       const dataText = document.getElementById("dataText");
       const connectBtn = document.getElementById("connectBtn");
-      const disconnectBtn = document.getElementById("disconnectBtn");
       const resultsList = document.getElementById("resultsList");
       const resultsCount = document.getElementById("resultsCount");
       const wsStatus = document.getElementById("wsStatus");
@@ -370,7 +361,6 @@
 
             // Atualizar botões
             connectBtn.disabled = isConnected;
-            disconnectBtn.disabled = !isConnected;
 
             // Atualizar informações
             wsStatus.textContent = isConnected ? "Conectado" : "Desconectado";
@@ -440,7 +430,6 @@
           if (data.success) {
             showMessage("Conectando à PlayNabets...", "success");
             connectBtn.disabled = true;
-            disconnectBtn.disabled = false;
 
             // Iniciar atualização periódica
             if (updateInterval) {
@@ -449,35 +438,6 @@
             updateInterval = setInterval(updateStatus, 2000);
           } else {
             showMessage(data.error || "Erro ao conectar", "error");
-          }
-        } catch (error) {
-          showMessage("Erro de conexão: " + error.message, "error");
-        }
-      }
-
-      async function disconnectPlayNabets() {
-        try {
-          const response = await fetch("/api/playnabets/stop", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-            },
-          });
-
-          const data = await response.json();
-
-          if (data.success) {
-            showMessage("Desconectado da PlayNabets", "success");
-            connectBtn.disabled = false;
-            disconnectBtn.disabled = true;
-
-            // Parar atualização periódica
-            if (updateInterval) {
-              clearInterval(updateInterval);
-            }
-          } else {
-            showMessage(data.error || "Erro ao desconectar", "error");
           }
         } catch (error) {
           showMessage("Erro de conexão: " + error.message, "error");

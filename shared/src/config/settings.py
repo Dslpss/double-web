@@ -69,12 +69,12 @@ DEFAULT_CONFIG = {
         "charts": ["color_distribution", "pattern_frequency", "prediction_accuracy", "win_loss_ratio"],
         "show_statistics": True,
         "show_predictions": True,
-        "show_alerts": True,
+        "show_alerts": False,  # Desabilitado para evitar spam de alertas
         "layout": "dashboard"
     },
     "notifications": {
-        "enabled": True,
-        "types": ["sound", "popup", "email", "telegram"],
+        "enabled": False,
+        "types": [],  # Removido popup e sound
         "sound_file": "data/sounds/alert.mp3",
         "min_confidence": 0.8,
         "email": {
@@ -92,7 +92,7 @@ DEFAULT_CONFIG = {
         }
     },
     "monitoring": {
-        "enabled": True,
+        "enabled": False,  # Desabilitado para evitar spam de notificações
         "interval": 5,  # segundos
         "auto_bet": False,
         "max_consecutive_losses": 3,

@@ -23,10 +23,10 @@ class AlertSystem:
             config (Dict): Configurações do sistema de alertas
         """
         self.config = config or {}
-        self.enabled = self.config.get('enabled', True)
+        self.enabled = self.config.get('enabled', False)  # Desabilitado por padrão
         self.min_confidence = self.config.get('min_confidence', 0.7)
-        self.desktop_notifications = self.config.get('desktop_notifications', True)
-        self.sound_alerts = self.config.get('sound_alerts', True)
+        self.desktop_notifications = self.config.get('desktop_notifications', False)  # Desabilitado por padrão
+        self.sound_alerts = self.config.get('sound_alerts', False)  # Desabilitado por padrão
         
         # Configurações de notificações expandidas
         self.notification_types = self.config.get('types', ['sound', 'popup'])

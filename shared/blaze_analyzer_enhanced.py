@@ -115,9 +115,9 @@ class BlazeAnalyzerEnhanced:
         
         # Inicializar sistema de feedback
         feedback_config = {
-            'show_popup_alerts': True,
+            'show_popup_alerts': False,  # Desabilitado para evitar spam de popups
             'show_console_feedback': True,
-            'play_sound': True,
+            'play_sound': False,  # Desabilitado para evitar spam de sons
             'feedback_delay': 1.0
         }
         self.prediction_feedback = PredictionFeedback(feedback_config)
