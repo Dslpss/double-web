@@ -11,6 +11,8 @@ import requests
 import json
 import time
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')  # Usar backend sem GUI para Railway
 import matplotlib.pyplot as plt
 import os
 from datetime import datetime, timedelta
