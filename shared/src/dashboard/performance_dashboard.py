@@ -5,6 +5,10 @@
 Dashboard de Performance em Tempo Real para Blaze Double Analyzer
 """
 
+# Configurar matplotlib ANTES de importar
+import matplotlib
+matplotlib.use('Agg')  # Usar backend sem GUI para Railway
+
 import tkinter as tk
 from tkinter import ttk
 import matplotlib.pyplot as plt

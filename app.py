@@ -12,6 +12,8 @@ import json
 import time
 import random
 import threading
+import matplotlib
+matplotlib.use('Agg')  # Configurar backend sem GUI ANTES de qualquer import
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS

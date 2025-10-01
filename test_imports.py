@@ -8,6 +8,10 @@ Teste de todas as importações para identificar problemas
 import sys
 import os
 
+# Configurar matplotlib ANTES de qualquer import
+import matplotlib
+matplotlib.use('Agg')  # Usar backend sem GUI para Railway
+
 # Adicionar shared ao path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'shared'))
 
