@@ -83,8 +83,9 @@ def init_analyzer(clear_session_data=True):
     global analyzer
     try:
         if analyzer_available:
+            print("Tentando inicializar BlazeAnalyzerEnhanced...")
             analyzer = BlazeAnalyzerEnhanced(use_official_api=False)
-            print("Analyzer inicializado com sucesso!")
+            print("✅ Analyzer inicializado com sucesso!")
             
             # Limpar dados da sessão anterior se solicitado
             if clear_session_data:
@@ -156,14 +157,17 @@ def init_playnabets_integrator(analyzer_instance):
     global playnabets_integrator
     try:
         if playnabets_available and analyzer_instance:
+            print("Tentando inicializar PlayNabetsIntegrator...")
             playnabets_integrator = PlayNabetsIntegrator(analyzer_instance)
-            print("Integrador PlayNabets inicializado!")
+            print("✅ Integrador PlayNabets inicializado com sucesso!")
             return True
         else:
-            print("Integrador PlayNabets nao disponivel")
+            print(f"⚠️ PlayNabets não disponível - analyzer_available: {analyzer_available}, analyzer_instance: {analyzer_instance is not None}")
             return False
     except Exception as e:
-        print(f"Erro ao inicializar integrador PlayNabets: {e}")
+        print(f"❌ Erro ao inicializar integrador PlayNabets: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def start_websocket_connection():
@@ -983,21 +987,25 @@ def session_status():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    print("Iniciando Blaze Web Backend (Versao Polling)...")
+    print("🚀 Iniciando Blaze Web Backend (Versao Polling)...")
     
     # Inicializar analyzer
+    print("📊 Inicializando analyzer...")
     analyzer_ready = init_analyzer()
     
     # Inicializar integrador PlayNabets
     if analyzer_ready:
-        init_playnabets_integrator(analyzer)
-        print("Integrador PlayNabets inicializado!")
+        print("🔌 Inicializando integrador PlayNabets...")
+        playnabets_ready = init_playnabets_integrator(analyzer)
         
-        # Iniciar conexão PlayNabets automaticamente
-        print("Iniciando conexão automática com PlayNabets...")
-        start_websocket_connection()
+        if playnabets_ready:
+            # Iniciar conexão PlayNabets automaticamente
+            print("🌐 Iniciando conexão automática com PlayNabets...")
+            start_websocket_connection()
+        else:
+            print("⚠️ PlayNabets não pôde ser inicializado")
     else:
-        print("Aviso: Integrador PlayNabets nao inicializado - analyzer nao disponivel")
+        print("⚠️ Analyzer não disponível - PlayNabets não será inicializado")
     
     print("Sistema pronto!")
     print("Servidor iniciando em http://localhost:5000")
