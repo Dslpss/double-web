@@ -78,7 +78,7 @@ def test_add_manual_result():
         print("\n[TESTE] Adicao de resultado manual...")
         import random
         number = random.randint(0, 14)
-        color = 'red' if number in [1, 3, 5, 7, 9, 12, 14] else 'black' if number != 0 else 'white'
+        color = 'white' if number == 0 else 'red' if 1 <= number <= 7 else 'black'
         
         data = {'number': number, 'color': color}
         response = requests.post('http://localhost:5000/api/add_result', 

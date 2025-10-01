@@ -206,3 +206,4 @@ Sistema: "✅ ACERTOU!"
 **Sistema desenvolvido para análise educacional do Blaze Double.**
 **Jogar com responsabilidade!** 🎲
 
+

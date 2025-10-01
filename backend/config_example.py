@@ -91,10 +91,12 @@ def get_color_from_number(number):
     """
     if number == 0:
         return 'white'
-    elif number in [1, 3, 5, 7, 9, 12, 14]:
+    elif 1 <= number <= 7:
         return 'red'
-    else:
+    elif 8 <= number <= 14:
         return 'black'
+    else:
+        return 'unknown'
 
 def extract_result_from_payload(data):
     """

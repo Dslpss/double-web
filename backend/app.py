@@ -62,8 +62,14 @@ def start_websocket_connection():
             while ws_connected:
                 # Simular resultado aleatório
                 number = random.randint(0, 14)
-                colors = ['red', 'black', 'white']
-                color = random.choice(colors)
+                
+                # Determinar cor baseada no número (mapeamento correto)
+                if number == 0:
+                    color = 'white'
+                elif 1 <= number <= 7:
+                    color = 'red'
+                elif 8 <= number <= 14:
+                    color = 'black'
                 
                 result = {
                     'roll': number,

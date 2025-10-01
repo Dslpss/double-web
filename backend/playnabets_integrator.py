@@ -48,7 +48,7 @@ except ImportError as e:
             number = int(value) if isinstance(value, (int, float)) else int(str(value))
             if not (0 <= number <= 14):
                 return None
-            color = 'white' if number == 0 else 'red' if number in [1, 3, 5, 7, 9, 12, 14] else 'black'
+            color = 'white' if number == 0 else 'red' if 1 <= number <= 7 else 'black'
             return {
                 'number': number,
                 'color': color,

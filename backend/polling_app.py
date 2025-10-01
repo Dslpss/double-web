@@ -25,7 +25,7 @@ try:
     from src.database.local_storage_db import local_db
     NOTIFICATIONS_AVAILABLE = True
 except ImportError as e:
-    print(f"⚠️  Aviso: Sistema de notificações não disponível: {e}")
+    print(f"Aviso: Sistema de notificações não disponível: {e}")
     NOTIFICATIONS_AVAILABLE = False
     def notify_pattern(*args, **kwargs): return False
     def notify_result(*args, **kwargs): pass
@@ -36,7 +36,7 @@ try:
     from blaze_analyzer_enhanced import BlazeAnalyzerEnhanced
     analyzer_available = True
 except ImportError as e:
-    print(f"⚠️  Aviso: Não foi possível importar o analyzer: {e}")
+    print(f"Aviso: Não foi possível importar o analyzer: {e}")
     analyzer_available = False
 
 # Importar módulos de autenticação e PlayNabets
@@ -44,14 +44,14 @@ try:
     from auth import require_auth, login, logout, register, get_user_info
     auth_available = True
 except ImportError as e:
-    print(f"⚠️  Aviso: Módulo de autenticação não disponível: {e}")
+    print(f"Aviso: Módulo de autenticação não disponível: {e}")
     auth_available = False
 
 try:
     from playnabets_integrator import PlayNabetsIntegrator
     playnabets_available = True
 except ImportError as e:
-    print(f"⚠️  Aviso: Módulo PlayNabets não disponível: {e}")
+    print(f"Aviso: Módulo PlayNabets não disponível: {e}")
     playnabets_available = False
 
 # Inicializar Flask
@@ -144,12 +144,12 @@ def clear_session_data():
             if hasattr(analyzer, 'adaptive_integrator'):
                 analyzer.adaptive_integrator.reset()
             
-            print("✅ Dados da sessão limpos com sucesso!")
+            print("Dados da sessão limpos com sucesso!")
         else:
-            print("⚠️  Analyzer não disponível para limpeza")
+            print("Analyzer não disponível para limpeza")
             
     except Exception as e:
-        print(f"❌ Erro ao limpar dados da sessão: {e}")
+        print(f"Erro ao limpar dados da sessão: {e}")
 
 def init_playnabets_integrator(analyzer_instance):
     """Inicializa o integrador PlayNabets."""
@@ -177,7 +177,7 @@ def start_websocket_connection():
     def ws_worker():
         global ws_connected, last_results, last_analysis
         try:
-            print("🔌 Iniciando conexão PlayNabets...")
+            print("Iniciando conexão PlayNabets...")
             ws_connected = True
             
             if playnabets_integrator:
@@ -191,7 +191,7 @@ def start_websocket_connection():
                         
                         # Se não está conectado há muito tempo, tentar reconectar
                         if not status['connected'] and status.get('time_since_last_heartbeat', 0) > 60:
-                            print("⚠️  Conexão perdida há mais de 60s. Tentando reconectar...")
+                            print("Conexão perdida há mais de 60s. Tentando reconectar...")
                             playnabets_integrator.stop()
                             time.sleep(2)
                             playnabets_integrator.start()
@@ -216,31 +216,31 @@ def start_websocket_connection():
                                         if analysis:
                                             last_analysis = analysis
                                     except Exception as e:
-                                        print(f"⚠️  Erro na análise: {e}")
+                                        print(f"Erro na análise: {e}")
                         
                         time.sleep(2)  # Atualizar a cada 2 segundos
                         
                     except Exception as e:
-                        print(f"❌ Erro no loop WebSocket: {e}")
+                        print(f"Erro no loop WebSocket: {e}")
                         time.sleep(5)
                         
             else:
-                print("❌ Integrador PlayNabets não disponível")
+                print("Integrador PlayNabets não disponível")
                 
         except Exception as e:
-            print(f"❌ Erro na conexão WebSocket: {e}")
+            print(f"Erro na conexão WebSocket: {e}")
         finally:
             ws_connected = False
-            print("🔌 Conexão WebSocket finalizada")
+            print("Conexão WebSocket finalizada")
     
     ws_thread = threading.Thread(target=ws_worker, name="WebSocketWorker")
     ws_thread.start()
-    print("✅ Thread WebSocket iniciada")
+    print("Thread WebSocket iniciada")
 
 def stop_websocket_connection():
     """Para a conexão WebSocket."""
     global ws_connected, ws_thread
-    print("🛑 Parando conexão WebSocket...")
+    print("Parando conexão WebSocket...")
     ws_connected = False
     
     if playnabets_integrator:
@@ -248,12 +248,12 @@ def stop_websocket_connection():
     
     # Aguardar thread terminar
     if ws_thread and ws_thread.is_alive():
-        print("⏳ Aguardando thread WebSocket terminar...")
+        print("Aguardando thread WebSocket terminar...")
         ws_thread.join(timeout=10)
         if ws_thread.is_alive():
-            print("⚠️  Thread WebSocket não terminou em 10s")
+            print("Thread WebSocket não terminou em 10s")
     
-    print("✅ Conexão WebSocket parada")
+    print("Conexão WebSocket parada")
 
 # ===== ROTAS PRINCIPAIS =====
 

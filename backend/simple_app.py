@@ -95,8 +95,14 @@ def get_results():
             results = []
             for i in range(20):
                 number = random.randint(0, 14)
-                colors = ['red', 'black', 'white']
-                color = random.choice(colors)
+                
+                # Determinar cor baseada no número (mapeamento correto)
+                if number == 0:
+                    color = 'white'
+                elif 1 <= number <= 7:
+                    color = 'red'
+                elif 8 <= number <= 14:
+                    color = 'black'
                 results.append({
                     'roll': number,
                     'color': color,
@@ -121,8 +127,13 @@ def get_analysis():
     try:
         if not analyzer:
             # Simular análise se analyzer não estiver disponível
-            colors = ['red', 'black', 'white']
-            color = random.choice(colors)
+            number = random.randint(0, 14)
+            if number == 0:
+                color = 'white'
+            elif 1 <= number <= 7:
+                color = 'red'
+            elif 8 <= number <= 14:
+                color = 'black'
             confidence = random.uniform(0.6, 0.9)
             
             return jsonify({
