@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blaze Double Analyzer - Login</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #333;
+      }
+
+      .login-container {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        width: 100%;
+        max-width: 400px;
+      }
+
+      .login-header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .login-header h1 {
+        font-size: 2rem;
+        color: #2c3e50;
+        margin-bottom: 10px;
+      }
+
+      .login-header p {
+        color: #7f8c8d;
+        font-size: 1rem;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #2c3e50;
+        font-weight: 500;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .btn {
+        width: 100%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        padding: 14px;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+        margin-bottom: 15px;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn-secondary {
+        background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+      }
+
+      .error {
+        background: #ffebee;
+        color: #c62828;
+        padding: 12px;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-left: 4px solid #c62828;
+        display: none;
+      }
+
+      .success {
+        background: #e8f5e8;
+        color: #2e7d32;
+        padding: 12px;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-left: 4px solid #2e7d32;
+        display: none;
+      }
+
+      .register-link {
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      .register-link a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .register-link a:hover {
+        text-decoration: underline;
+      }
+
+      .demo-credentials {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 20px;
+        font-size: 0.9rem;
+      }
+
+      .demo-credentials h4 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+      }
+
+      .demo-credentials p {
+        color: #7f8c8d;
+        margin: 5px 0;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        color: #667eea;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="login-header">
+        <h1>🔥 Blaze Analyzer</h1>
+        <p>Faça login para acessar o sistema</p>
+      </div>
+
+      <div class="error" id="errorMessage"></div>
+      <div class="success" id="successMessage"></div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="username">Usuário:</label>
+          <input type="text" id="username" name="username" required />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Senha:</label>
+          <input type="password" id="password" name="password" required />
+        </div>
+
+        <button type="submit" class="btn" id="loginBtn">
+          <span id="loginText">Entrar</span>
+          <div class="loading" id="loginLoading">Entrando...</div>
+        </button>
+      </form>
+
+      <div class="register-link">
+        <a href="#" onclick="showRegister()">Não tem conta? Registre-se</a>
+      </div>
+
+      <div class="demo-credentials">
+        <h4>Credenciais de Demonstração:</h4>
+        <p><strong>Admin:</strong> admin / admin123</p>
+        <p><strong>Usuário:</strong> user / user123</p>
+      </div>
+    </div>
+
+    <script>
+      let isRegisterMode = false;
+
+      // Elementos DOM
+      const loginForm = document.getElementById("loginForm");
+      const errorMessage = document.getElementById("errorMessage");
+      const successMessage = document.getElementById("successMessage");
+      const loginBtn = document.getElementById("loginBtn");
+      const loginText = document.getElementById("loginText");
+      const loginLoading = document.getElementById("loginLoading");
+
+      // Event listeners
+      loginForm.addEventListener("submit", handleSubmit);
+
+      function handleSubmit(e) {
+        e.preventDefault();
+
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        if (isRegisterMode) {
+          register(username, password);
+        } else {
+          login(username, password);
+        }
+      }
+
+      function showRegister() {
+        isRegisterMode = true;
+        loginText.textContent = "Registrar";
+        document.querySelector(".register-link a").textContent =
+          "Já tem conta? Faça login";
+        document.querySelector(".register-link a").onclick = showLogin;
+      }
+
+      function showLogin() {
+        isRegisterMode = false;
+        loginText.textContent = "Entrar";
+        document.querySelector(".register-link a").textContent =
+          "Não tem conta? Registre-se";
+        document.querySelector(".register-link a").onclick = showRegister;
+      }
+
+      function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = "block";
+        successMessage.style.display = "none";
+      }
+
+      function showSuccess(message) {
+        successMessage.textContent = message;
+        successMessage.style.display = "block";
+        errorMessage.style.display = "none";
+      }
+
+      function hideMessages() {
+        errorMessage.style.display = "none";
+        successMessage.style.display = "none";
+      }
+
+      function setLoading(loading) {
+        if (loading) {
+          loginBtn.disabled = true;
+          loginText.style.display = "none";
+          loginLoading.style.display = "block";
+        } else {
+          loginBtn.disabled = false;
+          loginText.style.display = "block";
+          loginLoading.style.display = "none";
+        }
+      }
+
+      async function login(username, password) {
+        hideMessages();
+        setLoading(true);
+
+        try {
+          const response = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ username, password }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            // Salvar token no localStorage
+            localStorage.setItem("authToken", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+
+            showSuccess("Login realizado com sucesso!");
+
+            // Redirecionar após 1 segundo
+            setTimeout(() => {
+              window.location.href = "/dashboard";
+            }, 1000);
+          } else {
+            showError(data.error || "Erro no login");
+          }
+        } catch (error) {
+          showError("Erro de conexão: " + error.message);
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      async function register(username, password) {
+        hideMessages();
+        setLoading(true);
+
+        try {
+          const response = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ username, password, role: "user" }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            showSuccess("Usuário registrado com sucesso! Faça login.");
+            showLogin();
+          } else {
+            showError(data.error || "Erro no registro");
+          }
+        } catch (error) {
+          showError("Erro de conexão: " + error.message);
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      // Verificar se já está logado
+      window.addEventListener("load", () => {
+        const token = localStorage.getItem("authToken");
+        if (token) {
+          // Verificar se token ainda é válido
+          fetch("/api/auth/me", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+            .then((response) => {
+              if (response.ok) {
+                window.location.href = "/dashboard";
+              } else {
+                localStorage.removeItem("authToken");
+                localStorage.removeItem("user");
+              }
+            })
+            .catch(() => {
+              localStorage.removeItem("authToken");
+              localStorage.removeItem("user");
+            });
+        }
+      });
+    </script>
+  </body>
+</html>

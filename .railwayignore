@@ -1,0 +1,30 @@
+# Arquivos de teste
+test_*.py
+*_test.py
+
+# Arquivos de dados de exemplo
+blaze_export_*.json
+blaze_data.json
+blaze_data.db
+
+# Documentação
+README.md
+SECURITY.md
+SISTEMA_PADROES.md
+deploy-railway.md
+
+# Configurações locais
+env.example
+railway.env
+
+# Scripts de verificação
+check-railway-ready.py
+
+# Diretórios desnecessários
+frontend/
+backend/
+data/
+
+# Arquivos de backup
+*.backup
+*.bak

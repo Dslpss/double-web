@@ -1,1 +1,1 @@
-web: cd backend && python polling_app.py
+web: python app.py
