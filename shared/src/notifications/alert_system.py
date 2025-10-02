@@ -440,7 +440,7 @@ class AlertSystem:
         """
         try:
             # Importar DatabaseManager
-            from src.database.db_manager import DatabaseManager
+            from ..database.db_manager import DatabaseManager
             
             # Criar instância do banco (usar o mesmo banco do sistema)
             db = DatabaseManager("data/blaze_enhanced.db")
