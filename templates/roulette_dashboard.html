@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🎲 Dashboard Roleta Brasileira - Tempo Real</title>
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <style>
+      body {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .dashboard-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 15px;
+        margin-bottom: 20px;
+        transition: transform 0.3s ease;
+      }
+
+      .dashboard-card:hover {
+        transform: translateY(-5px);
+      }
+
+      .number-ball {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+        margin: 5px;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+      }
+
+      .number-red {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+      }
+      .number-black {
+        background: linear-gradient(135deg, #343a40, #23272b);
+      }
+      .number-green {
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+      }
+
+      .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+      }
+
+      .status-online {
+        background: #28a745;
+        animation: pulse 2s infinite;
+      }
+      .status-offline {
+        background: #dc3545;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      .notification-item {
+        background: rgba(255, 255, 255, 0.1);
+        border-left: 4px solid #ffc107;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+      }
+
+      .stats-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #ffc107;
+      }
+
+      .chart-container {
+        position: relative;
+        height: 300px;
+      }
+
+      .recent-results {
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .hot-number {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        animation: glow 2s ease-in-out infinite alternate;
+      }
+
+      .cold-number {
+        background: linear-gradient(135deg, #74b9ff, #0984e3);
+      }
+
+      @keyframes glow {
+        from {
+          box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+        }
+        to {
+          box-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
+        }
+      }
+
+      .header-title {
+        background: linear-gradient(45deg, #ffd700, #ffed4e);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid py-4">
+      <!-- Header -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="dashboard-card p-4 text-center">
+            <h1 class="header-title mb-0">
+              <i class="fas fa-dice"></i> Dashboard Roleta Brasileira - Tempo
+              Real
+            </h1>
+            <p class="mb-0 mt-2">
+              <span
+                id="status-indicator"
+                class="status-indicator status-offline"
+              ></span>
+              <span id="status-text">Conectando...</span>
+              <span class="ms-3">
+                <i class="fas fa-clock"></i>
+                <span id="last-update">--:--:--</span>
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="dashboard-card p-3 text-center">
+            <i class="fas fa-gamepad fa-2x mb-2 text-warning"></i>
+            <h5>Total de Jogos</h5>
+            <div class="stats-number" id="total-games">0</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="dashboard-card p-3 text-center">
+            <i class="fas fa-fire fa-2x mb-2 text-danger"></i>
+            <h5>Último Número</h5>
+            <div id="last-number-container">
+              <div class="number-ball number-black" id="last-number">--</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="dashboard-card p-3 text-center">
+            <i class="fas fa-chart-line fa-2x mb-2 text-success"></i>
+            <h5>Vermelhos</h5>
+            <div class="stats-number text-danger" id="red-count">0</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="dashboard-card p-3 text-center">
+            <i class="fas fa-chart-line fa-2x mb-2 text-dark"></i>
+            <h5>Pretos</h5>
+            <div class="stats-number text-dark" id="black-count">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="row">
+        <!-- Recent Results -->
+        <div class="col-lg-6">
+          <div class="dashboard-card p-4">
+            <h4><i class="fas fa-history"></i> Últimos Resultados</h4>
+            <div class="recent-results" id="recent-results">
+              <p class="text-center text-muted">Carregando resultados...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistics Chart -->
+        <div class="col-lg-6">
+          <div class="dashboard-card p-4">
+            <h4><i class="fas fa-chart-pie"></i> Distribuição de Cores</h4>
+            <div class="chart-container">
+              <canvas id="colorChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analysis Row -->
+      <div class="row mt-4">
+        <!-- Hot Numbers -->
+        <div class="col-lg-4">
+          <div class="dashboard-card p-4">
+            <h5><i class="fas fa-fire text-danger"></i> Números Quentes</h5>
+            <div id="hot-numbers">
+              <p class="text-muted">Carregando...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cold Numbers -->
+        <div class="col-lg-4">
+          <div class="dashboard-card p-4">
+            <h5><i class="fas fa-snowflake text-info"></i> Números Frios</h5>
+            <div id="cold-numbers">
+              <p class="text-muted">Carregando...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="col-lg-4">
+          <div class="dashboard-card p-4">
+            <h5><i class="fas fa-bell text-warning"></i> Notificações</h5>
+            <div id="notifications" style="max-height: 300px; overflow-y: auto">
+              <p class="text-muted">Nenhuma notificação</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Number Frequency -->
+      <div class="row mt-4">
+        <div class="col-12">
+          <div class="dashboard-card p-4">
+            <h4><i class="fas fa-chart-bar"></i> Frequência dos Números</h4>
+            <div class="chart-container">
+              <canvas id="numberChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      // Configuração do Socket.IO
+      const socket = io();
+
+      // Charts
+      let colorChart = null;
+      let numberChart = null;
+
+      // Conectar ao servidor
+      socket.on("connect", function () {
+        console.log("🔌 Conectado ao servidor");
+        updateStatus(true);
+      });
+
+      socket.on("disconnect", function () {
+        console.log("🔌 Desconectado do servidor");
+        updateStatus(false);
+      });
+
+      // Receber atualizações do dashboard
+      socket.on("dashboard_update", function (data) {
+        console.log("📊 Atualização recebida:", data);
+        updateDashboard(data);
+      });
+
+      function updateStatus(online) {
+        const indicator = document.getElementById("status-indicator");
+        const text = document.getElementById("status-text");
+
+        if (online) {
+          indicator.className = "status-indicator status-online";
+          text.textContent = "Online - Tempo Real";
+        } else {
+          indicator.className = "status-indicator status-offline";
+          text.textContent = "Offline";
+        }
+
+        document.getElementById("last-update").textContent =
+          new Date().toLocaleTimeString();
+      }
+
+      function updateDashboard(data) {
+        // Atualizar estatísticas básicas
+        if (data.statistics) {
+          document.getElementById("total-games").textContent =
+            data.statistics.total_games || 0;
+          document.getElementById("red-count").textContent =
+            data.statistics.color_frequency?.VERMELHO || 0;
+          document.getElementById("black-count").textContent =
+            data.statistics.color_frequency?.PRETO || 0;
+        }
+
+        // Atualizar último número
+        if (data.recent_results && data.recent_results.length > 0) {
+          const lastResult = data.recent_results[0];
+          updateLastNumber(lastResult);
+          updateRecentResults(data.recent_results);
+        }
+
+        // Atualizar análise
+        if (data.analysis) {
+          updateHotNumbers(data.analysis.hot_numbers || []);
+          updateColdNumbers(data.analysis.cold_numbers || []);
+          updateColorChart(data.analysis.color_frequency || {});
+          updateNumberChart(data.analysis.number_frequency || {});
+        }
+
+        // Atualizar notificações
+        if (data.notifications) {
+          updateNotifications(data.notifications);
+        }
+
+        updateStatus(true);
+      }
+
+      function updateLastNumber(result) {
+        const container = document.getElementById("last-number");
+        container.textContent = result.number;
+
+        // Atualizar cor
+        container.className = "number-ball";
+        if (result.color_name === "VERMELHO") {
+          container.classList.add("number-red");
+        } else if (result.color_name === "PRETO") {
+          container.classList.add("number-black");
+        } else {
+          container.classList.add("number-green");
+        }
+      }
+
+      function updateRecentResults(results) {
+        const container = document.getElementById("recent-results");
+
+        if (results.length === 0) {
+          container.innerHTML =
+            '<p class="text-muted">Nenhum resultado ainda</p>';
+          return;
+        }
+
+        let html = '<div class="row">';
+        results.slice(0, 20).forEach((result, index) => {
+          const colorClass =
+            result.color_name === "VERMELHO"
+              ? "number-red"
+              : result.color_name === "PRETO"
+              ? "number-black"
+              : "number-green";
+
+          html += `
+                    <div class="col-auto mb-2">
+                        <div class="number-ball ${colorClass}" title="Jogo: ${result.game_id}">
+                            ${result.number}
+                        </div>
+                    </div>
+                `;
+        });
+        html += "</div>";
+
+        container.innerHTML = html;
+      }
+
+      function updateHotNumbers(hotNumbers) {
+        const container = document.getElementById("hot-numbers");
+
+        if (hotNumbers.length === 0) {
+          container.innerHTML =
+            '<p class="text-muted">Nenhum número quente</p>';
+          return;
+        }
+
+        let html = '<div class="row">';
+        hotNumbers.slice(0, 10).forEach((number) => {
+          const colorClass =
+            number === 0
+              ? "number-green"
+              : number % 2 === 1
+              ? "number-red"
+              : "number-black";
+
+          html += `
+                    <div class="col-auto mb-2">
+                        <div class="number-ball ${colorClass} hot-number">
+                            ${number}
+                        </div>
+                    </div>
+                `;
+        });
+        html += "</div>";
+
+        container.innerHTML = html;
+      }
+
+      function updateColdNumbers(coldNumbers) {
+        const container = document.getElementById("cold-numbers");
+
+        if (coldNumbers.length === 0) {
+          container.innerHTML = '<p class="text-muted">Nenhum número frio</p>';
+          return;
+        }
+
+        let html = '<div class="row">';
+        coldNumbers.slice(0, 10).forEach((number) => {
+          const colorClass =
+            number === 0
+              ? "number-green"
+              : number % 2 === 1
+              ? "number-red"
+              : "number-black";
+
+          html += `
+                    <div class="col-auto mb-2">
+                        <div class="number-ball ${colorClass} cold-number">
+                            ${number}
+                        </div>
+                    </div>
+                `;
+        });
+        html += "</div>";
+
+        container.innerHTML = html;
+      }
+
+      function updateNotifications(notifications) {
+        const container = document.getElementById("notifications");
+
+        if (notifications.length === 0) {
+          container.innerHTML = '<p class="text-muted">Nenhuma notificação</p>';
+          return;
+        }
+
+        let html = "";
+        notifications.slice(0, 5).forEach((notification) => {
+          const time = new Date(notification.timestamp).toLocaleTimeString();
+          html += `
+                    <div class="notification-item">
+                        <small class="text-muted">${time}</small><br>
+                        <strong>${notification.rule_name}</strong><br>
+                        ${notification.message}
+                    </div>
+                `;
+        });
+
+        container.innerHTML = html;
+      }
+
+      function updateColorChart(colorFreq) {
+        const ctx = document.getElementById("colorChart").getContext("2d");
+
+        if (colorChart) {
+          colorChart.destroy();
+        }
+
+        colorChart = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: ["Vermelho", "Preto", "Verde"],
+            datasets: [
+              {
+                data: [
+                  colorFreq.VERMELHO || 0,
+                  colorFreq.PRETO || 0,
+                  colorFreq.VERDE || 0,
+                ],
+                backgroundColor: ["#dc3545", "#343a40", "#28a745"],
+                borderWidth: 2,
+                borderColor: "#fff",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: {
+                  color: "white",
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function updateNumberChart(numberFreq) {
+        const ctx = document.getElementById("numberChart").getContext("2d");
+
+        if (numberChart) {
+          numberChart.destroy();
+        }
+
+        // Preparar dados para todos os números 0-36
+        const labels = [];
+        const data = [];
+        const colors = [];
+
+        for (let i = 0; i <= 36; i++) {
+          labels.push(i.toString());
+          data.push(numberFreq[i] || 0);
+
+          if (i === 0) {
+            colors.push("#28a745"); // Verde
+          } else if (i % 2 === 1) {
+            colors.push("#dc3545"); // Vermelho
+          } else {
+            colors.push("#343a40"); // Preto
+          }
+        }
+
+        numberChart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Frequência",
+                data: data,
+                backgroundColor: colors,
+                borderColor: colors,
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false,
+              },
+            },
+            scales: {
+              x: {
+                ticks: {
+                  color: "white",
+                },
+                grid: {
+                  color: "rgba(255, 255, 255, 0.1)",
+                },
+              },
+              y: {
+                ticks: {
+                  color: "white",
+                },
+                grid: {
+                  color: "rgba(255, 255, 255, 0.1)",
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Carregar dados iniciais
+      fetch("/api/dashboard")
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("📊 Dados iniciais carregados:", data);
+          updateDashboard(data);
+        })
+        .catch((error) => {
+          console.error("❌ Erro ao carregar dados:", error);
+        });
+    </script>
+  </body>
+</html>
