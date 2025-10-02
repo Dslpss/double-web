@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Roleta Brasileira - Pragmatic Play</title>
+
+    <!-- Bootstrap 5 -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+      :root {
+        --primary-color: #1a1a2e;
+        --secondary-color: #16213e;
+        --accent-color: #e94560;
+        --success-color: #0f3460;
+        --text-color: #ffffff;
+        --card-bg: rgba(255, 255, 255, 0.1);
+        --border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      body {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color) 0%,
+          var(--secondary-color) 100%
+        );
+        color: var(--text-color);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+      }
+
+      .glass-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border-color);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+
+      .header-card {
+        background: linear-gradient(135deg, var(--accent-color), #ff6b6b);
+        border: none;
+        color: white;
+        text-align: center;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .stat-card {
+        text-align: center;
+        padding: 15px;
+      }
+
+      .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--accent-color);
+      }
+
+      .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        margin-top: 5px;
+      }
+
+      .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 10px;
+      }
+
+      .result-item {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.9rem;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        margin: 0 auto;
+      }
+
+      .result-red {
+        background: linear-gradient(135deg, #ff4757, #ff3742);
+      }
+
+      .result-black {
+        background: linear-gradient(135deg, #2f3542, #1e1e1e);
+      }
+
+      .result-green {
+        background: linear-gradient(135deg, #2ed573, #1dd1a1);
+      }
+
+      .control-panel {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .btn-custom {
+        background: linear-gradient(135deg, var(--accent-color), #ff6b6b);
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .btn-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4);
+        color: white;
+      }
+
+      .btn-success-custom {
+        background: linear-gradient(135deg, #2ed573, #1dd1a1);
+      }
+
+      .btn-danger-custom {
+        background: linear-gradient(135deg, #ff4757, #ff3742);
+      }
+
+      .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+
+      .status-online {
+        background: #2ed573;
+        animation: pulse 2s infinite;
+      }
+
+      .status-offline {
+        background: #ff4757;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      .chart-container {
+        position: relative;
+        height: 300px;
+        margin-top: 20px;
+      }
+
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 10px;
+        color: white;
+        font-weight: 500;
+        z-index: 1000;
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+      }
+
+      .notification.show {
+        transform: translateX(0);
+      }
+
+      .notification.success {
+        background: linear-gradient(135deg, #2ed573, #1dd1a1);
+      }
+
+      .notification.error {
+        background: linear-gradient(135deg, #ff4757, #ff3742);
+      }
+
+      .back-btn {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1000;
+      }
+
+      .scrollbar-custom::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .scrollbar-custom::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+      }
+
+      .scrollbar-custom::-webkit-scrollbar-thumb {
+        background: var(--accent-color);
+        border-radius: 10px;
+      }
+
+      .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+        background: #ff6b6b;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Botão Voltar -->
+    <a href="/" class="btn btn-custom back-btn">
+      <i class="fas fa-arrow-left me-2"></i>Dashboard Principal
+    </a>
+
+    <div class="container-fluid py-4">
+      <!-- Header -->
+      <div class="glass-card header-card">
+        <h1 class="mb-0">
+          <i class="fas fa-circle-notch me-3"></i>
+          Roleta Brasileira - Pragmatic Play
+        </h1>
+        <p class="mb-0 mt-2">Monitor em tempo real da API oficial</p>
+      </div>
+
+      <!-- Status e Controles -->
+      <div class="glass-card">
+        <div
+          class="d-flex justify-content-between align-items-center flex-wrap"
+        >
+          <div>
+            <h5 class="mb-2">
+              <span class="status-indicator" id="statusIndicator"></span>
+              Status: <span id="systemStatus">Carregando...</span>
+            </h5>
+            <small class="text-muted">
+              <i class="fas fa-clock me-1"></i>
+              Última atualização: <span id="lastUpdate">--</span>
+            </small>
+          </div>
+          <div class="control-panel">
+            <button
+              class="btn btn-success-custom"
+              id="startBtn"
+              onclick="startSystem()"
+            >
+              <i class="fas fa-play me-2"></i>Iniciar
+            </button>
+            <button
+              class="btn btn-danger-custom"
+              id="stopBtn"
+              onclick="stopSystem()"
+              style="display: none"
+            >
+              <i class="fas fa-stop me-2"></i>Parar
+            </button>
+            <button class="btn btn-custom" onclick="refreshData()">
+              <i class="fas fa-sync-alt me-2"></i>Atualizar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Estatísticas -->
+        <div class="col-lg-4">
+          <div class="glass-card">
+            <h5 class="mb-3">
+              <i class="fas fa-chart-bar me-2"></i>Estatísticas (24h)
+            </h5>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-number" id="totalGames">0</div>
+                <div class="stat-label">Total de Jogos</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number text-danger" id="redCount">0</div>
+                <div class="stat-label">🔴 Vermelhos</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number text-dark" id="blackCount">0</div>
+                <div class="stat-label">⚫ Pretos</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number text-success" id="greenCount">0</div>
+                <div class="stat-label">🟢 Verdes</div>
+              </div>
+            </div>
+
+            <!-- Gráfico de Cores -->
+            <div class="chart-container">
+              <canvas id="colorChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resultados Recentes -->
+        <div class="col-lg-8">
+          <div class="glass-card">
+            <h5 class="mb-3">
+              <i class="fas fa-history me-2"></i>Últimos Resultados
+              <small class="text-muted"
+                >(<span id="resultsCount">0</span> resultados)</small
+              >
+            </h5>
+            <div class="results-grid scrollbar-custom" id="resultsGrid">
+              <!-- Resultados serão inseridos aqui -->
+            </div>
+          </div>
+
+          <!-- Números Mais Frequentes -->
+          <div class="glass-card">
+            <h5 class="mb-3">
+              <i class="fas fa-fire me-2"></i>Números Mais Frequentes
+            </h5>
+            <div class="row">
+              <div class="col-md-6">
+                <h6 class="text-danger">🔥 Números Quentes</h6>
+                <div id="hotNumbers" class="d-flex flex-wrap gap-2">
+                  <!-- Números quentes -->
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h6 class="text-info">❄️ Números Frios</h6>
+                <div id="coldNumbers" class="d-flex flex-wrap gap-2">
+                  <!-- Números frios -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notificação -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      let colorChart = null;
+      let isSystemRunning = false;
+      let updateInterval = null;
+
+      // Inicializar página
+      document.addEventListener("DOMContentLoaded", function () {
+        initColorChart();
+        checkSystemStatus();
+        refreshData();
+
+        // Atualizar a cada 30 segundos
+        updateInterval = setInterval(refreshData, 30000);
+      });
+
+      function initColorChart() {
+        const ctx = document.getElementById("colorChart").getContext("2d");
+        colorChart = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: ["Vermelho", "Preto", "Verde"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#ff4757", "#2f3542", "#2ed573"],
+                borderWidth: 2,
+                borderColor: "#ffffff",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  color: "#ffffff",
+                  padding: 20,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      async function checkSystemStatus() {
+        try {
+          const response = await fetch("/api/systems/status");
+          const data = await response.json();
+
+          isSystemRunning = data.roulette?.active || false;
+          updateStatusUI();
+        } catch (error) {
+          console.error("Erro ao verificar status:", error);
+          showNotification("Erro ao verificar status do sistema", "error");
+        }
+      }
+
+      function updateStatusUI() {
+        const statusIndicator = document.getElementById("statusIndicator");
+        const systemStatus = document.getElementById("systemStatus");
+        const startBtn = document.getElementById("startBtn");
+        const stopBtn = document.getElementById("stopBtn");
+
+        if (isSystemRunning) {
+          statusIndicator.className = "status-indicator status-online";
+          systemStatus.textContent = "Online";
+          startBtn.style.display = "none";
+          stopBtn.style.display = "inline-block";
+        } else {
+          statusIndicator.className = "status-indicator status-offline";
+          systemStatus.textContent = "Offline";
+          startBtn.style.display = "inline-block";
+          stopBtn.style.display = "none";
+        }
+      }
+
+      async function startSystem() {
+        try {
+          showNotification("Iniciando sistema...", "success");
+          const response = await fetch("/api/systems/start/roulette");
+          const data = await response.json();
+
+          if (data.status === "started") {
+            isSystemRunning = true;
+            updateStatusUI();
+            showNotification("Sistema iniciado com sucesso!", "success");
+            setTimeout(refreshData, 2000);
+          } else {
+            showNotification(
+              "Erro ao iniciar sistema: " +
+                (data.message || "Erro desconhecido"),
+              "error"
+            );
+          }
+        } catch (error) {
+          console.error("Erro ao iniciar sistema:", error);
+          showNotification("Erro ao iniciar sistema", "error");
+        }
+      }
+
+      async function stopSystem() {
+        try {
+          showNotification("Parando sistema...", "success");
+          const response = await fetch("/api/systems/stop/roulette");
+          const data = await response.json();
+
+          if (data.status === "stopped") {
+            isSystemRunning = false;
+            updateStatusUI();
+            showNotification("Sistema parado com sucesso!", "success");
+          } else {
+            showNotification(
+              "Erro ao parar sistema: " + (data.message || "Erro desconhecido"),
+              "error"
+            );
+          }
+        } catch (error) {
+          console.error("Erro ao parar sistema:", error);
+          showNotification("Erro ao parar sistema", "error");
+        }
+      }
+
+      async function refreshData() {
+        try {
+          const response = await fetch("/api/roulette/dashboard");
+          const data = await response.json();
+
+          if (data.error) {
+            console.warn("Sistema não iniciado:", data.error);
+            return;
+          }
+
+          updateDashboard(data);
+          document.getElementById("lastUpdate").textContent =
+            new Date().toLocaleTimeString();
+        } catch (error) {
+          console.error("Erro ao atualizar dados:", error);
+          showNotification("Erro ao atualizar dados", "error");
+        }
+      }
+
+      function updateDashboard(data) {
+        // Atualizar estatísticas
+        const stats = data.statistics || {};
+        const colorFreq = stats.color_frequency || {};
+
+        document.getElementById("totalGames").textContent =
+          stats.total_games || 0;
+        document.getElementById("redCount").textContent = colorFreq.RED || 0;
+        document.getElementById("blackCount").textContent =
+          colorFreq.BLACK || 0;
+        document.getElementById("greenCount").textContent =
+          colorFreq.GREEN || 0;
+
+        // Atualizar gráfico
+        if (colorChart) {
+          colorChart.data.datasets[0].data = [
+            colorFreq.RED || 0,
+            colorFreq.BLACK || 0,
+            colorFreq.GREEN || 0,
+          ];
+          colorChart.update();
+        }
+
+        // Atualizar resultados recentes
+        const results = data.recent_results || [];
+        updateResultsGrid(results);
+
+        // Atualizar números quentes e frios
+        updateHotColdNumbers(stats.number_frequency || {});
+      }
+
+      function updateResultsGrid(results) {
+        const grid = document.getElementById("resultsGrid");
+        const count = document.getElementById("resultsCount");
+
+        count.textContent = results.length;
+        grid.innerHTML = "";
+
+        results.reverse().forEach((result) => {
+          const item = document.createElement("div");
+          item.className = "result-item";
+
+          if (result.color_name === "RED") {
+            item.classList.add("result-red");
+          } else if (result.color_name === "BLACK") {
+            item.classList.add("result-black");
+          } else if (result.color_name === "GREEN") {
+            item.classList.add("result-green");
+          }
+
+          item.textContent = result.number;
+          item.title = `${result.number} ${result.color_name} - ${new Date(
+            result.timestamp
+          ).toLocaleTimeString()}`;
+
+          grid.appendChild(item);
+        });
+      }
+
+      function updateHotColdNumbers(numberFreq) {
+        const hotContainer = document.getElementById("hotNumbers");
+        const coldContainer = document.getElementById("coldNumbers");
+
+        // Converter para array e ordenar
+        const numbers = Object.entries(numberFreq)
+          .map(([num, count]) => ({ number: parseInt(num), count: count }))
+          .sort((a, b) => b.count - a.count);
+
+        // Top 5 quentes
+        const hot = numbers.slice(0, 5);
+        hotContainer.innerHTML = hot
+          .map(
+            (item) =>
+              `<span class="badge bg-danger">${item.number} (${item.count}x)</span>`
+          )
+          .join("");
+
+        // Top 5 frios (menos frequentes)
+        const cold = numbers.slice(-5).reverse();
+        coldContainer.innerHTML = cold
+          .map(
+            (item) =>
+              `<span class="badge bg-info">${item.number} (${item.count}x)</span>`
+          )
+          .join("");
+      }
+
+      function showNotification(message, type = "success") {
+        const notification = document.getElementById("notification");
+        notification.textContent = message;
+        notification.className = `notification ${type}`;
+        notification.classList.add("show");
+
+        setTimeout(() => {
+          notification.classList.remove("show");
+        }, 3000);
+      }
+
+      // Cleanup ao sair da página
+      window.addEventListener("beforeunload", function () {
+        if (updateInterval) {
+          clearInterval(updateInterval);
+        }
+      });
+    </script>
+  </body>
+</html>

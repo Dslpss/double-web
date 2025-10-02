@@ -63,6 +63,13 @@ except ImportError as e:
     print(f"Aviso: Módulo PlayNabets não disponível: {e}")
     playnabets_available = False
 
+try:
+    from pragmatic_play_integrator import PragmaticPlayIntegrator
+    pragmatic_available = True
+except ImportError as e:
+    print(f"Aviso: Módulo Pragmatic Play não disponível: {e}")
+    pragmatic_available = False
+
 # Inicializar Flask
 app = Flask(__name__, template_folder='backend/templates')
 CORS(app)
@@ -70,6 +77,7 @@ CORS(app)
 # Variáveis globais
 analyzer = None
 playnabets_integrator = None
+pragmatic_integrator = None
 ws_connected = False
 ws_thread = None
 last_results = []
@@ -669,6 +677,152 @@ def save_playnabets_config():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ===== PRAGMATIC PLAY ENDPOINTS =====
+
+@app.route('/api/pragmatic/status', methods=['GET'])
+def pragmatic_status():
+    """Status do integrador Pragmatic Play."""
+    try:
+        if not pragmatic_integrator:
+            return jsonify({
+                'available': pragmatic_available,
+                'initialized': False,
+                'message': 'Integrador não inicializado'
+            })
+        
+        stats = pragmatic_integrator.get_statistics()
+        return jsonify({
+            'available': True,
+            'initialized': True,
+            'table_id': pragmatic_integrator.table_id,
+            'statistics': stats
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/pragmatic/fetch', methods=['POST'])
+def pragmatic_fetch():
+    """Busca resultados da Pragmatic Play."""
+    global pragmatic_integrator, last_results, analyzer
+    
+    try:
+        if not pragmatic_available:
+            return jsonify({'error': 'Pragmatic Play não disponível'}), 500
+        
+        # Criar integrador se não existir
+        if not pragmatic_integrator:
+            data = request.get_json() or {}
+            table_id = data.get('table_id', 'rwbrzportrwa16rg')
+            session_id = data.get('session_id')
+            
+            pragmatic_integrator = PragmaticPlayIntegrator(table_id, session_id)
+        
+        # Buscar resultados
+        count = request.get_json().get('count', 50) if request.get_json() else 50
+        results = pragmatic_integrator.fetch_history(count)
+        
+        if not results:
+            return jsonify({'error': 'Nenhum resultado obtido'}), 500
+        
+        # Formatar para o analyzer
+        formatted = pragmatic_integrator.format_for_analyzer(results)
+        
+        # Atualizar last_results global
+        last_results = formatted
+        
+        # Se tiver analyzer, adicionar os resultados
+        if analyzer:
+            for result in reversed(formatted):  # Adicionar do mais antigo ao mais recente
+                try:
+                    analyzer.add_manual_result(result['number'], result['color'])
+                except Exception as e:
+                    print(f"Erro ao adicionar resultado ao analyzer: {e}")
+        
+        return jsonify({
+            'success': True,
+            'count': len(results),
+            'results': formatted[:20],  # Retornar apenas os 20 mais recentes
+            'statistics': pragmatic_integrator.get_statistics()
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/pragmatic/results', methods=['GET'])
+def pragmatic_results():
+    """Obtém resultados da Pragmatic Play."""
+    try:
+        if not pragmatic_integrator:
+            return jsonify({'error': 'Integrador não inicializado'}), 500
+        
+        count = request.args.get('count', 20, type=int)
+        results = pragmatic_integrator.get_latest_results(count)
+        formatted = pragmatic_integrator.format_for_analyzer(results)
+        
+        return jsonify({
+            'success': True,
+            'results': formatted,
+            'total': len(formatted)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/pragmatic/new', methods=['GET'])
+def pragmatic_new_results():
+    """Busca apenas novos resultados desde a última verificação."""
+    global last_results, analyzer
+    
+    try:
+        if not pragmatic_integrator:
+            return jsonify({'error': 'Integrador não inicializado'}), 500
+        
+        new_results = pragmatic_integrator.get_new_results()
+        
+        if new_results:
+            # Formatar para o analyzer
+            formatted = pragmatic_integrator.format_for_analyzer(new_results)
+            
+            # Adicionar aos resultados globais
+            last_results = formatted + last_results[:80]  # Manter últimos 100
+            
+            # Adicionar ao analyzer
+            if analyzer:
+                for result in reversed(formatted):
+                    try:
+                        analyzer.add_manual_result(result['number'], result['color'])
+                    except Exception as e:
+                        print(f"Erro ao adicionar resultado ao analyzer: {e}")
+            
+            return jsonify({
+                'success': True,
+                'new_count': len(new_results),
+                'results': formatted
+            })
+        
+        return jsonify({
+            'success': True,
+            'new_count': 0,
+            'results': []
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/pragmatic/statistics', methods=['GET'])
+def pragmatic_statistics():
+    """Estatísticas dos resultados da Pragmatic Play."""
+    try:
+        if not pragmatic_integrator:
+            return jsonify({'error': 'Integrador não inicializado'}), 500
+        
+        stats = pragmatic_integrator.get_statistics()
+        return jsonify({
+            'success': True,
+            'statistics': stats
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # ===== NOTIFICAÇÕES =====
 
 @app.route('/api/notifications/status', methods=['GET'])
@@ -1094,11 +1248,11 @@ if __name__ == '__main__':
         print("⚠️ Analyzer não disponível - PlayNabets não será inicializado")
     
     print("Sistema pronto!")
-    print("Servidor iniciando em http://localhost:5000")
     print("Polling ativo para atualizacoes em tempo real")
     print("Conexão PlayNabets iniciada automaticamente")
     
     # Iniciar servidor
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5001))  # Porta 5001 para não conflitar com main_dashboard
     debug = os.environ.get('FLASK_ENV') == 'development'
+    print(f"🌐 Sistema Double iniciando em http://localhost:{port}")
     app.run(debug=debug, host='0.0.0.0', port=port)

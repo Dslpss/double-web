@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🎲 Dashboard Principal - Double & Roleta Brasileira</title>
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <!-- Removido Socket.IO - usando polling simples -->
+
+    <style>
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        min-height: 100vh;
+      }
+
+      .main-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        margin-bottom: 30px;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      }
+
+      .main-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      .system-card {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 15px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .system-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .system-card.active {
+        border-color: #28a745;
+        box-shadow: 0 0 20px rgba(40, 167, 69, 0.3);
+      }
+
+      .system-card.inactive {
+        opacity: 0.7;
+      }
+
+      .system-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        background: linear-gradient(45deg, #ffd700, #ffed4e);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .system-title {
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+        background: linear-gradient(45deg, #ffffff, #f8f9fa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .system-description {
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 20px;
+      }
+
+      .status-indicator {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: #dc3545;
+        animation: pulse 2s infinite;
+      }
+
+      .status-indicator.active {
+        background: #28a745;
+      }
+
+      .btn-system {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        color: white;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        margin: 5px;
+      }
+
+      .btn-system:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        color: white;
+        text-decoration: none;
+      }
+
+      .btn-start {
+        background: linear-gradient(45deg, #28a745, #20c997);
+      }
+
+      .btn-stop {
+        background: linear-gradient(45deg, #dc3545, #fd7e14);
+      }
+
+      .btn-dashboard {
+        background: linear-gradient(45deg, #007bff, #6f42c1);
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      .header-title {
+        background: linear-gradient(45deg, #ffd700, #ffed4e);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .stats-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .stats-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #ffd700;
+      }
+
+      .connection-status {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px 15px;
+        border-radius: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        font-size: 0.9rem;
+      }
+
+      .connection-status.connected {
+        background: rgba(40, 167, 69, 0.8);
+      }
+
+      .connection-status.disconnected {
+        background: rgba(220, 53, 69, 0.8);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Status de Conexão -->
+    <div id="connection-status" class="connection-status disconnected">
+      <i class="fas fa-wifi"></i> Conectando...
+    </div>
+
+    <div class="container-fluid py-5">
+      <!-- Header -->
+      <div class="row mb-5">
+        <div class="col-12">
+          <h1 class="header-title">
+            <i class="fas fa-dice"></i> Dashboard Principal
+          </h1>
+          <p class="text-center text-white-50 fs-5">
+            Escolha seu sistema de monitoramento
+          </p>
+        </div>
+      </div>
+
+      <!-- Sistemas -->
+      <div class="row justify-content-center">
+        <!-- Double (Blaze) -->
+        <div class="col-lg-5 col-md-6 mb-4">
+          <div class="system-card h-100" id="double-card">
+            <div class="status-indicator" id="double-status"></div>
+            <div class="card-body p-4 text-center">
+              <div class="system-icon">
+                <i class="fas fa-fire"></i>
+              </div>
+              <h3 class="system-title">Double Blaze</h3>
+              <p class="system-description">
+                Monitor em tempo real do jogo Double da Blaze com análise de
+                padrões e estatísticas avançadas.
+              </p>
+
+              <!-- Estatísticas -->
+              <div class="stats-card">
+                <div class="row">
+                  <div class="col-6">
+                    <div class="stats-number" id="double-results">0</div>
+                    <small>Resultados</small>
+                  </div>
+                  <div class="col-6">
+                    <div class="stats-number" id="double-status-text">OFF</div>
+                    <small>Status</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botões -->
+              <div class="mt-3">
+                <button
+                  class="btn-system btn-start"
+                  onclick="startSystem('double')"
+                  id="double-start-btn"
+                >
+                  <i class="fas fa-play"></i> Iniciar
+                </button>
+                <button
+                  class="btn-system btn-stop"
+                  onclick="stopSystem('double')"
+                  id="double-stop-btn"
+                  style="display: none"
+                >
+                  <i class="fas fa-stop"></i> Parar
+                </button>
+                <a href="/double" class="btn-system btn-dashboard">
+                  <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Roleta Brasileira -->
+        <div class="col-lg-5 col-md-6 mb-4">
+          <div class="system-card h-100" id="roulette-card">
+            <div class="status-indicator" id="roulette-status"></div>
+            <div class="card-body p-4 text-center">
+              <div class="system-icon">
+                <i class="fas fa-circle-notch"></i>
+              </div>
+              <h3 class="system-title">Roleta Brasileira</h3>
+              <p class="system-description">
+                Monitor em tempo real da Roleta Brasileira do Pragmatic Play com
+                notificações inteligentes.
+              </p>
+
+              <!-- Estatísticas -->
+              <div class="stats-card">
+                <div class="row">
+                  <div class="col-6">
+                    <div class="stats-number" id="roulette-results">0</div>
+                    <small>Resultados</small>
+                  </div>
+                  <div class="col-6">
+                    <div class="stats-number" id="roulette-status-text">
+                      OFF
+                    </div>
+                    <small>Status</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botões -->
+              <div class="mt-3">
+                <button
+                  class="btn-system btn-start"
+                  onclick="startSystem('roulette')"
+                  id="roulette-start-btn"
+                >
+                  <i class="fas fa-play"></i> Iniciar
+                </button>
+                <button
+                  class="btn-system btn-stop"
+                  onclick="stopSystem('roulette')"
+                  id="roulette-stop-btn"
+                  style="display: none"
+                >
+                  <i class="fas fa-stop"></i> Parar
+                </button>
+                <a href="/roulette" class="btn-system btn-dashboard">
+                  <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- JimyoBot -->
+        <div class="col-lg-5 col-md-6 mb-4">
+          <div class="system-card h-100" id="jimyobot-card">
+            <div class="status-indicator" id="jimyobot-status"></div>
+            <div class="card-body p-4 text-center">
+              <div class="system-icon">
+                <i class="fas fa-robot"></i>
+              </div>
+              <h3 class="system-title">JimyoBot</h3>
+              <p class="system-description">
+                Monitor de múltiplos jogos: Aviator, Roleta, Mines, Fortune
+                Tiger e mais 10 jogos em tempo real.
+              </p>
+
+              <!-- Estatísticas -->
+              <div class="stats-card">
+                <div class="row">
+                  <div class="col-6">
+                    <div class="stats-number" id="jimyobot-games">14</div>
+                    <small>Jogos</small>
+                  </div>
+                  <div class="col-6">
+                    <div class="stats-number" id="jimyobot-status-text">
+                      OFF
+                    </div>
+                    <small>Status</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botões -->
+              <div class="mt-3">
+                <button
+                  class="btn-system btn-start"
+                  onclick="startSystem('jimyobot')"
+                  id="jimyobot-start-btn"
+                >
+                  <i class="fas fa-play"></i> Iniciar
+                </button>
+                <button
+                  class="btn-system btn-stop"
+                  onclick="stopSystem('jimyobot')"
+                  id="jimyobot-stop-btn"
+                  style="display: none"
+                >
+                  <i class="fas fa-stop"></i> Parar
+                </button>
+                <a href="/jimyobot" class="btn-system btn-dashboard">
+                  <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informações dos Sistemas -->
+      <div class="row mt-5">
+        <div class="col-12">
+          <div class="main-card p-4">
+            <h4 class="text-center mb-4">
+              <i class="fas fa-info-circle"></i> Informações dos Sistemas
+            </h4>
+            <div class="row">
+              <div class="col-md-6">
+                <h5><i class="fas fa-fire text-warning"></i> Double Blaze</h5>
+                <ul class="text-white-50">
+                  <li>✅ Monitoramento em tempo real</li>
+                  <li>📊 Análise de padrões</li>
+                  <li>🔔 Notificações de sequências</li>
+                  <li>📈 Estatísticas avançadas</li>
+                  <li>🎯 Predição de tendências</li>
+                </ul>
+              </div>
+              <div class="col-md-6">
+                <h5>
+                  <i class="fas fa-circle-notch text-success"></i> Roleta
+                  Brasileira
+                </h5>
+                <ul class="text-white-50">
+                  <li>✅ API Pragmatic Play oficial</li>
+                  <li>🎲 Números 0-36 em tempo real</li>
+                  <li>🔥 Detecção de números quentes/frios</li>
+                  <li>🔔 Alertas de sequências</li>
+                  <li>💾 Banco de dados SQLite</li>
+                </ul>
+              </div>
+              <div class="col-md-12 mt-4">
+                <h5><i class="fas fa-robot text-info"></i> JimyoBot</h5>
+                <div class="row">
+                  <div class="col-md-6">
+                    <ul class="text-white-50">
+                      <li>✈️ Aviator (1.5x e 2x + Velas Altas)</li>
+                      <li>🎲 Roleta Brasileira</li>
+                      <li>💎 Mines</li>
+                      <li>🐅 Fortune Tiger</li>
+                      <li>🚀 Spaceman</li>
+                      <li>📈 Stock Market</li>
+                      <li>🃏 Baccarat, Dragon Tiger</li>
+                    </ul>
+                  </div>
+                  <div class="col-md-6">
+                    <ul class="text-white-50">
+                      <li>🔍 14 jogos monitorados</li>
+                      <li>🎮 Múltiplas categorias (Crash, Live, Slots)</li>
+                      <li>🔴 Detecção de jogos ao vivo</li>
+                      <li>🔑 Autenticação JWT</li>
+                      <li>📊 Dashboard interativo</li>
+                      <li>⚡ Atualizações em tempo real</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      // Polling para atualizações em tempo real
+      let pollingInterval = null;
+
+      // Simular conexão
+      updateConnectionStatus(true);
+
+      // Iniciar polling
+      function startPolling() {
+        pollingInterval = setInterval(() => {
+          fetch("/api/live/status")
+            .then((response) => response.json())
+            .then((data) => {
+              console.log("📊 Status dos sistemas:", data);
+              updateSystemsStatus(data);
+              updateConnectionStatus(true);
+            })
+            .catch((error) => {
+              console.error("❌ Erro no polling:", error);
+              updateConnectionStatus(false);
+            });
+        }, 5000); // Atualizar a cada 5 segundos
+      }
+
+      // Parar polling
+      function stopPolling() {
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+          pollingInterval = null;
+        }
+      }
+
+      function updateConnectionStatus(connected) {
+        const statusElement = document.getElementById("connection-status");
+        if (connected) {
+          statusElement.className = "connection-status connected";
+          statusElement.innerHTML = '<i class="fas fa-wifi"></i> Conectado';
+        } else {
+          statusElement.className = "connection-status disconnected";
+          statusElement.innerHTML = '<i class="fas fa-wifi"></i> Desconectado';
+        }
+      }
+
+      function updateSystemsStatus(data) {
+        // Atualizar Double
+        if (data.double) {
+          const doubleCard = document.getElementById("double-card");
+          const doubleStatus = document.getElementById("double-status");
+          const doubleStatusText =
+            document.getElementById("double-status-text");
+          const doubleResults = document.getElementById("double-results");
+          const doubleStartBtn = document.getElementById("double-start-btn");
+          const doubleStopBtn = document.getElementById("double-stop-btn");
+
+          if (data.double.active) {
+            doubleCard.classList.add("active");
+            doubleCard.classList.remove("inactive");
+            doubleStatus.classList.add("active");
+            doubleStatusText.textContent = "ON";
+            doubleStartBtn.style.display = "none";
+            doubleStopBtn.style.display = "inline-block";
+          } else {
+            doubleCard.classList.remove("active");
+            doubleCard.classList.add("inactive");
+            doubleStatus.classList.remove("active");
+            doubleStatusText.textContent = "OFF";
+            doubleStartBtn.style.display = "inline-block";
+            doubleStopBtn.style.display = "none";
+          }
+
+          if (data.double.results_count !== undefined) {
+            doubleResults.textContent = data.double.results_count;
+          }
+        }
+
+        // Atualizar Roleta
+        if (data.roulette) {
+          const rouletteCard = document.getElementById("roulette-card");
+          const rouletteStatus = document.getElementById("roulette-status");
+          const rouletteStatusText = document.getElementById(
+            "roulette-status-text"
+          );
+          const rouletteResults = document.getElementById("roulette-results");
+          const rouletteStartBtn =
+            document.getElementById("roulette-start-btn");
+          const rouletteStopBtn = document.getElementById("roulette-stop-btn");
+
+          if (data.roulette.active) {
+            rouletteCard.classList.add("active");
+            rouletteCard.classList.remove("inactive");
+            rouletteStatus.classList.add("active");
+            rouletteStatusText.textContent = "ON";
+            rouletteStartBtn.style.display = "none";
+            rouletteStopBtn.style.display = "inline-block";
+          } else {
+            rouletteCard.classList.remove("active");
+            rouletteCard.classList.add("inactive");
+            rouletteStatus.classList.remove("active");
+            rouletteStatusText.textContent = "OFF";
+            rouletteStartBtn.style.display = "inline-block";
+            rouletteStopBtn.style.display = "none";
+          }
+
+          if (data.roulette.results_count !== undefined) {
+            rouletteResults.textContent = data.roulette.results_count;
+          }
+        }
+
+        // Atualizar JimyoBot
+        if (data.jimyobot) {
+          const jimyobotCard = document.getElementById("jimyobot-card");
+          const jimyobotStatus = document.getElementById("jimyobot-status");
+          const jimyobotStatusText = document.getElementById(
+            "jimyobot-status-text"
+          );
+          const jimyobotGames = document.getElementById("jimyobot-games");
+          const jimyobotStartBtn =
+            document.getElementById("jimyobot-start-btn");
+          const jimyobotStopBtn = document.getElementById("jimyobot-stop-btn");
+
+          if (data.jimyobot.active) {
+            jimyobotCard.classList.add("active");
+            jimyobotCard.classList.remove("inactive");
+            jimyobotStatus.classList.add("active");
+            jimyobotStatusText.textContent = "ON";
+            jimyobotStartBtn.style.display = "none";
+            jimyobotStopBtn.style.display = "inline-block";
+          } else {
+            jimyobotCard.classList.remove("active");
+            jimyobotCard.classList.add("inactive");
+            jimyobotStatus.classList.remove("active");
+            jimyobotStatusText.textContent = "OFF";
+            jimyobotStartBtn.style.display = "inline-block";
+            jimyobotStopBtn.style.display = "none";
+          }
+
+          if (data.jimyobot.games_count !== undefined) {
+            jimyobotGames.textContent = data.jimyobot.games_count;
+          }
+        }
+      }
+
+      function startSystem(system) {
+        fetch(`/api/systems/start/${system}`)
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(`Sistema ${system} iniciado:`, data);
+            if (data.status === "started") {
+              const systemName =
+                system === "double"
+                  ? "Double"
+                  : system === "roulette"
+                  ? "Roleta"
+                  : system === "jimyobot"
+                  ? "JimyoBot"
+                  : system;
+              showNotification(
+                `Sistema ${systemName} iniciado com sucesso!`,
+                "success"
+              );
+            }
+          })
+          .catch((error) => {
+            console.error("Erro ao iniciar sistema:", error);
+            showNotification("Erro ao iniciar sistema", "error");
+          });
+      }
+
+      function stopSystem(system) {
+        fetch(`/api/systems/stop/${system}`)
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(`Sistema ${system} parado:`, data);
+            if (data.status === "stopped") {
+              const systemName =
+                system === "double"
+                  ? "Double"
+                  : system === "roulette"
+                  ? "Roleta"
+                  : system === "jimyobot"
+                  ? "JimyoBot"
+                  : system;
+              showNotification(
+                `Sistema ${systemName} parado com sucesso!`,
+                "success"
+              );
+            }
+          })
+          .catch((error) => {
+            console.error("Erro ao parar sistema:", error);
+            showNotification("Erro ao parar sistema", "error");
+          });
+      }
+
+      function showNotification(message, type) {
+        // Criar notificação toast
+        const toast = document.createElement("div");
+        toast.className = `alert alert-${
+          type === "success" ? "success" : "danger"
+        } position-fixed`;
+        toast.style.top = "80px";
+        toast.style.right = "20px";
+        toast.style.zIndex = "9999";
+        toast.innerHTML = message;
+
+        document.body.appendChild(toast);
+
+        // Remover após 3 segundos
+        setTimeout(() => {
+          toast.remove();
+        }, 3000);
+      }
+
+      // Carregar status inicial e iniciar polling
+      fetch("/api/systems/status")
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("📊 Status inicial:", data);
+          updateSystemsStatus(data);
+          // Iniciar polling após carregar status inicial
+          startPolling();
+        })
+        .catch((error) => {
+          console.error("❌ Erro ao carregar status:", error);
+          updateConnectionStatus(false);
+        });
+
+      // Parar polling quando a página for fechada
+      window.addEventListener("beforeunload", stopPolling);
+    </script>
+  </body>
+</html>

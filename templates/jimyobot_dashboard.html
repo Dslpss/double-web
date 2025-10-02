@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JimyoBot Dashboard - Monitor de Jogos</title>
+
+    <!-- Bootstrap 5 -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .glass-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      }
+
+      .game-card {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(5px);
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+
+      .game-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      .status-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-weight: bold;
+      }
+
+      .status-online {
+        background: rgba(40, 167, 69, 0.8);
+        color: white;
+      }
+
+      .status-offline {
+        background: rgba(220, 53, 69, 0.8);
+        color: white;
+      }
+
+      .category-crash {
+        border-left: 5px solid #ff6b6b;
+      }
+      .category-live {
+        border-left: 5px solid #4ecdc4;
+      }
+      .category-slots {
+        border-left: 5px solid #45b7d1;
+      }
+
+      .stats-card {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        color: white;
+      }
+
+      .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      .btn-glass {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        backdrop-filter: blur(5px);
+        border-radius: 10px;
+        transition: all 0.3s ease;
+      }
+
+      .btn-glass:hover {
+        background: rgba(255, 255, 255, 0.3);
+        color: white;
+        transform: translateY(-2px);
+      }
+
+      .navbar-glass {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .text-white {
+        color: white !important;
+      }
+
+      .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .game-image {
+        width: 60px;
+        height: 60px;
+        border-radius: 10px;
+        object-fit: cover;
+      }
+
+      .live-indicator {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        width: 10px;
+        height: 10px;
+        background: #ff4757;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(0.95);
+          box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7);
+        }
+        70% {
+          transform: scale(1);
+          box-shadow: 0 0 0 10px rgba(255, 71, 87, 0);
+        }
+        100% {
+          transform: scale(0.95);
+          box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-glass">
+      <div class="container">
+        <a class="navbar-brand text-white fw-bold" href="/">
+          <i class="fas fa-robot me-2"></i>JimyoBot Dashboard
+        </a>
+        <div class="navbar-nav ms-auto">
+          <a class="nav-link text-white" href="/">
+            <i class="fas fa-home me-1"></i>Dashboard Principal
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container mt-4">
+      <!-- Header com Status -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="glass-card p-4">
+            <div class="row align-items-center">
+              <div class="col-md-8">
+                <h2 class="text-white mb-2">
+                  <i class="fas fa-robot me-2"></i>JimyoBot Monitor
+                </h2>
+                <p class="text-white-50 mb-0">
+                  Monitor de jogos em tempo real - 14 jogos disponíveis
+                </p>
+              </div>
+              <div class="col-md-4 text-end">
+                <button id="toggleSystem" class="btn btn-glass btn-lg">
+                  <span class="loading-spinner d-none me-2"></span>
+                  <i class="fas fa-play me-2"></i>
+                  <span class="btn-text">Iniciar Sistema</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estatísticas -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="stats-card">
+            <div class="stats-number" id="totalGames">0</div>
+            <div>Jogos Disponíveis</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stats-card">
+            <div class="stats-number" id="liveGames">0</div>
+            <div>Jogos Ao Vivo</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stats-card">
+            <div class="stats-number" id="crashGames">0</div>
+            <div>Jogos Crash</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stats-card">
+            <div class="stats-number" id="slotsGames">0</div>
+            <div>Slots</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="glass-card p-3">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <h5 class="text-white mb-0">
+                  <i class="fas fa-filter me-2"></i>Filtrar Jogos
+                </h5>
+              </div>
+              <div class="col-md-6">
+                <div class="btn-group w-100" role="group">
+                  <button
+                    type="button"
+                    class="btn btn-glass active"
+                    data-filter="all"
+                  >
+                    Todos
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-glass"
+                    data-filter="Crash"
+                  >
+                    Crash
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-glass"
+                    data-filter="Live"
+                  >
+                    Live
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-glass"
+                    data-filter="Slots"
+                  >
+                    Slots
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista de Jogos -->
+      <div class="row" id="gamesContainer">
+        <!-- Jogos serão carregados aqui via JavaScript -->
+      </div>
+
+      <!-- Jogos Ao Vivo -->
+      <div class="row mt-4" id="liveGamesSection" style="display: none">
+        <div class="col-12">
+          <div class="glass-card p-4">
+            <h4 class="text-white mb-3">
+              <i class="fas fa-broadcast-tower me-2"></i>Jogos Ao Vivo
+              <span class="live-indicator"></span>
+            </h4>
+            <div id="liveGamesContainer">
+              <!-- Jogos ao vivo serão carregados aqui -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      class JimyoBotDashboard {
+        constructor() {
+          this.isSystemActive = false;
+          this.games = [];
+          this.liveGames = [];
+          this.currentFilter = "all";
+
+          this.init();
+        }
+
+        init() {
+          this.setupEventListeners();
+          this.checkSystemStatus();
+          this.startPolling();
+        }
+
+        setupEventListeners() {
+          // Toggle do sistema
+          document
+            .getElementById("toggleSystem")
+            .addEventListener("click", () => {
+              this.toggleSystem();
+            });
+
+          // Filtros de categoria
+          document.querySelectorAll("[data-filter]").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              this.setFilter(e.target.dataset.filter);
+            });
+          });
+        }
+
+        async toggleSystem() {
+          const btn = document.getElementById("toggleSystem");
+          const spinner = btn.querySelector(".loading-spinner");
+          const icon = btn.querySelector("i");
+          const text = btn.querySelector(".btn-text");
+
+          // Mostrar loading
+          spinner.classList.remove("d-none");
+          icon.classList.add("d-none");
+          btn.disabled = true;
+          text.textContent = this.isSystemActive
+            ? "Parando..."
+            : "Iniciando...";
+
+          try {
+            const action = this.isSystemActive ? "stop" : "start";
+            const response = await fetch(`/api/systems/${action}/jimyobot`, {
+              method: "POST",
+            });
+
+            const result = await response.json();
+
+            if (result.status === "started" || result.status === "stopped") {
+              this.isSystemActive = !this.isSystemActive;
+              this.updateSystemButton();
+
+              if (this.isSystemActive) {
+                this.showNotification("Sistema JimyoBot iniciado!", "success");
+              } else {
+                this.showNotification("Sistema JimyoBot parado!", "info");
+              }
+            } else {
+              this.showNotification("Erro ao alterar sistema", "error");
+            }
+          } catch (error) {
+            console.error("Erro:", error);
+            this.showNotification("Erro de conexão", "error");
+          } finally {
+            // Esconder loading
+            spinner.classList.add("d-none");
+            icon.classList.remove("d-none");
+            btn.disabled = false;
+          }
+        }
+
+        updateSystemButton() {
+          const btn = document.getElementById("toggleSystem");
+          const icon = btn.querySelector("i");
+          const text = btn.querySelector(".btn-text");
+
+          if (this.isSystemActive) {
+            icon.className = "fas fa-stop me-2";
+            text.textContent = "Parar Sistema";
+            btn.classList.remove("btn-glass");
+            btn.classList.add("btn-danger");
+          } else {
+            icon.className = "fas fa-play me-2";
+            text.textContent = "Iniciar Sistema";
+            btn.classList.remove("btn-danger");
+            btn.classList.add("btn-glass");
+          }
+        }
+
+        async checkSystemStatus() {
+          try {
+            const response = await fetch("/api/systems/status");
+            const status = await response.json();
+
+            this.isSystemActive = status.jimyobot?.active || false;
+            this.updateSystemButton();
+          } catch (error) {
+            console.error("Erro ao verificar status:", error);
+          }
+        }
+
+        async loadDashboardData() {
+          if (!this.isSystemActive) return;
+
+          try {
+            const response = await fetch("/api/jimyobot/dashboard");
+            const data = await response.json();
+
+            if (data.error) {
+              console.log("Sistema não iniciado ainda");
+              return;
+            }
+
+            this.games = data.games || [];
+            this.liveGames = data.live_games || [];
+
+            this.updateStats();
+            this.renderGames();
+            this.renderLiveGames();
+          } catch (error) {
+            console.error("Erro ao carregar dados:", error);
+          }
+        }
+
+        updateStats() {
+          const stats = {
+            total: this.games.length,
+            live: this.liveGames.length,
+            crash: this.games.filter((g) => g.category === "Crash").length,
+            slots: this.games.filter((g) => g.category === "Slots").length,
+          };
+
+          document.getElementById("totalGames").textContent = stats.total;
+          document.getElementById("liveGames").textContent = stats.live;
+          document.getElementById("crashGames").textContent = stats.crash;
+          document.getElementById("slotsGames").textContent = stats.slots;
+        }
+
+        renderGames() {
+          const container = document.getElementById("gamesContainer");
+          const filteredGames =
+            this.currentFilter === "all"
+              ? this.games
+              : this.games.filter((g) => g.category === this.currentFilter);
+
+          if (filteredGames.length === 0) {
+            container.innerHTML = `
+                        <div class="col-12 text-center">
+                            <div class="glass-card p-4">
+                                <i class="fas fa-gamepad fa-3x text-white-50 mb-3"></i>
+                                <h5 class="text-white">Nenhum jogo encontrado</h5>
+                                <p class="text-white-50">
+                                    ${
+                                      this.isSystemActive
+                                        ? "Aguardando dados..."
+                                        : "Inicie o sistema para ver os jogos"
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                    `;
+            return;
+          }
+
+          container.innerHTML = filteredGames
+            .map(
+              (game) => `
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="game-card p-3 h-100 category-${game.category.toLowerCase()}">
+                            <div class="d-flex align-items-center">
+                                <img src="https://jimyobot.vip/assets/images/${
+                                  game.image
+                                }" 
+                                     alt="${game.name}" 
+                                     class="game-image me-3"
+                                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjYwIiBmaWxsPSIjNjY3ZWVhIi8+CjxwYXRoIGQ9Ik0zMCAyMEM0NC4zIDIwIDU2IDMxLjcgNTYgNDVTNDQuMyA3MCAzMCA3MFM0IDU4LjMgNCA0NVMxNS43IDIwIDMwIDIwWiIgZmlsbD0iIzc2NGJhMiIvPgo8L3N2Zz4K'">
+                                <div class="flex-grow-1">
+                                    <h6 class="text-white mb-1">${
+                                      game.name
+                                    }</h6>
+                                    <small class="text-white-50">
+                                        <i class="fas fa-tag me-1"></i>${
+                                          game.category
+                                        }
+                                    </small>
+                                    <br>
+                                    <small class="text-white-50">
+                                        <i class="fas fa-hashtag me-1"></i>ID: ${
+                                          game.id
+                                        }
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            )
+            .join("");
+        }
+
+        renderLiveGames() {
+          const section = document.getElementById("liveGamesSection");
+          const container = document.getElementById("liveGamesContainer");
+
+          if (this.liveGames.length === 0) {
+            section.style.display = "none";
+            return;
+          }
+
+          section.style.display = "block";
+          container.innerHTML = this.liveGames
+            .map(
+              (game) => `
+                    <div class="game-card p-3 mb-2">
+                        <div class="position-relative">
+                            <div class="live-indicator"></div>
+                            <h6 class="text-white">${
+                              game.name || "Jogo Ao Vivo"
+                            }</h6>
+                            <p class="text-white-50 mb-0">${JSON.stringify(
+                              game
+                            )}</p>
+                        </div>
+                    </div>
+                `
+            )
+            .join("");
+        }
+
+        setFilter(filter) {
+          this.currentFilter = filter;
+
+          // Atualizar botões
+          document.querySelectorAll("[data-filter]").forEach((btn) => {
+            btn.classList.remove("active");
+          });
+          document
+            .querySelector(`[data-filter="${filter}"]`)
+            .classList.add("active");
+
+          // Re-renderizar jogos
+          this.renderGames();
+        }
+
+        showNotification(message, type = "info") {
+          // Criar notificação simples
+          const notification = document.createElement("div");
+          notification.className = `alert alert-${
+            type === "error" ? "danger" : type
+          } position-fixed`;
+          notification.style.cssText =
+            "top: 20px; right: 20px; z-index: 9999; min-width: 300px;";
+          notification.innerHTML = `
+                    <i class="fas fa-${
+                      type === "success"
+                        ? "check"
+                        : type === "error"
+                        ? "exclamation"
+                        : "info"
+                    }-circle me-2"></i>
+                    ${message}
+                `;
+
+          document.body.appendChild(notification);
+
+          setTimeout(() => {
+            notification.remove();
+          }, 3000);
+        }
+
+        startPolling() {
+          // Carregar dados a cada 5 segundos
+          setInterval(() => {
+            this.loadDashboardData();
+          }, 5000);
+
+          // Carregar dados inicial
+          setTimeout(() => {
+            this.loadDashboardData();
+          }, 1000);
+        }
+      }
+
+      // Inicializar dashboard
+      document.addEventListener("DOMContentLoaded", () => {
+        new JimyoBotDashboard();
+      });
+    </script>
+  </body>
+</html>

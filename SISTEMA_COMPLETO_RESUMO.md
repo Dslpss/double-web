@@ -93,20 +93,31 @@ Durante o teste, o sistema detectou automaticamente:
 
 ### 🎯 COMO USAR O SISTEMA
 
-#### **Opção 1: Sistema Completo**
+#### **🆕 OPÇÃO 1: Dashboard Principal (RECOMENDADO)**
+
+```bash
+python main_dashboard.py
+# ou
+python start_main_dashboard.py
+# Acesse: http://localhost:5000
+```
+
+**✨ Novo dashboard integrado com Double (Blaze) + Roleta Brasileira!**
+
+#### **Opção 2: Apenas Roleta**
 
 ```bash
 python roulette_system_complete.py
 ```
 
-#### **Opção 2: Sistema + Interface Web**
+#### **Opção 3: Roleta + Interface Web**
 
 ```bash
 python roulette_web_server.py
 # Acesse: http://localhost:5000
 ```
 
-#### **Opção 3: Inicialização Simples**
+#### **Opção 4: Inicialização Simples da Roleta**
 
 ```bash
 python start_roulette_system.py
