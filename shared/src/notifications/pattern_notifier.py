@@ -54,13 +54,56 @@ class PatternNotifier:
         # Callback para notificações web
         self.web_callback = None
         
-        # Limpar tela no início
-        self._clear_screen()
-        self._print_header()
+        # 🆕 Sistema de cooldown para evitar spam de alertas
+        self.cooldown_duration = self.config.get('cooldown_duration', 300)  # 5 minutos em segundos
+        self.last_notification_time = {}  # Dicionário para rastrear último tempo por tipo de padrão
+        self.pattern_cooldowns = self.config.get('pattern_cooldowns', {
+            'dominance': 300,      # 5 minutos para padrões de dominância
+            'sequence': 180,      # 3 minutos para sequências
+            'alternation': 120,   # 2 minutos para alternância
+            'hot_cold': 240,      # 4 minutos para números quentes/frios
+            'default': 300        # 5 minutos para outros padrões
+        })
+        
+        print(f"🔔 PatternNotifier inicializado - Cooldown: {self.cooldown_duration}s")
     
     def _clear_screen(self):
         """Limpa a tela do terminal"""
         os.system('cls' if os.name == 'nt' else 'clear')
+    
+    def _is_in_cooldown(self, pattern_type: str) -> bool:
+        """
+        Verifica se um tipo de padrão está em cooldown
+        
+        Args:
+            pattern_type: Tipo do padrão
+            
+        Returns:
+            bool: True se está em cooldown
+        """
+        current_time = time.time()
+        
+        # Determinar cooldown específico para o tipo de padrão
+        cooldown_duration = self.pattern_cooldowns.get(pattern_type.lower(), self.pattern_cooldowns['default'])
+        
+        # Verificar se já foi notificado recentemente
+        if pattern_type in self.last_notification_time:
+            time_since_last = current_time - self.last_notification_time[pattern_type]
+            if time_since_last < cooldown_duration:
+                remaining_time = cooldown_duration - time_since_last
+                print(f"⏰ Padrão '{pattern_type}' em cooldown - {remaining_time:.0f}s restantes")
+                return True
+        
+        return False
+    
+    def _update_cooldown(self, pattern_type: str) -> None:
+        """
+        Atualiza o tempo da última notificação para um tipo de padrão
+        
+        Args:
+            pattern_type: Tipo do padrão
+        """
+        self.last_notification_time[pattern_type] = time.time()
     
     def _print_header(self):
         """Imprime cabeçalho do sistema"""
@@ -93,6 +136,10 @@ class PatternNotifier:
         Returns:
             bool: True se notificação foi exibida
         """
+        # 🆕 Verificar cooldown antes de processar
+        if self._is_in_cooldown(pattern_type):
+            return False
+        
         # Reduzir confiança mínima para detectar mais padrões (aceitar qualquer confiança acima de 25%)
         min_confidence = min(0.25, self.min_confidence)
         
@@ -120,6 +167,9 @@ class PatternNotifier:
         
         # Enviar para web
         self._send_web_notification(notification)
+        
+        # 🆕 Atualizar cooldown após enviar notificação
+        self._update_cooldown(pattern_type)
         
         return True
     
@@ -242,6 +292,58 @@ class PatternNotifier:
         """Define confiança mínima para notificações"""
         self.min_confidence = max(0.0, min(1.0, confidence))
         print(f"{Colors.YELLOW}Confiança mínima alterada para: {self.min_confidence:.1%}{Colors.END}")
+    
+    def get_cooldown_status(self) -> Dict[str, Any]:
+        """
+        Retorna status dos cooldowns ativos
+        
+        Returns:
+            Dict com informações dos cooldowns
+        """
+        current_time = time.time()
+        active_cooldowns = {}
+        
+        for pattern_type, last_time in self.last_notification_time.items():
+            cooldown_duration = self.pattern_cooldowns.get(pattern_type.lower(), self.pattern_cooldowns['default'])
+            time_since_last = current_time - last_time
+            
+            if time_since_last < cooldown_duration:
+                remaining_time = cooldown_duration - time_since_last
+                active_cooldowns[pattern_type] = {
+                    'remaining_time': remaining_time,
+                    'cooldown_duration': cooldown_duration,
+                    'last_notification': last_time
+                }
+        
+        return {
+            'active_cooldowns': active_cooldowns,
+            'total_active': len(active_cooldowns),
+            'cooldown_config': self.pattern_cooldowns
+        }
+    
+    def clear_cooldown(self, pattern_type: str = None) -> bool:
+        """
+        Limpa cooldown de um padrão específico ou todos
+        
+        Args:
+            pattern_type: Tipo do padrão (None para limpar todos)
+            
+        Returns:
+            bool: True se cooldown foi limpo
+        """
+        if pattern_type:
+            if pattern_type in self.last_notification_time:
+                del self.last_notification_time[pattern_type]
+                print(f"✅ Cooldown limpo para padrão: {pattern_type}")
+                return True
+            else:
+                print(f"⚠️ Nenhum cooldown ativo para padrão: {pattern_type}")
+                return False
+        else:
+            cleared_count = len(self.last_notification_time)
+            self.last_notification_time.clear()
+            print(f"✅ Todos os cooldowns limpos ({cleared_count} padrões)")
+            return True
     
     def set_web_callback(self, callback):
         """Define callback para notificações web"""

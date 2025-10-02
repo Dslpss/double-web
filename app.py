@@ -22,13 +22,10 @@ from datetime import datetime
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 
-# Adicionar o diretório shared ao path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'shared'))
-
 # Importar sistema de notificações
 try:
-    from src.notifications.pattern_notifier import notify_pattern, notify_result, get_notifier
-    from src.database.local_storage_db import local_db
+    from shared.src.notifications.pattern_notifier import notify_pattern, notify_result, get_notifier
+    from shared.src.database.local_storage_db import local_db
     NOTIFICATIONS_AVAILABLE = True
 except ImportError as e:
     print(f"Aviso: Sistema de notificações não disponível: {e}")
@@ -39,7 +36,7 @@ except ImportError as e:
     local_db = None
 
 try:
-    from blaze_analyzer_enhanced import BlazeAnalyzerEnhanced
+    from shared.blaze_analyzer_enhanced import BlazeAnalyzerEnhanced
     analyzer_available = True
     print("✅ BlazeAnalyzerEnhanced importado com sucesso")
 except ImportError as e:
@@ -760,6 +757,48 @@ def get_web_notifications():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/notifications/cooldown/status', methods=['GET'])
+def get_cooldown_status():
+    """Status dos cooldowns ativos"""
+    try:
+        if not NOTIFICATIONS_AVAILABLE:
+            return jsonify({'error': 'Sistema de notificações não disponível'}), 500
+        
+        notifier = get_notifier()
+        if notifier:
+            status = notifier.get_cooldown_status()
+            return jsonify({
+                'success': True,
+                'cooldown_status': status
+            })
+        else:
+            return jsonify({'error': 'Notificador não disponível'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/notifications/cooldown/clear', methods=['POST'])
+def clear_cooldown():
+    """Limpa cooldowns de padrões"""
+    try:
+        if not NOTIFICATIONS_AVAILABLE:
+            return jsonify({'error': 'Sistema de notificações não disponível'}), 500
+        
+        data = request.get_json() or {}
+        pattern_type = data.get('pattern_type')  # None para limpar todos
+        
+        notifier = get_notifier()
+        if notifier:
+            success = notifier.clear_cooldown(pattern_type)
+            return jsonify({
+                'success': success,
+                'message': f'Cooldown {"limpo" if success else "não encontrado"}',
+                'pattern_type': pattern_type
+            })
+        else:
+            return jsonify({'error': 'Notificador não disponível'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/notifications/web/clear', methods=['POST'])
 def clear_web_notifications():
     """Limpa notificações web."""
@@ -859,7 +898,7 @@ def debug_pattern_status():
         
         # Verificar notificador
         try:
-            from src.notifications.pattern_notifier import get_notifier
+            from shared.src.notifications.pattern_notifier import get_notifier
             notifier = get_notifier()
             if notifier:
                 status['notifier_enabled'] = notifier.enabled
@@ -891,7 +930,7 @@ def force_pattern_detection():
         analyzer.analyze_comprehensive()
         
         # Enviar notificação de teste
-        from src.notifications.pattern_notifier import get_notifier
+        from shared.src.notifications.pattern_notifier import get_notifier
         notifier = get_notifier()
         if notifier and notifier.web_callback:
             test_notification = {
@@ -1061,7 +1100,7 @@ def get_diagnostics():
         
         try:
             sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'shared'))
-            from blaze_analyzer_enhanced import BlazeAnalyzerEnhanced
+            from shared.blaze_analyzer_enhanced import BlazeAnalyzerEnhanced
             diagnostics['modules']['analyzer_import'] = 'Success'
         except Exception as e:
             diagnostics['modules']['analyzer_import'] = f'Error: {str(e)}'
@@ -1071,6 +1110,118 @@ def get_diagnostics():
         
     except Exception as e:
         return jsonify({'error': f'Diagnostics failed: {str(e)}'}), 500
+
+# 🆕 ENDPOINTS PARA SISTEMA ADAPTATIVO
+
+@app.route('/api/pattern_performance', methods=['GET'])
+def get_pattern_performance():
+    """Retorna estatísticas de performance de padrões"""
+    try:
+        if not analyzer:
+            return jsonify({'error': 'Analyzer não inicializado'}), 503
+        
+        stats = analyzer.get_pattern_performance_stats()
+        
+        return jsonify({
+            'success': True,
+            'data': stats,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/prediction_mode', methods=['GET', 'POST'])
+def prediction_mode():
+    """Obtém ou define o modo de predição"""
+    try:
+        if not analyzer:
+            return jsonify({'error': 'Analyzer não inicializado'}), 503
+        
+        if request.method == 'GET':
+            # Retornar modo atual
+            return jsonify({
+                'success': True,
+                'mode': analyzer.prediction_mode,
+                'options': ['opposite', 'continue'],
+                'description': {
+                    'opposite': 'Apostar na cor oposta (regressão à média)',
+                    'continue': 'Continuar na mesma cor (hot hand)'
+                }
+            })
+        
+        elif request.method == 'POST':
+            # Alterar modo
+            data = request.get_json() or {}
+            new_mode = data.get('mode', '').lower()
+            
+            if new_mode not in ['opposite', 'continue']:
+                return jsonify({
+                    'error': 'Modo inválido. Use "opposite" ou "continue"'
+                }), 400
+            
+            success = analyzer.set_prediction_mode(new_mode)
+            
+            return jsonify({
+                'success': success,
+                'mode': analyzer.prediction_mode,
+                'message': f'Modo alterado para: {new_mode}'
+            })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/update_pattern_result', methods=['POST'])
+def update_pattern_result():
+    """Atualiza resultado de uma predição de padrão"""
+    try:
+        if not analyzer:
+            return jsonify({'error': 'Analyzer não inicializado'}), 503
+        
+        data = request.get_json() or {}
+        pattern_id = data.get('pattern_id')
+        was_correct = data.get('was_correct')
+        
+        if not pattern_id or was_correct is None:
+            return jsonify({
+                'error': 'pattern_id e was_correct são obrigatórios'
+            }), 400
+        
+        analyzer.update_pattern_performance(pattern_id, bool(was_correct))
+        
+        # Retornar estatísticas atualizadas
+        stats = analyzer.get_pattern_performance_stats()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Performance atualizada',
+            'stats': stats
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/adaptive_settings', methods=['GET'])
+def get_adaptive_settings():
+    """Retorna configurações adaptativas atuais"""
+    try:
+        if not analyzer:
+            return jsonify({'error': 'Analyzer não inicializado'}), 503
+        
+        return jsonify({
+            'success': True,
+            'settings': {
+                'thresholds': analyzer.adaptive_thresholds,
+                'performance': analyzer.pattern_performance,
+                'prediction_mode': analyzer.prediction_mode,
+                'signal_history_size': len(analyzer.signal_history)
+            },
+            'description': {
+                'thresholds': 'Confiança mínima adaptativa por tipo de padrão',
+                'performance': 'Taxa de acerto histórica por tipo',
+                'prediction_mode': 'Modo atual de predição (opposite/continue)',
+                'signal_history_size': 'Número de sinais no histórico'
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     print("🚀 Iniciando Blaze Web Backend (Versao Polling)...")

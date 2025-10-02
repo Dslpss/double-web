@@ -46,8 +46,8 @@ def main():
     # Verificar arquivos essenciais
     checks.append(check_file_exists("Procfile", "Procfile"))
     checks.append(check_file_exists("railway.json", "Configuração Railway"))
-    checks.append(check_file_exists("backend/requirements.txt", "Requirements Python"))
-    checks.append(check_file_exists("backend/polling_app.py", "App Principal"))
+    checks.append(check_file_exists("requirements.txt", "Requirements Python"))
+    checks.append(check_file_exists("app.py", "App Principal"))
     
     # Verificar conteúdo do Procfile
     checks.append(check_file_content("Procfile", "web:", "Comando web no Procfile"))
@@ -56,11 +56,11 @@ def main():
     checks.append(check_file_content("railway.json", "startCommand", "Comando de start no railway.json"))
     
     # Verificar requirements.txt
-    checks.append(check_file_content("backend/requirements.txt", "Flask", "Flask no requirements"))
-    checks.append(check_file_content("backend/requirements.txt", "gunicorn", "Gunicorn no requirements"))
+    checks.append(check_file_content("requirements.txt", "Flask", "Flask no requirements"))
+    checks.append(check_file_content("requirements.txt", "gunicorn", "Gunicorn no requirements"))
     
     # Verificar configuração de porta no app
-    checks.append(check_file_content("backend/polling_app.py", "os.environ.get('PORT'", "Configuração de porta dinâmica"))
+    checks.append(check_file_content("app.py", "os.environ.get('PORT'", "Configuração de porta dinâmica"))
     
     print("\n" + "=" * 50)
     

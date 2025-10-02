@@ -15,20 +15,20 @@ import os
 from datetime import datetime, timedelta
 
 import matplotlib.pyplot as plt
-from src.api.blaze_official_api import BlazeOfficialAPI
-from src.database.db_manager import DatabaseManager
-from src.analysis.pattern_analyzer import PatternAnalyzer
-from src.models.prediction_model import PredictionModel
-from src.notifications.alert_system import AlertSystem
-from src.notifications.pattern_notifier import notify_pattern, notify_result, get_notifier
-from src.database.local_storage_db import local_db
-from src.analysis.double_patterns import DoublePatternDetector
-from src.ml.adaptive_integrator import AdaptiveIntegrator
-from src.ml.prediction_validator import PredictionValidator
-from src.ml.prediction_feedback import PredictionFeedback
-from src.analysis.dual_color_patterns import DualColorPatternDetector
-from src.ml.pattern_reassessor import PatternReassessor
-from src.ml.reassessment_callbacks import (
+from shared.src.api.blaze_official_api import BlazeOfficialAPI
+from shared.src.database.db_manager import DatabaseManager
+from shared.src.analysis.pattern_analyzer import PatternAnalyzer
+from shared.src.models.prediction_model import PredictionModel
+from shared.src.notifications.alert_system import AlertSystem
+from shared.src.notifications.pattern_notifier import notify_pattern, notify_result, get_notifier
+from shared.src.database.local_storage_db import local_db
+from shared.src.analysis.double_patterns import DoublePatternDetector
+from shared.src.ml.adaptive_integrator import AdaptiveIntegrator
+from shared.src.ml.prediction_validator import PredictionValidator
+from shared.src.ml.prediction_feedback import PredictionFeedback
+from shared.src.analysis.dual_color_patterns import DualColorPatternDetector
+from shared.src.ml.pattern_reassessor import PatternReassessor
+from shared.src.ml.reassessment_callbacks import (
     PatternAnalyzerReassessmentCallback,
     DualPatternDetectorReassessmentCallback,
     AdaptiveLearnerReassessmentCallback
@@ -167,6 +167,30 @@ class BlazeAnalyzerEnhanced:
         self.resignal_on_correct = bool(resignal_on_correct)
         # track last recommended color to avoid repeating same recommendation quickly
         self.last_recommended_color = None
+        
+        # 🆕 SISTEMA DE RASTREAMENTO DE TAXA DE ACERTO POR PADRÃO
+        self.pattern_performance = {
+            'sequence': {'correct': 0, 'total': 0, 'accuracy': 0.0},
+            'dominance': {'correct': 0, 'total': 0, 'accuracy': 0.0},
+            'double_patterns': {'correct': 0, 'total': 0, 'accuracy': 0.0},
+            'general_patterns': {'correct': 0, 'total': 0, 'accuracy': 0.0}
+        }
+        
+        # 🆕 CONFIGURAÇÕES DE APRENDIZADO ADAPTATIVO
+        self.adaptive_thresholds = {
+            'sequence': 0.72,      # Confiança mínima por tipo de padrão
+            'dominance': 0.72,
+            'double_patterns': 0.72,
+            'general_patterns': 0.72
+        }
+        
+        # 🆕 MODO DE PREDIÇÃO: 'opposite' ou 'continue'
+        self.prediction_mode = 'opposite'  # Padrão: apostar na cor oposta
+        # Modo 'continue' = apostar na mesma cor (hot hand)
+        
+        # 🆕 HISTÓRICO DE SINAIS PARA ANÁLISE
+        self.signal_history = []  # Últimos 50 sinais
+        self.max_signal_history = 50
 
         # Carregar dados existentes do banco
         self._load_existing_data()
@@ -514,7 +538,7 @@ class BlazeAnalyzerEnhanced:
             bool: True se reavaliação foi iniciada
         """
         try:
-            from src.ml.pattern_reassessor import ReassessmentTrigger
+            from shared.src.ml.pattern_reassessor import ReassessmentTrigger
             
             context = {
                 'reason': reason,
@@ -671,7 +695,7 @@ class BlazeAnalyzerEnhanced:
                             predicted_color = pred.get('predicted_color', '')
                             
                             # Enviar notificação de resultado via pattern notifier
-                            from src.notifications.pattern_notifier import get_notifier
+                            from shared.src.notifications.pattern_notifier import get_notifier
                             notifier = get_notifier()
                             if notifier and notifier.web_callback:
                                 notifier.web_callback({
@@ -844,6 +868,136 @@ class BlazeAnalyzerEnhanced:
         except Exception:
             logger.exception('Erro ao notificar callbacks de previsão')
     
+    def _add_to_signal_history(self, signal_data: dict):
+        """
+        Adiciona sinal ao histórico para rastreamento.
+        
+        Args:
+            signal_data: Dados do sinal detectado
+        """
+        try:
+            self.signal_history.append(signal_data)
+            
+            # Manter apenas últimos N sinais
+            if len(self.signal_history) > self.max_signal_history:
+                self.signal_history = self.signal_history[-self.max_signal_history:]
+            
+            logger.debug(f"Sinal adicionado ao histórico: {signal_data['pattern_type']} -> {signal_data['predicted_color']}")
+        except Exception as e:
+            logger.error(f"Erro ao adicionar sinal ao histórico: {e}")
+    
+    def update_pattern_performance(self, pattern_id: str, was_correct: bool):
+        """
+        Atualiza a taxa de acerto de um padrão específico.
+        
+        Args:
+            pattern_id: ID do padrão
+            was_correct: Se a previsão estava correta
+        """
+        try:
+            # Encontrar o sinal no histórico
+            signal = None
+            for s in reversed(self.signal_history):
+                if s.get('pattern_id') == pattern_id:
+                    signal = s
+                    break
+            
+            if not signal:
+                logger.warning(f"Sinal {pattern_id} não encontrado no histórico")
+                return
+            
+            pattern_type = signal.get('pattern_type', 'unknown')
+            
+            if pattern_type in self.pattern_performance:
+                # Atualizar estatísticas
+                self.pattern_performance[pattern_type]['total'] += 1
+                if was_correct:
+                    self.pattern_performance[pattern_type]['correct'] += 1
+                
+                # Calcular nova taxa de acerto
+                total = self.pattern_performance[pattern_type]['total']
+                correct = self.pattern_performance[pattern_type]['correct']
+                accuracy = correct / total if total > 0 else 0.0
+                self.pattern_performance[pattern_type]['accuracy'] = accuracy
+                
+                logger.info(f"📊 Performance atualizada - {pattern_type}: {correct}/{total} ({accuracy:.1%})")
+                
+                # 🆕 APRENDIZADO ADAPTATIVO: Ajustar threshold baseado em performance
+                self._adjust_adaptive_thresholds(pattern_type, accuracy, total)
+            
+        except Exception as e:
+            logger.error(f"Erro ao atualizar performance do padrão: {e}")
+    
+    def _adjust_adaptive_thresholds(self, pattern_type: str, accuracy: float, total_samples: int):
+        """
+        Ajusta dinamicamente os thresholds de confiança baseado na performance.
+        
+        Args:
+            pattern_type: Tipo do padrão
+            accuracy: Taxa de acerto atual
+            total_samples: Número total de amostras
+        """
+        try:
+            # Só ajustar após ter dados suficientes
+            if total_samples < 5:
+                return
+            
+            current_threshold = self.adaptive_thresholds.get(pattern_type, 0.72)
+            
+            # Lógica de ajuste
+            if accuracy > 0.75:
+                # Está acertando muito: REDUZIR threshold (permitir mais sinais)
+                new_threshold = max(0.65, current_threshold - 0.02)
+                action = "REDUZIDO"
+            elif accuracy < 0.50:
+                # Está errando muito: AUMENTAR threshold (ser mais seletivo)
+                new_threshold = min(0.80, current_threshold + 0.03)
+                action = "AUMENTADO"
+            elif accuracy < 0.60:
+                # Está errando um pouco: aumentar levemente
+                new_threshold = min(0.78, current_threshold + 0.01)
+                action = "AUMENTADO LEVEMENTE"
+            else:
+                # Performance OK: manter
+                new_threshold = current_threshold
+                action = "MANTIDO"
+            
+            if new_threshold != current_threshold:
+                self.adaptive_thresholds[pattern_type] = new_threshold
+                logger.info(f"🎯 Threshold {action} para {pattern_type}: {current_threshold:.2f} -> {new_threshold:.2f} (acurácia: {accuracy:.1%})")
+        
+        except Exception as e:
+            logger.error(f"Erro ao ajustar thresholds adaptativos: {e}")
+    
+    def get_pattern_performance_stats(self) -> dict:
+        """
+        Retorna estatísticas de performance de todos os padrões.
+        
+        Returns:
+            dict: Estatísticas completas
+        """
+        return {
+            'performance': self.pattern_performance,
+            'thresholds': self.adaptive_thresholds,
+            'prediction_mode': self.prediction_mode,
+            'signal_history_size': len(self.signal_history)
+        }
+    
+    def set_prediction_mode(self, mode: str):
+        """
+        Define o modo de predição: 'opposite' ou 'continue'.
+        
+        Args:
+            mode: 'opposite' (apostar na cor oposta) ou 'continue' (continuar na mesma cor)
+        """
+        if mode not in ['opposite', 'continue']:
+            logger.error(f"Modo inválido: {mode}. Use 'opposite' ou 'continue'")
+            return False
+        
+        self.prediction_mode = mode
+        logger.info(f"🎯 Modo de predição alterado para: {mode}")
+        return True
+    
     def _reset_system_after_pattern(self, keep_context=True):
         """
         Reseta sistema após detectar um padrão, mantendo contexto suficiente.
@@ -862,10 +1016,10 @@ class BlazeAnalyzerEnhanced:
                     self.manual_data = self.manual_data[-context_size:]
                     logger.info(f"[DADOS] Mantidos {context_size} resultados para contexto")
                 else:
-                    # Reset total - apenas último resultado
+                    # RESET TOTAL - apenas último resultado (ponto de partida)
                     last_result = self.manual_data[-1]
                     self.manual_data = [last_result]
-                    logger.info(f"[DADOS] Reset total - mantido apenas último resultado: {last_result}")
+                    logger.info(f"[RESET TOTAL] Mantido apenas último resultado: {last_result.get('roll', 'N/A')} ({last_result.get('color', 'N/A')})")
             
             # 2. Limpar dados da API (manter alguns recentes se disponível)
             if self.data:
@@ -874,8 +1028,9 @@ class BlazeAnalyzerEnhanced:
                     self.data = self.data[-3:]
                     logger.info("[DADOS] Mantidos 3 resultados da API para contexto")
                 else:
+                    # RESET TOTAL - limpar completamente
                     self.data = []
-                    logger.info("[DADOS] Dados da API limpos")
+                    logger.info("[RESET TOTAL] Dados da API completamente limpos")
             
             # 3. Limpar apenas padrões muito antigos (não todos)
             try:
@@ -899,19 +1054,42 @@ class BlazeAnalyzerEnhanced:
                     self.pattern_detector.reset()
                     logger.info("[RESET] Detector de padrões resetado")
             
+            # 4.1. Limpar sistemas de aprendizado adaptativo (reset total)
+            if not keep_context:
+                try:
+                    # Resetar aprendizado adaptativo
+                    if hasattr(self, 'adaptive_integrator') and self.adaptive_integrator:
+                        if hasattr(self.adaptive_integrator, 'pattern_learner'):
+                            if hasattr(self.adaptive_integrator.pattern_learner, 'clear_history'):
+                                self.adaptive_integrator.pattern_learner.clear_history()
+                                logger.info("[RESET TOTAL] Sistema de aprendizado adaptativo limpo")
+                    
+                    # Resetar detector de padrões dual
+                    if hasattr(self, 'dual_pattern_detector') and self.dual_pattern_detector:
+                        if hasattr(self.dual_pattern_detector, 'clear_history'):
+                            self.dual_pattern_detector.clear_history()
+                            logger.info("[RESET TOTAL] Detector de padrões dual limpo")
+                except Exception as e:
+                    logger.warning(f"Erro ao limpar sistemas de aprendizado: {e}")
+            
             # 5. Limpar notificações antigas (manter recentes)
             try:
                 if hasattr(self, 'notifier') and self.notifier:
                     # Limpar apenas notificações antigas
                     if hasattr(self.notifier, 'notifications_history'):
-                        # Manter apenas últimas 3 notificações
-                        if len(self.notifier.notifications_history) > 3:
+                        if not keep_context:
+                            # RESET TOTAL - limpar TODAS as notificações
+                            self.notifier.notifications_history = []
+                            logger.info("[RESET TOTAL] Todas as notificações limpas")
+                        elif len(self.notifier.notifications_history) > 3:
+                            # Manter apenas últimas 3 notificações
                             self.notifier.notifications_history = self.notifier.notifications_history[-3:]
                             logger.info("[LIMPEZA] Notificações antigas removidas - mantidas últimas 3")
             except Exception as e:
                 logger.warning(f"Erro ao limpar notificações: {e}")
             
-            logger.info("[SUCESSO] Sistema resetado com contexto preservado")
+            status_msg = "[SUCESSO] Sistema resetado TOTALMENTE - histórico esquecido" if not keep_context else "[SUCESSO] Sistema resetado com contexto preservado"
+            logger.info(status_msg)
             
         except Exception as e:
             logger.error(f"Erro ao resetar sistema: {e}")
@@ -989,8 +1167,9 @@ class BlazeAnalyzerEnhanced:
             # 3. Verificar se já detectou padrão muito recentemente
             if hasattr(self, '_last_pattern_time'):
                 time_since_last_pattern = current_time - self._last_pattern_time
-                if time_since_last_pattern < 30:  # 30 segundos mínimo entre padrões
-                    logger.debug(f"Padrão detectado recentemente - aguardando {30 - time_since_last_pattern:.1f}s")
+                # AUMENTADO: cooldown de 30 para 60 segundos entre padrões (evitar spam)
+                if time_since_last_pattern < 60:
+                    logger.debug(f"Padrão detectado recentemente - aguardando {60 - time_since_last_pattern:.1f}s")
                     return False
             
             return True
@@ -1100,9 +1279,9 @@ class BlazeAnalyzerEnhanced:
             # Usar dados manuais (que incluem dados do PlayNabets)
             data_to_analyze = self.manual_data if self.manual_data else self.data
             
-            # Reduzir requisito mínimo para 3 resultados
-            if not data_to_analyze or len(data_to_analyze) < 3:
-                logger.debug(f"Dados insuficientes para detecção de padrões: {len(data_to_analyze) if data_to_analyze else 0} resultados")
+            # ✅ CORRIGIDO: Requisito mínimo de 5 resultados para análise confiável
+            if not data_to_analyze or len(data_to_analyze) < 5:
+                logger.debug(f"Dados insuficientes para detecção de padrões: {len(data_to_analyze) if data_to_analyze else 0} resultados (mínimo: 5)")
                 return
             
             logger.info(f"Detectando padrões em {len(data_to_analyze)} resultados")
@@ -1115,7 +1294,8 @@ class BlazeAnalyzerEnhanced:
                 double_patterns = self.double_pattern_detector.detect_all_patterns(data_to_analyze)
                 if double_patterns and 'patterns' in double_patterns and double_patterns['patterns']:
                     for pattern_name, pattern_data in double_patterns['patterns'].items():
-                        if pattern_data.get('confidence', 0) >= 0.6 and pattern_data.get('detected', False):
+                        # AUMENTADO: confiança mínima de 0.6 para 0.72 (consistente com detector)
+                        if pattern_data.get('confidence', 0) >= 0.72 and pattern_data.get('detected', False):
                             # Obter último número que saiu
                             last_number = 0
                             if isinstance(data_to_analyze, list) and data_to_analyze:
@@ -1190,19 +1370,41 @@ class BlazeAnalyzerEnhanced:
             
             # 3. Detectar padrões usando análise estatística simples
             try:
-                # Reduzir requisito para 3 resultados
-                if len(data_to_analyze) >= 3:
+                # AUMENTADO: requisito mínimo de 3 para 5 resultados (mais dados = mais confiável)
+                if len(data_to_analyze) >= 5:
                     recent_data = data_to_analyze[-10:]  # Até 10 resultados
                     recent_colors = [r.get('color', '') for r in recent_data]
                     
-                    # Detectar sequências (reduzir requisito para 3 da mesma cor)
-                    if len(set(recent_colors)) == 1 and len(recent_colors) >= 3:
+                    # AUMENTADO: Detectar sequências de pelo menos 4 da mesma cor (era 3)
+                    if len(set(recent_colors)) == 1 and len(recent_colors) >= 4:
                         # Sequência de mesma cor
                         color = recent_colors[0]
-                        opposite_color = 'black' if color == 'red' else 'red' if color in ['red', 'black'] else 'red'
                         
-                        # Calcular confiança baseada no tamanho da sequência
-                        confidence = min(0.85, 0.35 + (len(recent_colors) - 2) * 0.12)
+                        # 🆕 LÓGICA DE PREDIÇÃO: Modo 'opposite' ou 'continue'
+                        if self.prediction_mode == 'continue':
+                            # Modo "continuar cor quente" (hot hand)
+                            predicted_color = color
+                            reasoning_mode = "Tendência de continuação (hot hand)"
+                        else:
+                            # Modo "apostar na oposta" (regressão à média)
+                            predicted_color = 'black' if color == 'red' else 'red' if color in ['red', 'black'] else 'red'
+                            reasoning_mode = "Tendência de inversão (regressão à média)"
+                        
+                        # 🆕 CONFIANÇA ADAPTATIVA baseada em histórico de acertos
+                        base_confidence = 0.65
+                        sequence_bonus = (len(recent_colors) - 4) * 0.08
+                        
+                        # Ajustar confiança baseado em performance histórica
+                        pattern_accuracy = self.pattern_performance['sequence']['accuracy']
+                        if pattern_accuracy > 0.70:  # Se está acertando muito
+                            adaptive_bonus = 0.05
+                        elif pattern_accuracy < 0.50 and self.pattern_performance['sequence']['total'] > 5:
+                            # Se está errando muito, reduzir confiança
+                            adaptive_bonus = -0.10
+                        else:
+                            adaptive_bonus = 0.0
+                        
+                        confidence = min(0.90, base_confidence + sequence_bonus + adaptive_bonus)
                         
                         # Obter último número
                         last_number = 0
@@ -1212,20 +1414,32 @@ class BlazeAnalyzerEnhanced:
                                 last_number = last_result.get('roll', last_result.get('number', 0))
                         
                         # Notificar sequência detectada
+                        pattern_id = f"sequence_{int(time.time())}"
                         pattern_sent = notify_pattern(
                             pattern_type="Sequência Repetitiva",
                             detected_number=last_number,
-                            predicted_color=opposite_color,
+                            predicted_color=predicted_color,
                             confidence=confidence,
-                            reasoning=f"Sequência de {len(recent_colors)} {color}s consecutivos. Recomenda-se apostar na cor oposta.",
-                            pattern_id=f"sequence_{int(time.time())}"
+                            reasoning=f"Sequência de {len(recent_colors)} {color}s consecutivos. {reasoning_mode}. Taxa de acerto histórica: {pattern_accuracy:.1%}",
+                            pattern_id=pattern_id
                         )
                         
-                        logger.info(f"Sequência detectada e notificada: {len(recent_colors)} {color}s -> recomendar {opposite_color} - Enviado: {pattern_sent}")
+                        # 🆕 REGISTRAR NO HISTÓRICO DE SINAIS
+                        self._add_to_signal_history({
+                            'pattern_id': pattern_id,
+                            'pattern_type': 'sequence',
+                            'detected_color': color,
+                            'predicted_color': predicted_color,
+                            'confidence': confidence,
+                            'mode': self.prediction_mode,
+                            'timestamp': time.time()
+                        })
+                        
+                        logger.info(f"Sequência detectada e notificada: {len(recent_colors)} {color}s -> recomendar {predicted_color} ({self.prediction_mode}) - Enviado: {pattern_sent}")
                         pattern_detected = True
                     
                     # Se não há sequência uniforme, detectar predominância de cor
-                    if len(recent_colors) >= 5:
+                    if len(recent_colors) >= 6:
                         color_count = {}
                         for c in recent_colors:
                             color_count[c] = color_count.get(c, 0) + 1
@@ -1234,10 +1448,31 @@ class BlazeAnalyzerEnhanced:
                         dominant_color = max(color_count, key=color_count.get)
                         dominant_count = color_count[dominant_color]
                         
-                        # Se uma cor apareceu em mais de 60% dos últimos resultados
-                        if dominant_count / len(recent_colors) > 0.6:
-                            opposite_color = 'black' if dominant_color == 'red' else 'red' if dominant_color in ['red', 'black'] else 'red'
-                            confidence = min(0.75, 0.3 + (dominant_count / len(recent_colors) - 0.6) * 1.5)
+                        # AUMENTADO: predominância de 60% para 70% (mais seletivo)
+                        if dominant_count / len(recent_colors) > 0.70:
+                            # 🆕 LÓGICA DE PREDIÇÃO: Modo 'opposite' ou 'continue'
+                            if self.prediction_mode == 'continue':
+                                predicted_color = dominant_color
+                                reasoning_mode = "Continuar na cor predominante"
+                            else:
+                                predicted_color = 'black' if dominant_color == 'red' else 'red' if dominant_color in ['red', 'black'] else 'red'
+                                reasoning_mode = "Tendência de inversão"
+                            
+                            # 🆕 CONFIANÇA ADAPTATIVA
+                            dominance_ratio = dominant_count / len(recent_colors)
+                            base_confidence = 0.45
+                            dominance_bonus = (dominance_ratio - 0.70) * 1.2
+                            
+                            # Ajustar baseado em performance
+                            pattern_accuracy = self.pattern_performance['dominance']['accuracy']
+                            if pattern_accuracy > 0.70:
+                                adaptive_bonus = 0.05
+                            elif pattern_accuracy < 0.50 and self.pattern_performance['dominance']['total'] > 5:
+                                adaptive_bonus = -0.08
+                            else:
+                                adaptive_bonus = 0.0
+                            
+                            confidence = min(0.85, base_confidence + dominance_bonus + adaptive_bonus)
                             
                             # Obter último número
                             last_number = 0
@@ -1247,16 +1482,28 @@ class BlazeAnalyzerEnhanced:
                                     last_number = last_result.get('roll', last_result.get('number', 0))
                             
                             # Notificar padrão de predominância
+                            pattern_id = f"dominance_{int(time.time())}"
                             pattern_sent = notify_pattern(
                                 pattern_type="Predominância de Cor",
                                 detected_number=last_number,
-                                predicted_color=opposite_color,
+                                predicted_color=predicted_color,
                                 confidence=confidence,
-                                reasoning=f"Cor {dominant_color} apareceu {dominant_count} vezes nos últimos {len(recent_colors)} resultados. Tendência de inversão.",
-                                pattern_id=f"dominance_{int(time.time())}"
+                                reasoning=f"Cor {dominant_color} apareceu {dominant_count} vezes nos últimos {len(recent_colors)} resultados ({dominance_ratio:.1%}). {reasoning_mode}. Acurácia histórica: {pattern_accuracy:.1%}",
+                                pattern_id=pattern_id
                             )
                             
-                            logger.info(f"Predominância detectada e notificada: {dominant_count}/{len(recent_colors)} {dominant_color}s -> recomendar {opposite_color} - Enviado: {pattern_sent}")
+                            # 🆕 REGISTRAR NO HISTÓRICO
+                            self._add_to_signal_history({
+                                'pattern_id': pattern_id,
+                                'pattern_type': 'dominance',
+                                'detected_color': dominant_color,
+                                'predicted_color': predicted_color,
+                                'confidence': confidence,
+                                'mode': self.prediction_mode,
+                                'timestamp': time.time()
+                            })
+                            
+                            logger.info(f"Predominância detectada e notificada: {dominant_count}/{len(recent_colors)} {dominant_color}s -> recomendar {predicted_color} ({self.prediction_mode}) - Enviado: {pattern_sent}")
                             pattern_detected = True
             except Exception as e:
                 logger.exception(f'Erro ao detectar sequências: {e}')
@@ -1267,10 +1514,11 @@ class BlazeAnalyzerEnhanced:
                 
                 # Validar qualidade do padrão antes de resetar
                 if self._validate_pattern_quality(data_to_analyze):
-                    logger.info("[SUCESSO] Padrão validado - Iniciando reset do sistema")
+                    logger.info("[SUCESSO] Padrão validado - Iniciando RESET TOTAL do sistema")
                     # Registrar tempo da última detecção
                     self._last_pattern_time = time.time()
-                    self._reset_system_after_pattern(keep_context=True)
+                    # ALTERADO: keep_context=False para reset TOTAL (esquecer histórico)
+                    self._reset_system_after_pattern(keep_context=False)
                 else:
                     logger.warning("[AVISO] Padrão rejeitado por baixa qualidade - continuando análise")
             else:
