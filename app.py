@@ -61,7 +61,7 @@ except ImportError as e:
     playnabets_available = False
 
 # Inicializar Flask
-app = Flask(__name__, template_folder='backend/templates')
+app = Flask(__name__, template_folder='templates')
 CORS(app)
 
 # Variáveis globais
