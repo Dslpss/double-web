@@ -3,6 +3,7 @@
 ## 🔍 Problema Identificado
 
 O auto-start funciona **localmente** mas **falha no Railway** com o erro:
+
 ```
 Falha ao fazer login na Roleta Brasileira - credenciais inválidas ou erro de conexão
 ```
@@ -10,15 +11,19 @@ Falha ao fazer login na Roleta Brasileira - credenciais inválidas ou erro de co
 ## ⚠️ Possíveis Causas
 
 ### 1. **Variáveis de Ambiente não Configuradas**
+
 As credenciais podem não estar configuradas no Railway Dashboard.
 
 ### 2. **Problema de Rede/Firewall**
+
 O Railway pode ter restrições de rede que impedem a conexão com a API da Pragmatic Play.
 
 ### 3. **Timeout/Latência**
+
 A conexão do Railway para a API pode estar demorando mais que o timeout configurado.
 
 ### 4. **IP Bloqueado**
+
 O IP do Railway pode estar bloqueado pela API da Pragmatic Play (proteção anti-bot).
 
 ## ✅ Soluções Implementadas
@@ -38,6 +43,7 @@ ROULETTE_AUTO_START=false  # Desabilita auto-start (padrão)
 ### 2. **Logging Detalhado**
 
 Melhorado logging no `pragmatic_brazilian_roulette.py`:
+
 - ✅ Mostra URL de login
 - ✅ Mostra username (parcial)
 - ✅ Mostra status HTTP da resposta
@@ -51,6 +57,7 @@ Aumentado timeout de **10s → 15s** para dar mais tempo para Railway conectar.
 ### 4. **Graceful Degradation**
 
 Se auto-start falhar:
+
 - ❌ Não quebra o sistema
 - ✅ Mostra notificação amigável
 - ✅ Permite inicialização manual via botão
@@ -63,11 +70,13 @@ Se auto-start falhar:
 Se o auto-start continuar falhando no Railway:
 
 **No Railway Dashboard → Variables:**
+
 ```env
 ROULETTE_AUTO_START=false
 ```
 
 **Resultado:**
+
 - ✅ Página carrega normalmente
 - ✅ Sem erros de auto-start
 - ✅ Usuário clica em "Iniciar Monitoramento" manualmente
@@ -78,6 +87,7 @@ ROULETTE_AUTO_START=false
 Se quiser manter o auto-start (funciona localmente):
 
 **No Railway Dashboard → Variables:**
+
 ```env
 ROULETTE_AUTO_START=true
 PRAGMATIC_USERNAME=seu_email@exemplo.com
@@ -85,6 +95,7 @@ PRAGMATIC_PASSWORD=sua_senha
 ```
 
 **Se falhar:**
+
 - ⚠️ Notificação aparece: "Auto-start falhou. Clique em Iniciar Monitoramento"
 - ✅ Botão manual continua funcionando
 - ✅ Sistema não quebra
@@ -96,6 +107,7 @@ PRAGMATIC_PASSWORD=sua_senha
 Após fazer deploy, procure nos logs:
 
 **Se sucesso:**
+
 ```
 🔍 [ROULETTE STATUS] Verificando status...
 🔧 Auto-start: ✅ Habilitado
@@ -111,6 +123,7 @@ Login realizado com sucesso!
 ```
 
 **Se falha:**
+
 ```
 🔍 [ROULETTE STATUS] Verificando status...
 🔧 Auto-start: ✅ Habilitado
@@ -153,11 +166,13 @@ ROULETTE_AUTO_START=true (ou false)
 ### Para Uso em Produção (Railway):
 
 1. **Desabilitar auto-start:**
+
    ```env
    ROULETTE_AUTO_START=false
    ```
 
 2. **Deixar usuário iniciar manualmente**
+
    - Mais confiável
    - Evita erros na inicialização
    - Funciona independente de problemas de rede
@@ -167,6 +182,7 @@ ROULETTE_AUTO_START=true (ou false)
 ### Para Uso Local (Desenvolvimento):
 
 1. **Habilitar auto-start:**
+
    ```env
    ROULETTE_AUTO_START=true
    ```
@@ -201,21 +217,23 @@ git push origin deploy
 
 ## 📊 Comparação
 
-| Aspecto | Auto-Start ON | Auto-Start OFF |
-|---------|---------------|----------------|
-| **UX** | Melhor (zero cliques) | Bom (1 clique) |
-| **Confiabilidade** | Depende da rede | 100% confiável |
-| **Logs** | Mais verboso | Mais limpo |
-| **Produção** | Risco de falhas | Recomendado ✅ |
-| **Desenvolvimento** | Recomendado ✅ | Desnecessário |
+| Aspecto             | Auto-Start ON         | Auto-Start OFF |
+| ------------------- | --------------------- | -------------- |
+| **UX**              | Melhor (zero cliques) | Bom (1 clique) |
+| **Confiabilidade**  | Depende da rede       | 100% confiável |
+| **Logs**            | Mais verboso          | Mais limpo     |
+| **Produção**        | Risco de falhas       | Recomendado ✅ |
+| **Desenvolvimento** | Recomendado ✅        | Desnecessário  |
 
 ## 🎯 Decisão Final
 
-**Recomendação**: 
+**Recomendação**:
+
 - ✅ **Local**: `ROULETTE_AUTO_START=true`
 - ✅ **Railway**: `ROULETTE_AUTO_START=false`
 
 Isso garante:
+
 - ✅ Desenvolvimento ágil localmente
 - ✅ Produção estável no Railway
 - ✅ Sistema funciona em ambos os ambientes

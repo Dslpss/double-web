@@ -1,6 +1,7 @@
 # ✅ RESUMO: Solução Completa para Auto-Start no Railway
 
 ## 🎯 O Problema
+
 ```
 ❌ Auto-start funciona LOCAL
 ❌ Auto-start falha RAILWAY
@@ -12,6 +13,7 @@ Erro: "Falha ao fazer login - credenciais inválidas ou erro de conexão"
 ### 🔧 Implementações
 
 #### 1. **Controle de Auto-Start** (Novo!)
+
 ```env
 # Agora você pode ligar/desligar o auto-start
 ROULETTE_AUTO_START=true   # Habilita (local)
@@ -19,7 +21,9 @@ ROULETTE_AUTO_START=false  # Desabilita (Railway) ← Recomendado
 ```
 
 #### 2. **Logging Detalhado**
+
 Agora mostra exatamente o que está acontecendo no login:
+
 - URL tentada
 - Username (parcial)
 - Status HTTP
@@ -27,10 +31,13 @@ Agora mostra exatamente o que está acontecendo no login:
 - Tipo de exceção
 
 #### 3. **Timeout Aumentado**
+
 10s → 15s para dar mais tempo ao Railway conectar
 
 #### 4. **Graceful Degradation**
+
 Se auto-start falhar:
+
 - ✅ Sistema NÃO quebra
 - ✅ Notificação amigável
 - ✅ Botão manual funciona normalmente
@@ -38,6 +45,7 @@ Se auto-start falhar:
 ## 📊 Comparação Antes vs Depois
 
 ### ANTES ❌
+
 ```
 Página carrega
   ↓
@@ -51,6 +59,7 @@ FALHA no Railway
 ```
 
 ### DEPOIS ✅
+
 ```
 Página carrega
   ↓
@@ -62,7 +71,7 @@ Se TRUE: tenta auto-start
     ✅ Botão manual funciona
   ↓ sucesso?
     ✅ Conectado automaticamente!
-  
+
 Se FALSE: aguarda clique manual
   ↓
 ✅ Usuário clica "Iniciar"
@@ -73,20 +82,26 @@ Se FALSE: aguarda clique manual
 ## 🎬 Como Fica na Prática
 
 ### 💻 Local (Desenvolvimento)
+
 ```env
 # .env
 ROULETTE_AUTO_START=true
 ```
+
 **Resultado:**
+
 1. Abre página → 2s → ✅ Conectado automaticamente!
 2. Zero cliques 🚀
 
 ### ☁️ Railway (Produção)
+
 ```env
 # Railway Variables
 ROULETTE_AUTO_START=false
 ```
+
 **Resultado:**
+
 1. Abre página → Status: "Inativo"
 2. Clica "Iniciar Monitoramento" → ✅ Conectado!
 3. 1 clique apenas ✅
@@ -124,24 +139,27 @@ ROULETTE_AUTO_START=false
 
 ## 🎯 Decisão Recomendada
 
-| Ambiente | ROULETTE_AUTO_START | Motivo |
-|----------|---------------------|--------|
-| **Local** | `true` | ✅ Funciona perfeitamente<br>✅ Desenvolvimento ágil<br>✅ Zero cliques |
-| **Railway** | `false` | ✅ Evita erros de rede<br>✅ Mais confiável<br>✅ Botão manual funciona 100% |
+| Ambiente    | ROULETTE_AUTO_START | Motivo                                                                       |
+| ----------- | ------------------- | ---------------------------------------------------------------------------- |
+| **Local**   | `true`              | ✅ Funciona perfeitamente<br>✅ Desenvolvimento ágil<br>✅ Zero cliques      |
+| **Railway** | `false`             | ✅ Evita erros de rede<br>✅ Mais confiável<br>✅ Botão manual funciona 100% |
 
 ## 🎉 Benefícios Finais
 
 ### ✅ Para Você (Desenvolvedor)
+
 - Local: auto-start rápido e prático
 - Railway: sistema estável e confiável
 - Logs detalhados para debug
 
 ### ✅ Para o Usuário
+
 - Sem erros confusos
 - Sistema sempre funciona
 - Feedback claro do que fazer
 
 ### ✅ Para o Sistema
+
 - Não quebra se login falhar
 - Funciona em qualquer ambiente
 - Fácil de configurar
