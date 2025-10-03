@@ -866,8 +866,12 @@ def roulette_status():
         if roulette_integrator is None:
             print("⚠️ Integrador não está inicializado")
             
-            # Tentar inicializar automaticamente se tiver credenciais
-            if has_credentials:
+            # Verificar se auto-start está habilitado
+            auto_start_enabled = os.getenv('ROULETTE_AUTO_START', 'false').lower() == 'true'
+            print(f"🔧 Auto-start: {'✅ Habilitado' if auto_start_enabled else '❌ Desabilitado'}")
+            
+            # Tentar inicializar automaticamente se tiver credenciais E auto-start habilitado
+            if has_credentials and auto_start_enabled:
                 print("🔄 Tentando inicializar automaticamente...")
                 try:
                     init_roulette_integrator()
@@ -886,23 +890,34 @@ def roulette_status():
                         'message': 'Integrador inicializado automaticamente'
                     })
                 except Exception as e:
-                    print(f"❌ Falha ao inicializar automaticamente: {e}")
+                    error_msg = str(e)
+                    print(f"❌ Falha ao inicializar automaticamente: {error_msg}")
+                    
+                    # Se auto-start falhar, não retornar erro - permitir uso manual
                     return jsonify({
                         'available': True,
                         'connected': False,
                         'monitoring': False,
                         'has_credentials': has_credentials,
                         'auto_start_failed': True,
-                        'message': f'Falha ao inicializar automaticamente: {str(e)}'
+                        'auto_start_enabled': True,
+                        'message': f'Auto-start falhou: {error_msg}. Clique em "Iniciar Monitoramento" para tentar manualmente.'
                     })
             
-            # Sem credenciais, apenas reportar
+            # Auto-start desabilitado ou sem credenciais
+            message = 'Integrador não inicializado.'
+            if not has_credentials:
+                message += ' Configure as credenciais (PRAGMATIC_USERNAME e PRAGMATIC_PASSWORD).'
+            elif not auto_start_enabled:
+                message += ' Clique em "Iniciar Monitoramento" ou habilite ROULETTE_AUTO_START=true.'
+            
             return jsonify({
                 'available': True,
                 'connected': False,
                 'monitoring': False,
                 'has_credentials': has_credentials,
-                'message': 'Integrador não inicializado. Configure as credenciais.'
+                'auto_start_enabled': auto_start_enabled,
+                'message': message
             })
         
         # Verificar se está conectado

@@ -40,9 +40,13 @@ async function checkStatus() {
       if (window.roulettePatterns) {
         window.roulettePatterns.startDetection();
       }
-    } else if (data.auto_start_failed) {
+    } else if (data.auto_start_failed && data.auto_start_enabled) {
+      // Só mostra erro se auto-start estava habilitado
       console.warn("⚠️ Falha ao inicializar automaticamente:", data.message);
-      showNotification(`⚠️ ${data.message}`, "warning");
+      showNotification(`⚠️ Auto-start falhou. Clique em "Iniciar Monitoramento"`, "warning");
+    } else if (!data.connected) {
+      // Sistema não conectado, mas sem erros - modo normal
+      console.log("ℹ️ Sistema aguardando inicialização manual");
     }
   } catch (error) {
     console.error("Erro ao verificar status:", error);

@@ -80,6 +80,8 @@ class PragmaticBrazilianRoulette:
         """
         try:
             logger.info("Realizando login...")
+            logger.info(f"URL: {self.login_url}")
+            logger.info(f"Username: {self.username[:5]}...@{self.username.split('@')[1] if '@' in self.username else 'N/A'}")
             
             # Payload do login
             payload = {
@@ -105,15 +107,19 @@ class PragmaticBrazilianRoulette:
             }
             
             # Fazer login
+            logger.info("Enviando requisição de login...")
             response = self.session.post(
                 self.login_url,
                 json=payload,
                 headers=headers,
-                timeout=10
+                timeout=15  # Aumentado de 10 para 15 segundos
             )
+            
+            logger.info(f"Status da resposta: {response.status_code}")
             
             if response.status_code == 200:
                 data = response.json()
+                logger.info(f"Resposta JSON recebida. Success: {data.get('success')}")
                 
                 if data.get('success'):
                     self.token_cassino = data['results']['tokenCassino']
@@ -123,14 +129,25 @@ class PragmaticBrazilianRoulette:
                     # Agora lançar o jogo para obter JSESSIONID
                     return self._launch_game()
                 else:
-                    logger.error(f"Login falhou: {data}")
+                    error_msg = data.get('message', 'Sem mensagem de erro')
+                    logger.error(f"Login falhou: {error_msg}")
+                    logger.error(f"Resposta completa: {data}")
                     return False
             else:
-                logger.error(f"Erro no login: {response.status_code}")
+                logger.error(f"Erro no login. Status: {response.status_code}")
+                logger.error(f"Resposta: {response.text[:200]}")
                 return False
                 
+        except requests.exceptions.Timeout:
+            logger.error("Timeout ao fazer login (> 15 segundos)")
+            return False
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"Erro de conexão ao fazer login: {e}")
+            return False
         except Exception as e:
-            logger.error(f"Erro ao fazer login: {e}")
+            logger.error(f"Erro inesperado ao fazer login: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def _launch_game(self) -> bool:
