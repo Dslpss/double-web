@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Roleta Brasileira - Pragmatic Play</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        min-height: 100vh;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+        color: white;
+        position: relative;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .header p {
+        font-size: 1.2rem;
+        opacity: 0.9;
+      }
+
+      .back-button {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .back-button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      }
+
+      .back-button:active {
+        transform: translateY(0);
+      }
+
+      @media (max-width: 768px) {
+        .back-button {
+          position: static;
+          margin-bottom: 20px;
+          align-self: flex-start;
+        }
+      }
+
+      .status-bar {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .status-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #4caf50;
+        animation: pulse 2s infinite;
+      }
+
+      .status-dot.offline {
+        background: #f44336;
+        animation: none;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .control-buttons {
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-play {
+        background: linear-gradient(135deg, #f39c12, #e74c3c);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+      }
+
+      .btn-play:hover:not(:disabled) {
+        background: linear-gradient(135deg, #e67e22, #c0392b);
+      }
+
+      .btn-stop {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      @media (max-width: 968px) {
+        .dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .card h2 {
+        color: #333;
+        margin-bottom: 15px;
+        font-size: 1.3rem;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 10px;
+      }
+
+      .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      .result-item {
+        aspect-ratio: 1;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+        font-size: 1.2rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      }
+
+      .result-item:hover {
+        transform: scale(1.1) rotate(5deg);
+        z-index: 10;
+      }
+
+      .result-item.red {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+      }
+
+      .result-item.black {
+        background: linear-gradient(135deg, #2c3e50, #34495e);
+      }
+
+      .result-item.green {
+        background: linear-gradient(135deg, #27ae60, #229954);
+      }
+
+      .result-number {
+        font-size: 1.5rem;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      .result-time {
+        font-size: 0.6rem;
+        opacity: 0.8;
+        margin-top: 3px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-top: 15px;
+      }
+
+      .stat-card {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-5px);
+      }
+
+      .stat-card.red {
+        background: linear-gradient(135deg, #ffe6e6, #ffcccc);
+      }
+
+      .stat-card.black {
+        background: linear-gradient(135deg, #e8e8e8, #d0d0d0);
+      }
+
+      .stat-card.green {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+      }
+
+      .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 5px;
+      }
+
+      .stat-label {
+        color: #7f8c8d;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+      }
+
+      .stat-percentage {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #667eea;
+      }
+
+      .chart-container {
+        position: relative;
+        height: 300px;
+        margin-top: 15px;
+      }
+
+      .patterns-list {
+        margin-top: 15px;
+      }
+
+      .pattern-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+      }
+
+      .pattern-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .pattern-sequence {
+        display: flex;
+        gap: 5px;
+      }
+
+      .pattern-color {
+        width: 30px;
+        height: 30px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.8rem;
+        color: white;
+      }
+
+      .pattern-color.red {
+        background: #e74c3c;
+      }
+
+      .pattern-color.black {
+        background: #2c3e50;
+      }
+
+      .pattern-color.green {
+        background: #27ae60;
+      }
+
+      .pattern-count {
+        font-weight: bold;
+        color: #667eea;
+      }
+
+      .alerts-section {
+        margin-top: 15px;
+      }
+
+      .alert-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 10px;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        animation: slideIn 0.5s ease;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(-100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      .alert-item.hot-number {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+      }
+
+      .alert-item.cold-number {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+      }
+
+      .alert-item.sequence {
+        background: linear-gradient(135deg, #9b59b6, #8e44ad);
+      }
+
+      .alert-item.recommendation {
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+      }
+
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+      }
+
+      .loading::after {
+        content: "...";
+        animation: dots 1.5s steps(4, end) infinite;
+      }
+
+      @keyframes dots {
+        0%,
+        20% {
+          content: ".";
+        }
+        40% {
+          content: "..";
+        }
+        60%,
+        100% {
+          content: "...";
+        }
+      }
+
+      .error {
+        background: #ffebee;
+        color: #c62828;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+        border-left: 4px solid #c62828;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #7f8c8d;
+      }
+
+      .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+      }
+
+      .play-banner {
+        background: linear-gradient(135deg, #f39c12, #e74c3c);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        text-align: center;
+        box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
+        animation: pulse-banner 2s infinite;
+      }
+
+      @keyframes pulse-banner {
+        0%,
+        100% {
+          box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
+        }
+        50% {
+          box-shadow: 0 8px 35px rgba(231, 76, 60, 0.5);
+        }
+      }
+
+      .play-banner a {
+        color: white;
+        text-decoration: none;
+        font-size: 1.5rem;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        transition: transform 0.3s ease;
+      }
+
+      .play-banner a:hover {
+        transform: scale(1.05);
+      }
+
+      .play-banner-icon {
+        font-size: 2rem;
+        animation: spin 3s linear infinite;
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <a href="/" class="back-button"> ← Voltar </a>
+        <h1>🎰 Roleta Brasileira - Pragmatic Play</h1>
+        <p>Análise em tempo real dos resultados da roleta</p>
+      </div>
+
+      <div class="play-banner">
+        <a
+          href="https://playnabets.com/live-casino/pragmatic/237"
+          target="_blank"
+        >
+          <span class="play-banner-icon">🎰</span>
+          <span>CLIQUE AQUI PARA JOGAR ROLETA BRASILEIRA AO VIVO</span>
+          <span>🎲</span>
+        </a>
+      </div>
+
+      <div class="status-bar">
+        <div class="status-item">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusText">Carregando...</span>
+        </div>
+        <div class="status-item">
+          <span id="lastUpdate">Última atualização: Nunca</span>
+        </div>
+        <div class="control-buttons">
+          <a
+            href="https://playnabets.com/live-casino/pragmatic/237"
+            target="_blank"
+            class="btn btn-play"
+            title="Abrir Roleta Brasileira ao vivo"
+          >
+            🎰 Jogar Agora
+          </a>
+          <button class="btn" id="startBtn" onclick="startMonitoring()">
+            ▶ Iniciar Monitoramento
+          </button>
+          <button
+            class="btn btn-stop"
+            id="stopBtn"
+            onclick="stopMonitoring()"
+            disabled
+          >
+            ⏹ Parar
+          </button>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <!-- Card: Últimos Resultados -->
+        <div class="card">
+          <h2>📊 Últimos Resultados (20)</h2>
+          <div id="resultsContainer" class="results-grid">
+            <div class="empty-state">
+              <div class="empty-state-icon">🎲</div>
+              <p>Aguardando resultados...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card: Estatísticas -->
+        <div class="card">
+          <h2>📈 Estatísticas de Cores</h2>
+          <div class="stats-grid" id="statsGrid">
+            <div class="stat-card red">
+              <div class="stat-value" id="redCount">0</div>
+              <div class="stat-label">Vermelhos</div>
+              <div class="stat-percentage" id="redPercent">0%</div>
+            </div>
+            <div class="stat-card black">
+              <div class="stat-value" id="blackCount">0</div>
+              <div class="stat-label">Pretos</div>
+              <div class="stat-percentage" id="blackPercent">0%</div>
+            </div>
+            <div class="stat-card green">
+              <div class="stat-value" id="greenCount">0</div>
+              <div class="stat-label">Verdes (0)</div>
+              <div class="stat-percentage" id="greenPercent">0%</div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="colorChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Card: Padrões Detectados -->
+        <div class="card">
+          <h2>🔍 Padrões de Sequência</h2>
+          <div class="patterns-list" id="patternsList">
+            <div class="empty-state">
+              <div class="empty-state-icon">🔎</div>
+              <p>Analisando padrões...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card: Alertas e Recomendações -->
+        <div class="card">
+          <h2>⚠️ Alertas e Tendências</h2>
+          <div class="alerts-section" id="alertsContainer">
+            <div class="empty-state">
+              <div class="empty-state-icon">🔔</div>
+              <p>Nenhum alerta no momento</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let colorChart = null;
+      let updateInterval = null;
+      let isMonitoring = false;
+
+      // Inicializar ao carregar a página
+      window.addEventListener("DOMContentLoaded", () => {
+        checkStatus();
+        initColorChart();
+      });
+
+      // Verificar status do monitoramento
+      async function checkStatus() {
+        try {
+          const response = await fetch("/api/roulette/status");
+          const data = await response.json();
+
+          const isActive = data.connected && data.available;
+          isMonitoring = isActive;
+          updateStatusUI(isActive);
+
+          if (isActive) {
+            loadResults();
+            startAutoUpdate();
+          }
+        } catch (error) {
+          console.error("Erro ao verificar status:", error);
+          updateStatusUI(false);
+        }
+      }
+
+      // Atualizar interface de status
+      function updateStatusUI(monitoring) {
+        const statusDot = document.getElementById("statusDot");
+        const statusText = document.getElementById("statusText");
+        const startBtn = document.getElementById("startBtn");
+        const stopBtn = document.getElementById("stopBtn");
+
+        if (monitoring) {
+          statusDot.classList.remove("offline");
+          statusText.textContent = "Monitoramento Ativo";
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
+        } else {
+          statusDot.classList.add("offline");
+          statusText.textContent = "Monitoramento Inativo";
+          startBtn.disabled = false;
+          stopBtn.disabled = true;
+        }
+      }
+
+      // Iniciar monitoramento
+      async function startMonitoring() {
+        try {
+          const response = await fetch("/api/roulette/start", {
+            method: "POST",
+          });
+          const data = await response.json();
+
+          if (data.success) {
+            isMonitoring = true;
+            updateStatusUI(true);
+            loadResults(); // Carregar resultados imediatamente
+            startAutoUpdate();
+            alert("✅ Monitoramento iniciado com sucesso!");
+          } else {
+            alert("❌ Erro ao iniciar: " + (data.error || data.message));
+          }
+        } catch (error) {
+          console.error("Erro ao iniciar monitoramento:", error);
+          alert("❌ Erro ao conectar com o servidor");
+        }
+      }
+
+      // Parar monitoramento
+      async function stopMonitoring() {
+        try {
+          const response = await fetch("/api/roulette/stop", {
+            method: "POST",
+          });
+          const data = await response.json();
+
+          if (data.success) {
+            isMonitoring = false;
+            updateStatusUI(false);
+            stopAutoUpdate();
+            alert("✅ Monitoramento parado!");
+          } else {
+            alert("❌ Erro ao parar: " + (data.error || data.message));
+          }
+        } catch (error) {
+          console.error("Erro ao parar monitoramento:", error);
+          alert("❌ Erro ao conectar com o servidor");
+        }
+      }
+
+      // Iniciar atualizações automáticas
+      function startAutoUpdate() {
+        if (updateInterval) clearInterval(updateInterval);
+        updateInterval = setInterval(loadResults, 3000); // A cada 3 segundos
+      }
+
+      // Parar atualizações automáticas
+      function stopAutoUpdate() {
+        if (updateInterval) {
+          clearInterval(updateInterval);
+          updateInterval = null;
+        }
+      }
+
+      // Carregar resultados
+      async function loadResults() {
+        try {
+          const response = await fetch("/api/roulette/results");
+          const data = await response.json();
+
+          console.log("Resultados recebidos:", data); // Debug
+
+          if (data.success && data.results && data.results.length > 0) {
+            displayResults(data.results);
+            updateLastUpdate();
+            loadStats();
+          } else if (
+            data.success &&
+            data.results &&
+            data.results.length === 0
+          ) {
+            // Mostrar mensagem de sem dados
+            const container = document.getElementById("resultsContainer");
+            container.innerHTML =
+              '<div class="empty-state"><div class="empty-state-icon">🎰</div><p>Aguardando resultados...</p></div>';
+          }
+        } catch (error) {
+          console.error("Erro ao carregar resultados:", error);
+          const container = document.getElementById("resultsContainer");
+          container.innerHTML =
+            '<div class="error">Erro ao carregar resultados. Verifique a conexão.</div>';
+        }
+      }
+
+      // Exibir resultados na grade
+      function displayResults(results) {
+        const container = document.getElementById("resultsContainer");
+        container.innerHTML = "";
+
+        // Mostrar últimos 20 resultados
+        const last20 = results.slice(0, 20);
+
+        last20.forEach((result) => {
+          const item = document.createElement("div");
+          item.className = `result-item ${result.color}`;
+
+          const number = document.createElement("div");
+          number.className = "result-number";
+          number.textContent = result.number;
+
+          const time = document.createElement("div");
+          time.className = "result-time";
+          time.textContent = new Date(result.timestamp).toLocaleTimeString(
+            "pt-BR",
+            {
+              hour: "2-digit",
+              minute: "2-digit",
+            }
+          );
+
+          item.appendChild(number);
+          item.appendChild(time);
+          container.appendChild(item);
+        });
+
+        // Detectar padrões
+        detectPatterns(results);
+        generateAlerts(results);
+      }
+
+      // Carregar estatísticas
+      async function loadStats() {
+        try {
+          const response = await fetch("/api/roulette/analysis");
+          const data = await response.json();
+
+          if (data.success && data.analysis) {
+            // Converter análise para formato de estatísticas
+            const analysis = data.analysis;
+            const total = analysis.total_spins || 1;
+
+            const stats = {
+              red: {
+                count: analysis.colors?.red || 0,
+                percentage: ((analysis.colors?.red || 0) / total) * 100,
+              },
+              black: {
+                count: analysis.colors?.black || 0,
+                percentage: ((analysis.colors?.black || 0) / total) * 100,
+              },
+              green: {
+                count: analysis.colors?.green || 0,
+                percentage: ((analysis.colors?.green || 0) / total) * 100,
+              },
+            };
+
+            updateStatsDisplay(stats);
+            updateColorChart(stats);
+          }
+        } catch (error) {
+          console.error("Erro ao carregar estatísticas:", error);
+        }
+      }
+
+      // Atualizar exibição de estatísticas
+      function updateStatsDisplay(stats) {
+        document.getElementById("redCount").textContent = stats.red.count;
+        document.getElementById("redPercent").textContent =
+          stats.red.percentage.toFixed(1) + "%";
+
+        document.getElementById("blackCount").textContent = stats.black.count;
+        document.getElementById("blackPercent").textContent =
+          stats.black.percentage.toFixed(1) + "%";
+
+        document.getElementById("greenCount").textContent = stats.green.count;
+        document.getElementById("greenPercent").textContent =
+          stats.green.percentage.toFixed(1) + "%";
+      }
+
+      // Inicializar gráfico de cores
+      function initColorChart() {
+        const ctx = document.getElementById("colorChart").getContext("2d");
+        colorChart = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: ["Vermelho", "Preto", "Verde"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: [
+                  "rgba(231, 76, 60, 0.8)",
+                  "rgba(44, 62, 80, 0.8)",
+                  "rgba(39, 174, 96, 0.8)",
+                ],
+                borderColor: [
+                  "rgba(231, 76, 60, 1)",
+                  "rgba(44, 62, 80, 1)",
+                  "rgba(39, 174, 96, 1)",
+                ],
+                borderWidth: 2,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "bottom",
+              },
+            },
+          },
+        });
+      }
+
+      // Atualizar gráfico de cores
+      function updateColorChart(stats) {
+        if (colorChart) {
+          colorChart.data.datasets[0].data = [
+            stats.red.count,
+            stats.black.count,
+            stats.green.count,
+          ];
+          colorChart.update();
+        }
+      }
+
+      // Detectar padrões de sequência
+      function detectPatterns(results) {
+        const patternsList = document.getElementById("patternsList");
+        patternsList.innerHTML = "";
+
+        if (results.length < 3) {
+          patternsList.innerHTML =
+            '<div class="empty-state"><p>Aguardando mais dados...</p></div>';
+          return;
+        }
+
+        const patterns = {};
+
+        // Analisar sequências de 3 cores
+        for (let i = 0; i <= results.length - 3; i++) {
+          const sequence = results
+            .slice(i, i + 3)
+            .map((r) => r.color)
+            .join("-");
+          patterns[sequence] = (patterns[sequence] || 0) + 1;
+        }
+
+        // Ordenar por frequência
+        const sortedPatterns = Object.entries(patterns)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5); // Top 5 padrões
+
+        if (sortedPatterns.length === 0) {
+          patternsList.innerHTML =
+            '<div class="empty-state"><p>Nenhum padrão detectado</p></div>';
+          return;
+        }
+
+        sortedPatterns.forEach(([pattern, count]) => {
+          const item = document.createElement("div");
+          item.className = "pattern-item";
+
+          const sequence = document.createElement("div");
+          sequence.className = "pattern-sequence";
+
+          pattern.split("-").forEach((color) => {
+            const colorDiv = document.createElement("div");
+            colorDiv.className = `pattern-color ${color}`;
+            colorDiv.textContent =
+              color === "red" ? "V" : color === "black" ? "P" : "0";
+            sequence.appendChild(colorDiv);
+          });
+
+          const countDiv = document.createElement("div");
+          countDiv.className = "pattern-count";
+          countDiv.textContent = `${count}x`;
+
+          item.appendChild(sequence);
+          item.appendChild(countDiv);
+          patternsList.appendChild(item);
+        });
+      }
+
+      // Gerar alertas e recomendações
+      function generateAlerts(results) {
+        const alertsContainer = document.getElementById("alertsContainer");
+        alertsContainer.innerHTML = "";
+
+        if (results.length < 10) {
+          alertsContainer.innerHTML =
+            '<div class="empty-state"><p>Aguardando mais dados...</p></div>';
+          return;
+        }
+
+        const alerts = [];
+        const last10 = results.slice(0, 10);
+
+        // Detectar números quentes (aparecem 2+ vezes nos últimos 10)
+        const numberCounts = {};
+        last10.forEach((r) => {
+          numberCounts[r.number] = (numberCounts[r.number] || 0) + 1;
+        });
+
+        Object.entries(numberCounts).forEach(([number, count]) => {
+          if (count >= 2) {
+            alerts.push({
+              type: "hot-number",
+              message: `🔥 Número ${number} apareceu ${count}x nos últimos 10 giros`,
+              priority: count,
+            });
+          }
+        });
+
+        // Detectar sequências de mesma cor
+        let sameColorStreak = 1;
+        let streakColor = last10[0].color;
+
+        for (let i = 1; i < last10.length; i++) {
+          if (last10[i].color === streakColor) {
+            sameColorStreak++;
+          } else {
+            break;
+          }
+        }
+
+        if (sameColorStreak >= 3) {
+          const colorName =
+            streakColor === "red"
+              ? "Vermelho"
+              : streakColor === "black"
+              ? "Preto"
+              : "Verde";
+          alerts.push({
+            type: "sequence",
+            message: `📍 Sequência de ${sameColorStreak} resultados ${colorName}`,
+            priority: sameColorStreak,
+          });
+        }
+
+        // Detectar ausência de verde
+        const greenInLast10 = last10.filter((r) => r.color === "green").length;
+        if (greenInLast10 === 0 && results.length >= 20) {
+          const last20 = results.slice(0, 20);
+          const greenInLast20 = last20.filter(
+            (r) => r.color === "green"
+          ).length;
+          if (greenInLast20 === 0) {
+            alerts.push({
+              type: "cold-number",
+              message: `❄️ Verde (0) não aparece há ${last20.length} giros`,
+              priority: 3,
+            });
+          }
+        }
+
+        // Mostrar alertas
+        if (alerts.length === 0) {
+          alertsContainer.innerHTML =
+            '<div class="empty-state"><p>Nenhum alerta no momento</p></div>';
+          return;
+        }
+
+        // Ordenar por prioridade
+        alerts.sort((a, b) => b.priority - a.priority);
+
+        alerts.forEach((alert) => {
+          const item = document.createElement("div");
+          item.className = `alert-item ${alert.type}`;
+          item.innerHTML = `
+            <span>${alert.message}</span>
+            <span>⚡</span>
+          `;
+          alertsContainer.appendChild(item);
+        });
+      }
+
+      // Atualizar timestamp da última atualização
+      function updateLastUpdate() {
+        const lastUpdate = document.getElementById("lastUpdate");
+        const now = new Date().toLocaleTimeString("pt-BR");
+        lastUpdate.textContent = `Última atualização: ${now}`;
+      }
+    </script>
+  </body>
+</html>

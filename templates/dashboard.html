@@ -300,6 +300,80 @@
         border-left: 4px solid #c62828;
       }
 
+      .play-banner {
+        background: linear-gradient(135deg, #f39c12, #e74c3c);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        text-align: center;
+        box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
+        animation: pulse-banner 2s infinite;
+      }
+
+      @keyframes pulse-banner {
+        0%,
+        100% {
+          box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
+        }
+        50% {
+          box-shadow: 0 8px 35px rgba(231, 76, 60, 0.5);
+        }
+      }
+
+      .play-banner a {
+        color: white;
+        text-decoration: none;
+        font-size: 1.5rem;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        transition: transform 0.3s ease;
+      }
+
+      .play-banner a:hover {
+        transform: scale(1.05);
+      }
+
+      .play-banner-icon {
+        font-size: 2rem;
+        animation: bounce 1s infinite;
+      }
+
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      .btn-play {
+        background: linear-gradient(135deg, #f39c12, #e74c3c);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        margin-left: 10px;
+      }
+
+      .btn-play:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        background: linear-gradient(135deg, #e67e22, #c0392b);
+      }
+
       @media (max-width: 768px) {
         .dashboard-grid {
           grid-template-columns: 1fr;
@@ -322,6 +396,17 @@
         <p>Dashboard Avançado - Análise de Padrões em Tempo Real</p>
       </div>
 
+      <div class="play-banner">
+        <a
+          href="https://playnabets.com/casino/soline/mobi_Dobrar"
+          target="_blank"
+        >
+          <span class="play-banner-icon">🎯</span>
+          <span>CLIQUE AQUI PARA JOGAR DOUBLE AO VIVO</span>
+          <span>🔥</span>
+        </a>
+      </div>
+
       <div class="status-bar">
         <div class="status-item">
           <div class="status-dot" id="wsStatus"></div>
@@ -338,6 +423,16 @@
         </div>
         <div class="status-item">
           <span>Precisão: <span id="accuracyRate">0%</span></span>
+        </div>
+        <div class="status-item">
+          <a
+            href="https://playnabets.com/casino/soline/mobi_Dobrar"
+            target="_blank"
+            class="btn-play"
+            title="Abrir Double ao vivo"
+          >
+            🎯 Jogar Agora
+          </a>
         </div>
       </div>
 
