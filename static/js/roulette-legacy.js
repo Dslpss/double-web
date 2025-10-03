@@ -24,8 +24,25 @@ async function checkStatus() {
     updateStatusUI(isActive);
 
     if (isActive) {
+      // Se foi inicializado automaticamente, notificar usuário
+      if (data.auto_started) {
+        console.log("✅ Sistema inicializado automaticamente!");
+        showNotification(
+          "✅ Sistema conectado automaticamente à Roleta Brasileira",
+          "success"
+        );
+      }
+
       loadResults();
       startAutoUpdate();
+
+      // Iniciar detecção de padrões se disponível
+      if (window.roulettePatterns) {
+        window.roulettePatterns.startDetection();
+      }
+    } else if (data.auto_start_failed) {
+      console.warn("⚠️ Falha ao inicializar automaticamente:", data.message);
+      showNotification(`⚠️ ${data.message}`, "warning");
     }
   } catch (error) {
     console.error("Erro ao verificar status:", error);
@@ -377,6 +394,44 @@ function updateLastUpdate() {
     const now = new Date().toLocaleTimeString("pt-BR");
     lastUpdate.textContent = `Última atualização: ${now}`;
   }
+}
+
+// Mostrar notificação temporária
+function showNotification(message, type = "info") {
+  // Criar elemento de notificação
+  const notification = document.createElement("div");
+  notification.className = `auto-start-notification ${type}`;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    background: ${
+      type === "success"
+        ? "#10b981"
+        : type === "warning"
+        ? "#f59e0b"
+        : "#3b82f6"
+    };
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    z-index: 10000;
+    font-weight: 500;
+    animation: slideIn 0.3s ease-out;
+  `;
+  notification.textContent = message;
+
+  // Adicionar ao body
+  document.body.appendChild(notification);
+
+  // Remover após 5 segundos
+  setTimeout(() => {
+    notification.style.animation = "slideOut 0.3s ease-in";
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+  }, 5000);
 }
 
 console.log("✅ Roulette Legacy Functions loaded");

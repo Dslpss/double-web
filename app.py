@@ -22,6 +22,10 @@ from datetime import datetime
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 
+# IMPORTANTE: Carregar variáveis de ambiente ANTES de importar módulos que precisam delas
+from dotenv import load_dotenv
+load_dotenv()  # Carregar variáveis do .env
+
 # Importar sistema de notificações
 try:
     from shared.src.notifications.pattern_notifier import notify_pattern, notify_result, get_notifier
@@ -62,8 +66,6 @@ except ImportError as e:
 
 try:
     from integrators.pragmatic_brazilian_roulette import PragmaticBrazilianRoulette
-    from dotenv import load_dotenv
-    load_dotenv()  # Carregar variáveis do .env
     roulette_available = True
 except ImportError as e:
     print(f"Aviso: Módulo Roleta Brasileira não disponível: {e}")
@@ -837,42 +839,97 @@ def roulette_status():
     try:
         global roulette_integrator
         
+        print("\n🔍 [ROULETTE STATUS] Verificando status do integrador...")
+        
+        # Verificar se módulo está disponível
         if not roulette_available:
+            error_msg = "Módulo PragmaticBrazilianRoulette não está disponível"
+            print(f"❌ {error_msg}")
             return jsonify({
                 'available': False,
                 'connected': False,
-                'error': 'Módulo da Roleta não disponível'
+                'monitoring': False,
+                'error': error_msg,
+                'details': 'Verifique se o arquivo integrators/pragmatic_brazilian_roulette.py existe'
             })
         
-        # Tentar inicializar automaticamente se não estiver inicializado
+        print("✅ Módulo disponível")
+        
+        # Verificar credenciais
+        pragmatic_username = os.getenv('PRAGMATIC_USERNAME')
+        pragmatic_password = os.getenv('PRAGMATIC_PASSWORD')
+        has_credentials = bool(pragmatic_username and pragmatic_password)
+        
+        print(f"� Credenciais: {'✅ Configuradas' if has_credentials else '❌ NÃO configuradas'}")
+        
+        # Verificar estado do integrador
         if roulette_integrator is None:
-            print("🔄 Tentando inicializar integrador automaticamente...")
-            if init_roulette_integrator():
-                print("✅ Integrador inicializado automaticamente")
-            else:
-                return jsonify({
-                    'available': True,
-                    'connected': False,
-                    'monitoring': False,
-                    'message': 'Falha ao inicializar integrador automaticamente'
-                })
+            print("⚠️ Integrador não está inicializado")
+            
+            # Tentar inicializar automaticamente se tiver credenciais
+            if has_credentials:
+                print("🔄 Tentando inicializar automaticamente...")
+                try:
+                    init_roulette_integrator()
+                    print("✅ Integrador inicializado automaticamente com sucesso!")
+                    
+                    # Verificar se realmente conectou
+                    is_connected = roulette_integrator.jsessionid is not None
+                    
+                    return jsonify({
+                        'available': True,
+                        'connected': is_connected,
+                        'monitoring': is_connected,
+                        'has_credentials': has_credentials,
+                        'session_id': bool(roulette_integrator.jsessionid),
+                        'auto_started': True,
+                        'message': 'Integrador inicializado automaticamente'
+                    })
+                except Exception as e:
+                    print(f"❌ Falha ao inicializar automaticamente: {e}")
+                    return jsonify({
+                        'available': True,
+                        'connected': False,
+                        'monitoring': False,
+                        'has_credentials': has_credentials,
+                        'auto_start_failed': True,
+                        'message': f'Falha ao inicializar automaticamente: {str(e)}'
+                    })
+            
+            # Sem credenciais, apenas reportar
+            return jsonify({
+                'available': True,
+                'connected': False,
+                'monitoring': False,
+                'has_credentials': has_credentials,
+                'message': 'Integrador não inicializado. Configure as credenciais.'
+            })
         
         # Verificar se está conectado
         is_connected = roulette_integrator.jsessionid is not None
         
+        print(f"📡 Status: {'✅ Conectado' if is_connected else '❌ Desconectado'}")
+        print(f"   JSESSIONID: {roulette_integrator.jsessionid[:30] if roulette_integrator.jsessionid else 'None'}...")
+        
         return jsonify({
             'available': True,
             'connected': is_connected,
-            'monitoring': True,  # Sempre true se integrador está funcionando
+            'monitoring': is_connected,
+            'has_credentials': has_credentials,
             'session_id': bool(roulette_integrator.jsessionid),
             'last_update': roulette_integrator.last_update_time.isoformat() if hasattr(roulette_integrator, 'last_update_time') and roulette_integrator.last_update_time else None
         })
     except Exception as e:
-        print(f"❌ Erro no status da roleta: {e}")
+        error_msg = f"Erro ao verificar status: {str(e)}"
+        print(f"❌ [ROULETTE STATUS] {error_msg}")
+        import traceback
+        traceback.print_exc()
+        
         return jsonify({
             'available': False,
             'connected': False,
-            'error': str(e)
+            'monitoring': False,
+            'error': error_msg
         }), 500
 
 def init_roulette_integrator():
@@ -880,11 +937,13 @@ def init_roulette_integrator():
     global roulette_integrator
     
     if roulette_integrator is not None:
+        print("ℹ️ Integrador já está inicializado")
         return True
     
     if not roulette_available:
-        print("⚠️ Módulo da Roleta não disponível")
-        return False
+        error_msg = "Módulo da Roleta não disponível - verifique a importação do PragmaticBrazilianRoulette"
+        print(f"⚠️ {error_msg}")
+        raise Exception(error_msg)
     
     try:
         print("🔧 Inicializando integrador da Roleta Brasileira...")
@@ -893,10 +952,16 @@ def init_roulette_integrator():
         pragmatic_username = os.getenv('PRAGMATIC_USERNAME')
         pragmatic_password = os.getenv('PRAGMATIC_PASSWORD')
         
-        if not pragmatic_username or not pragmatic_password:
-            print("⚠️ Credenciais da Roleta não configuradas no .env")
-            return False
+        print(f"🔍 Verificando credenciais...")
+        print(f"   Username: {'✅ Configurado' if pragmatic_username else '❌ NÃO configurado'}")
+        print(f"   Password: {'✅ Configurado' if pragmatic_password else '❌ NÃO configurado'}")
         
+        if not pragmatic_username or not pragmatic_password:
+            error_msg = "Credenciais da Roleta não configuradas (PRAGMATIC_USERNAME e PRAGMATIC_PASSWORD)"
+            print(f"⚠️ {error_msg}")
+            raise Exception(error_msg)
+        
+        print(f"🎰 Criando instância do PragmaticBrazilianRoulette...")
         roulette_integrator = PragmaticBrazilianRoulette(
             username=pragmatic_username,
             password=pragmatic_password
@@ -904,29 +969,50 @@ def init_roulette_integrator():
         
         # Fazer login
         print("🔐 Fazendo login na Roleta Brasileira...")
-        if not roulette_integrator.login():
-            print("❌ Falha ao fazer login na Roleta Brasileira")
+        login_success = roulette_integrator.login()
+        
+        if not login_success:
+            error_msg = "Falha ao fazer login na Roleta Brasileira - credenciais inválidas ou erro de conexão"
+            print(f"❌ {error_msg}")
             roulette_integrator = None
-            return False
+            raise Exception(error_msg)
         
         print("✅ Integrador da Roleta Brasileira inicializado com sucesso")
+        print(f"   JSESSIONID: {'✅ Obtido' if roulette_integrator.jsessionid else '❌ Não obtido'}")
         return True
         
     except Exception as e:
-        print(f"❌ Erro ao inicializar integrador da Roleta: {e}")
+        error_msg = f"Erro ao inicializar integrador da Roleta: {str(e)}"
+        print(f"❌ {error_msg}")
+        import traceback
+        traceback.print_exc()
         roulette_integrator = None
-        return False
+        raise Exception(error_msg)
 
 @app.route('/api/roulette/start', methods=['POST'])
 def roulette_start():
     """Inicia monitoramento da Roleta Brasileira."""
     try:
-        # Inicializar integrador se necessário
-        if not init_roulette_integrator():
+        print("\n" + "="*60)
+        print("🎰 [ROULETTE START] Requisição recebida")
+        print("="*60)
+        
+        # Verificar se módulo está disponível
+        if not roulette_available:
+            error_msg = "Módulo PragmaticBrazilianRoulette não está disponível. Verifique a instalação."
+            print(f"❌ {error_msg}")
             return jsonify({
                 'success': False,
-                'error': 'Falha ao inicializar integrador da Roleta Brasileira'
+                'error': error_msg,
+                'details': 'Módulo não importado corretamente no app.py'
             }), 500
+        
+        # Inicializar integrador se necessário
+        print("🔄 Chamando init_roulette_integrator()...")
+        init_roulette_integrator()
+        
+        print("✅ Integrador inicializado com sucesso")
+        print("="*60 + "\n")
         
         return jsonify({
             'success': True,
@@ -935,12 +1021,16 @@ def roulette_start():
             'monitoring': True
         })
     except Exception as e:
-        print(f"Erro ao iniciar Roleta: {e}")
+        error_msg = str(e)
+        print(f"\n❌ [ROULETTE START] ERRO: {error_msg}")
         import traceback
         traceback.print_exc()
+        print("="*60 + "\n")
+        
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': error_msg,
+            'details': 'Verifique os logs do servidor para mais informações'
         }), 500
 
 @app.route('/api/roulette/stop', methods=['POST'])
