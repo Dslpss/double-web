@@ -840,72 +840,93 @@ def roulette_status():
         if not roulette_available:
             return jsonify({
                 'available': False,
+                'connected': False,
                 'error': 'Módulo da Roleta não disponível'
             })
         
+        # Tentar inicializar automaticamente se não estiver inicializado
         if roulette_integrator is None:
-            return jsonify({
-                'available': True,
-                'connected': False,
-                'monitoring': False,
-                'message': 'Integrador não inicializado'
-            })
+            print("🔄 Tentando inicializar integrador automaticamente...")
+            if init_roulette_integrator():
+                print("✅ Integrador inicializado automaticamente")
+            else:
+                return jsonify({
+                    'available': True,
+                    'connected': False,
+                    'monitoring': False,
+                    'message': 'Falha ao inicializar integrador automaticamente'
+                })
+        
+        # Verificar se está conectado
+        is_connected = roulette_integrator.jsessionid is not None
         
         return jsonify({
             'available': True,
-            'connected': roulette_integrator.jsessionid is not None,
-            'monitoring': hasattr(roulette_integrator, 'monitoring') and roulette_integrator.monitoring,
+            'connected': is_connected,
+            'monitoring': True,  # Sempre true se integrador está funcionando
             'session_id': bool(roulette_integrator.jsessionid),
             'last_update': roulette_integrator.last_update_time.isoformat() if hasattr(roulette_integrator, 'last_update_time') and roulette_integrator.last_update_time else None
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ Erro no status da roleta: {e}")
+        return jsonify({
+            'available': False,
+            'connected': False,
+            'error': str(e)
+        }), 500
+
+def init_roulette_integrator():
+    """Inicializa o integrador da Roleta Brasileira."""
+    global roulette_integrator
+    
+    if roulette_integrator is not None:
+        return True
+    
+    if not roulette_available:
+        print("⚠️ Módulo da Roleta não disponível")
+        return False
+    
+    try:
+        print("🔧 Inicializando integrador da Roleta Brasileira...")
+        
+        # Carregar credenciais do .env
+        pragmatic_username = os.getenv('PRAGMATIC_USERNAME')
+        pragmatic_password = os.getenv('PRAGMATIC_PASSWORD')
+        
+        if not pragmatic_username or not pragmatic_password:
+            print("⚠️ Credenciais da Roleta não configuradas no .env")
+            return False
+        
+        roulette_integrator = PragmaticBrazilianRoulette(
+            username=pragmatic_username,
+            password=pragmatic_password
+        )
+        
+        # Fazer login
+        print("🔐 Fazendo login na Roleta Brasileira...")
+        if not roulette_integrator.login():
+            print("❌ Falha ao fazer login na Roleta Brasileira")
+            roulette_integrator = None
+            return False
+        
+        print("✅ Integrador da Roleta Brasileira inicializado com sucesso")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Erro ao inicializar integrador da Roleta: {e}")
+        roulette_integrator = None
+        return False
 
 @app.route('/api/roulette/start', methods=['POST'])
 def roulette_start():
     """Inicia monitoramento da Roleta Brasileira."""
     try:
-        global roulette_integrator
-        
-        if not roulette_available:
+        # Inicializar integrador se necessário
+        if not init_roulette_integrator():
             return jsonify({
                 'success': False,
-                'error': 'Módulo da Roleta não disponível'
+                'error': 'Falha ao inicializar integrador da Roleta Brasileira'
             }), 500
-        
-        # Inicializar integrador se necessário
-        if roulette_integrator is None:
-            print("Inicializando integrador da Roleta Brasileira...")
-            
-            # Carregar credenciais do .env
-            pragmatic_username = os.getenv('PRAGMATIC_USERNAME')
-            pragmatic_password = os.getenv('PRAGMATIC_PASSWORD')
-            
-            if not pragmatic_username or not pragmatic_password:
-                return jsonify({
-                    'success': False,
-                    'error': 'Credenciais da Roleta não configuradas no .env (PRAGMATIC_USERNAME e PRAGMATIC_PASSWORD)'
-                }), 500
-            
-            roulette_integrator = PragmaticBrazilianRoulette(
-                username=pragmatic_username,
-                password=pragmatic_password
-            )
-        
-        # Fazer login se necessário
-        if roulette_integrator.jsessionid is None:
-            print("Fazendo login na Roleta Brasileira...")
-            if not roulette_integrator.login():
-                return jsonify({
-                    'success': False,
-                    'error': 'Falha ao fazer login na Roleta Brasileira'
-                }), 500
-        
-        # Iniciar monitoramento
-        if not hasattr(roulette_integrator, 'monitoring') or not roulette_integrator.monitoring:
-            print("Iniciando monitoramento da Roleta Brasileira...")
-            # Note: A classe não tem método start_monitoring ainda, vamos apenas retornar sucesso
-            # O monitoramento será feito através das chamadas à API get_history
         
         return jsonify({
             'success': True,
@@ -967,6 +988,10 @@ def roulette_results():
         # Buscar resultados do histórico
         results = roulette_integrator.get_history(num_games=20)
         
+        # Verificar se results não é None
+        if results is None:
+            results = []
+        
         return jsonify({
             'success': True,
             'results': results,
@@ -994,6 +1019,10 @@ def roulette_analysis():
         
         # Buscar resultados para análise
         results = roulette_integrator.get_history(num_games=100)
+        
+        # Verificar se results não é None
+        if results is None:
+            results = []
         
         if not results:
             return jsonify({
@@ -1059,6 +1088,206 @@ def roulette_analysis():
             'analysis': analysis,
             'timestamp': int(time.time())
         })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# ===== ANÁLISE AVANÇADA DE PADRÕES (FASE 2) =====
+
+# Inicializar analisador avançado
+roulette_advanced_analyzer = None
+try:
+    from analyzers.roulette_analyzer import RouletteAdvancedAnalyzer
+    roulette_advanced_analyzer = RouletteAdvancedAnalyzer()
+    print("✅ Analisador avançado de roleta inicializado")
+except ImportError as e:
+    print(f"⚠️ Analisador avançado não disponível: {e}")
+
+@app.route('/api/roulette/patterns/basic')
+def roulette_basic_patterns():
+    """
+    Retorna análise básica de padrões (cache de 5 segundos)
+    Essa rota serve dados para o detector JavaScript
+    """
+    try:
+        # Inicializar integrador automaticamente se necessário
+        if not init_roulette_integrator():
+            return jsonify({
+                'success': False,
+                'patterns': [],
+                'message': 'Integrador não disponível'
+            })
+        
+        # Buscar últimos 100 resultados
+        results = roulette_integrator.get_history(num_games=100)
+        
+        # Verificar se results não é None
+        if results is None:
+            results = []
+        
+        if not results:
+            return jsonify({
+                'success': True,
+                'patterns': [],
+                'results': [],
+                'message': 'Nenhum resultado disponível'
+            })
+        
+        # Retornar resultados formatados para o JavaScript
+        formatted_results = []
+        for r in results:
+            formatted_results.append({
+                'number': r.get('number'),
+                'color': r.get('color', '').lower(),
+                'timestamp': r.get('timestamp', int(time.time()))
+            })
+        
+        return jsonify({
+            'success': True,
+            'results': formatted_results,
+            'count': len(formatted_results),
+            'timestamp': int(time.time())
+        }), 200, {
+            'Cache-Control': 'public, max-age=5'  # Cache de 5 segundos
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/roulette/patterns/advanced')
+def roulette_advanced_patterns():
+    """
+    Retorna análise avançada de padrões usando Python (cache de 30 segundos)
+    Inclui: setores, bias, clusters espaciais, tendências temporais
+    """
+    try:
+        # Inicializar integrador automaticamente se necessário
+        if not init_roulette_integrator():
+            return jsonify({
+                'success': False,
+                'patterns': [],
+                'message': 'Integrador não disponível'
+            })
+        
+        if roulette_advanced_analyzer is None:
+            return jsonify({
+                'success': False,
+                'patterns': [],
+                'message': 'Analisador avançado não disponível'
+            })
+        
+        # Buscar resultados para análise (pelo menos 100 para detecção de bias)
+        results = roulette_integrator.get_history(num_games=150)
+        
+        if not results:
+            return jsonify({
+                'success': True,
+                'patterns': [],
+                'message': 'Nenhum resultado disponível'
+            })
+        
+        # Formatar resultados
+        formatted_results = []
+        for r in results:
+            formatted_results.append({
+                'number': r.get('number'),
+                'color': r.get('color', '').lower(),
+                'timestamp': r.get('timestamp', int(time.time()))
+            })
+        
+        # Executar análise avançada
+        print("🔬 Executando análise avançada...")
+        patterns = roulette_advanced_analyzer.analyze_all_advanced_patterns(formatted_results)
+        if patterns is None:
+            patterns = []
+        print(f"✅ {len(patterns)} padrões detectados")
+        
+        # Obter estatísticas gerais
+        print("📊 Obtendo estatísticas...")
+        stats = roulette_advanced_analyzer.get_comprehensive_stats(formatted_results)
+        print("✅ Estatísticas obtidas")
+        
+        # Testar serialização de cada componente
+        print("🧪 Testando serialização...")
+        try:
+            json.dumps(patterns)
+            print("✅ Padrões serializáveis")
+        except Exception as e:
+            print(f"❌ Erro na serialização de padrões: {e}")
+            return jsonify({'success': False, 'error': f'Erro padrões: {e}'}), 500
+        
+        try:
+            json.dumps(stats)
+            print("✅ Estatísticas serializáveis")
+        except Exception as e:
+            print(f"❌ Erro na serialização de estatísticas: {e}")
+            return jsonify({'success': False, 'error': f'Erro estatísticas: {e}'}), 500
+        
+        print("🚀 Retornando resposta...")
+        return jsonify({
+            'success': True,
+            'patterns': patterns,
+            'statistics': stats,
+            'total_results': len(formatted_results),
+            'timestamp': int(time.time())
+        }), 200, {
+            'Cache-Control': 'public, max-age=30'  # Cache de 30 segundos
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/roulette/patterns/all')
+def roulette_all_patterns():
+    """
+    Retorna TODOS os padrões (básicos + avançados) consolidados
+    """
+    try:
+        # Esta rota combina os resultados das duas análises
+        # Frontend pode usar esta única rota para obter tudo
+        
+        basic_data = roulette_basic_patterns()
+        basic_json = basic_data[0].get_json()
+        
+        advanced_data = roulette_advanced_patterns()
+        advanced_json = advanced_data[0].get_json()
+        
+        if not basic_json.get('success') or not advanced_json.get('success'):
+            return jsonify({
+                'success': False,
+                'message': 'Erro ao obter padrões'
+            })
+        
+        # Consolidar
+        all_patterns = advanced_json.get('patterns', [])
+        
+        return jsonify({
+            'success': True,
+            'results': basic_json.get('results', []),
+            'patterns': {
+                'basic': [],  # Detectados no frontend com JavaScript
+                'advanced': all_patterns
+            },
+            'statistics': advanced_json.get('statistics', {}),
+            'timestamp': int(time.time())
+        }), 200, {
+            'Cache-Control': 'public, max-age=10'  # Cache intermediário
+        }
+        
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -1481,175 +1710,8 @@ def get_adaptive_settings():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ===== ROTAS DA ROLETA BRASILEIRA =====
-
-# Integrador da Roleta (será inicializado sob demanda)
-roulette_integrator = None
-roulette_last_results = []
-roulette_monitoring = False
-
-@app.route('/api/roulette/start', methods=['POST'])
-def start_roulette_monitoring():
-    """Inicia monitoramento da Roleta Brasileira."""
-    global roulette_integrator, roulette_monitoring
-    
-    try:
-        if roulette_monitoring:
-            return jsonify({'success': True, 'message': 'Monitoramento já ativo'})
-        
-        # Importar e inicializar integrador
-        from integrators.pragmatic_brazilian_roulette import PragmaticBrazilianRoulette
-        from dotenv import load_dotenv
-        load_dotenv()
-        
-        import os
-        username = os.getenv('PRAGMATIC_USERNAME')
-        password = os.getenv('PRAGMATIC_PASSWORD')
-        
-        if not username or not password:
-            return jsonify({
-                'success': False,
-                'error': 'Credenciais não configuradas no .env'
-            }), 400
-        
-        roulette_integrator = PragmaticBrazilianRoulette(username, password)
-        
-        # Fazer login
-        if not roulette_integrator.login():
-            return jsonify({
-                'success': False,
-                'error': 'Falha no login'
-            }), 500
-        
-        roulette_monitoring = True
-        
-        # Iniciar thread de monitoramento
-        def monitor_roulette():
-            global roulette_last_results, roulette_monitoring
-            last_id = None
-            
-            while roulette_monitoring:
-                try:
-                    history = roulette_integrator.get_history(num_games=10)
-                    if history and history[0]['id'] != last_id:
-                        # Novo resultado
-                        new_result = history[0]
-                        last_id = new_result['id']
-                        
-                        # Adicionar à lista global
-                        roulette_last_results.insert(0, new_result)
-                        if len(roulette_last_results) > 50:
-                            roulette_last_results.pop()
-                        
-                        print(f"🎰 Novo resultado roleta: {new_result['number']} {new_result['color']}")
-                    
-                    time.sleep(10)  # Checar a cada 10 segundos
-                except Exception as e:
-                    print(f"Erro no monitoramento da roleta: {e}")
-                    time.sleep(10)
-        
-        threading.Thread(target=monitor_roulette, daemon=True).start()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Monitoramento iniciado'
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-@app.route('/api/roulette/stop', methods=['POST'])
-def stop_roulette_monitoring():
-    """Para monitoramento da Roleta Brasileira."""
-    global roulette_monitoring
-    
-    roulette_monitoring = False
-    
-    return jsonify({
-        'success': True,
-        'message': 'Monitoramento parado'
-    })
-
-@app.route('/api/roulette/results')
-def get_roulette_results():
-    """Obtém resultados recentes da roleta."""
-    global roulette_last_results
-    
-    try:
-        return jsonify({
-            'success': True,
-            'results': roulette_last_results[:20],
-            'total': len(roulette_last_results),
-            'monitoring': roulette_monitoring
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-@app.route('/api/roulette/stats')
-def get_roulette_stats():
-    """Obtém estatísticas da roleta."""
-    global roulette_last_results
-    
-    try:
-        if not roulette_last_results:
-            return jsonify({
-                'success': True,
-                'stats': {
-                    'red': 0,
-                    'black': 0,
-                    'green': 0,
-                    'total': 0
-                }
-            })
-        
-        colors = [r['color'] for r in roulette_last_results]
-        
-        stats = {
-            'red': colors.count('red'),
-            'black': colors.count('black'),
-            'green': colors.count('green'),
-            'total': len(colors)
-        }
-        
-        # Calcular percentuais
-        if stats['total'] > 0:
-            stats['red_percent'] = round(stats['red'] / stats['total'] * 100, 1)
-            stats['black_percent'] = round(stats['black'] / stats['total'] * 100, 1)
-            stats['green_percent'] = round(stats['green'] / stats['total'] * 100, 1)
-        
-        # Últimos 10 resultados para análise de padrões
-        recent = roulette_last_results[:10]
-        stats['recent_sequence'] = [{'number': r['number'], 'color': r['color']} for r in recent]
-        
-        return jsonify({
-            'success': True,
-            'stats': stats
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-@app.route('/api/roulette/status')
-def get_roulette_status():
-    """Status do monitoramento da roleta."""
-    global roulette_monitoring, roulette_integrator
-    
-    return jsonify({
-        'success': True,
-        'monitoring': roulette_monitoring,
-        'integrator_ready': roulette_integrator is not None,
-        'results_count': len(roulette_last_results),
-        'timestamp': int(time.time())
-    })
+# ===== ROTAS DA ROLETA BRASILEIRA (REMOVIDAS - DUPLICATAS) =====
+# As rotas da roleta foram movidas para a seção principal acima para evitar duplicação
 
 if __name__ == '__main__':
     print("🚀 Iniciando Blaze Web Backend (Versao Polling)...")

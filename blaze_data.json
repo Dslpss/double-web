@@ -203,484 +203,564 @@
   ],
   "patterns": [
     {
-      "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
+      "pattern_type": "Oscar's Grind",
+      "detected_number": 4,
+      "predicted_color": "black",
+      "confidence": 0.74,
+      "reasoning": "Equilíbrio detectado com tendência recente de red",
+      "risk_level": "low",
+      "id": "pattern_1759526451376",
+      "timestamp": "2025-10-03T18:20:51.376540"
+    },
+    {
+      "pattern_type": "1-3-2-6 System",
+      "detected_number": 4,
+      "predicted_color": "black",
+      "confidence": 0.76,
+      "reasoning": "Sequência de 4 blacks - ideal para sistema 1-3-2-6",
       "risk_level": "medium",
-      "id": "pattern_1759501276304",
-      "timestamp": "2025-10-03T11:21:16.304845"
+      "id": "pattern_1759526451396",
+      "timestamp": "2025-10-03T18:20:51.396936"
     },
     {
       "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
+      "detected_number": 4,
+      "predicted_color": "black",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 blacks - momentum detectado",
       "risk_level": "high",
-      "id": "pattern_1759501276319",
-      "timestamp": "2025-10-03T11:21:16.319429"
+      "id": "pattern_1759526451434",
+      "timestamp": "2025-10-03T18:20:51.434972"
+    },
+    {
+      "pattern_type": "Setor Betting",
+      "detected_number": 4,
+      "predicted_color": "black",
+      "confidence": 0.81,
+      "reasoning": "Setor 10-14 (Preto) está quente (45.0%)",
+      "risk_level": "medium",
+      "id": "pattern_1759526454978",
+      "timestamp": "2025-10-03T18:20:54.978729"
     },
     {
       "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 11,
+      "detected_number": 4,
       "predicted_color": "red",
       "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
+      "reasoning": "Grupo vizinho [4, 5, 6] está quente (8 aparições)",
       "risk_level": "medium",
-      "id": "pattern_1759501276333",
-      "timestamp": "2025-10-03T11:21:16.333042"
+      "id": "pattern_1759526454994",
+      "timestamp": "2025-10-03T18:20:54.994728"
     },
     {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
+      "pattern_type": "Middle Numbers (Números do Meio)",
+      "detected_number": 4,
+      "predicted_color": "black",
+      "confidence": 0.8,
+      "reasoning": "9/12 números recentes são do meio (4-10)",
       "risk_level": "medium",
-      "id": "pattern_1759501276338",
-      "timestamp": "2025-10-03T11:21:16.338936"
+      "id": "pattern_1759526455015",
+      "timestamp": "2025-10-03T18:20:55.015716"
     },
     {
       "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 11,
+      "detected_number": 2,
       "predicted_color": "black",
-      "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
+      "confidence": 0.9,
+      "reasoning": "Números quentes: [13, 11, 4], frios: [12, 9, 2]",
       "risk_level": "medium",
-      "id": "pattern_1759501278722",
-      "timestamp": "2025-10-03T11:21:18.722552"
+      "id": "pattern_1759526467647",
+      "timestamp": "2025-10-03T18:21:07.647700"
     },
     {
-      "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
-      "risk_level": "medium",
-      "id": "pattern_1759501278822",
-      "timestamp": "2025-10-03T11:21:18.822734"
-    },
-    {
-      "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
-      "risk_level": "high",
-      "id": "pattern_1759501278902",
-      "timestamp": "2025-10-03T11:21:18.902761"
-    },
-    {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501278965",
-      "timestamp": "2025-10-03T11:21:18.965993"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501279039",
-      "timestamp": "2025-10-03T11:21:19.039601"
-    },
-    {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 11,
+      "pattern_type": "Sequência de Cores",
+      "detected_number": 2,
       "predicted_color": "black",
-      "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
+      "confidence": 0.9,
+      "reasoning": "Sequência de 4 reds detectada",
       "risk_level": "medium",
-      "id": "pattern_1759501279958",
-      "timestamp": "2025-10-03T11:21:19.958289"
-    },
-    {
-      "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
-      "risk_level": "medium",
-      "id": "pattern_1759501280006",
-      "timestamp": "2025-10-03T11:21:20.006261"
-    },
-    {
-      "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
-      "risk_level": "high",
-      "id": "pattern_1759501280041",
-      "timestamp": "2025-10-03T11:21:20.041241"
-    },
-    {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501280091",
-      "timestamp": "2025-10-03T11:21:20.091213"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501280139",
-      "timestamp": "2025-10-03T11:21:20.139901"
-    },
-    {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 11,
-      "predicted_color": "black",
-      "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
-      "risk_level": "medium",
-      "id": "pattern_1759501281886",
-      "timestamp": "2025-10-03T11:21:21.886592"
-    },
-    {
-      "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
-      "risk_level": "medium",
-      "id": "pattern_1759501281913",
-      "timestamp": "2025-10-03T11:21:21.913575"
-    },
-    {
-      "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
-      "risk_level": "high",
-      "id": "pattern_1759501281936",
-      "timestamp": "2025-10-03T11:21:21.936875"
-    },
-    {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501281957",
-      "timestamp": "2025-10-03T11:21:21.957929"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501282004",
-      "timestamp": "2025-10-03T11:21:22.004284"
-    },
-    {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 11,
-      "predicted_color": "black",
-      "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
-      "risk_level": "medium",
-      "id": "pattern_1759501283853",
-      "timestamp": "2025-10-03T11:21:23.853640"
-    },
-    {
-      "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
-      "risk_level": "medium",
-      "id": "pattern_1759501283869",
-      "timestamp": "2025-10-03T11:21:23.869630"
-    },
-    {
-      "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
-      "risk_level": "high",
-      "id": "pattern_1759501283890",
-      "timestamp": "2025-10-03T11:21:23.890619"
-    },
-    {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501283922",
-      "timestamp": "2025-10-03T11:21:23.922697"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501283952",
-      "timestamp": "2025-10-03T11:21:23.952739"
-    },
-    {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 11,
-      "predicted_color": "black",
-      "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
-      "risk_level": "medium",
-      "id": "pattern_1759501285856",
-      "timestamp": "2025-10-03T11:21:25.856186"
-    },
-    {
-      "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
-      "risk_level": "medium",
-      "id": "pattern_1759501285880",
-      "timestamp": "2025-10-03T11:21:25.880173"
-    },
-    {
-      "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
-      "risk_level": "high",
-      "id": "pattern_1759501285903",
-      "timestamp": "2025-10-03T11:21:25.903160"
-    },
-    {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501285937",
-      "timestamp": "2025-10-03T11:21:25.937146"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501285974",
-      "timestamp": "2025-10-03T11:21:25.974121"
-    },
-    {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 11,
-      "predicted_color": "black",
-      "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
-      "risk_level": "medium",
-      "id": "pattern_1759501288484",
-      "timestamp": "2025-10-03T11:21:28.484502"
-    },
-    {
-      "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
-      "risk_level": "medium",
-      "id": "pattern_1759501288807",
-      "timestamp": "2025-10-03T11:21:28.807319"
-    },
-    {
-      "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
-      "risk_level": "high",
-      "id": "pattern_1759501289153",
-      "timestamp": "2025-10-03T11:21:29.153499"
-    },
-    {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501289290",
-      "timestamp": "2025-10-03T11:21:29.290418"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501289372",
-      "timestamp": "2025-10-03T11:21:29.372371"
-    },
-    {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 11,
-      "predicted_color": "black",
-      "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
-      "risk_level": "medium",
-      "id": "pattern_1759501289888",
-      "timestamp": "2025-10-03T11:21:29.888419"
-    },
-    {
-      "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
-      "risk_level": "medium",
-      "id": "pattern_1759501289920",
-      "timestamp": "2025-10-03T11:21:29.920406"
-    },
-    {
-      "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
-      "risk_level": "high",
-      "id": "pattern_1759501289956",
-      "timestamp": "2025-10-03T11:21:29.956561"
-    },
-    {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501289986",
-      "timestamp": "2025-10-03T11:21:29.986886"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501290036",
-      "timestamp": "2025-10-03T11:21:30.036858"
-    },
-    {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 11,
-      "predicted_color": "black",
-      "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
-      "risk_level": "medium",
-      "id": "pattern_1759501292005",
-      "timestamp": "2025-10-03T11:21:32.005405"
-    },
-    {
-      "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
-      "risk_level": "medium",
-      "id": "pattern_1759501292083",
-      "timestamp": "2025-10-03T11:21:32.083194"
-    },
-    {
-      "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
-      "risk_level": "high",
-      "id": "pattern_1759501292106",
-      "timestamp": "2025-10-03T11:21:32.106172"
-    },
-    {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501292140",
-      "timestamp": "2025-10-03T11:21:32.140693"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 11,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501292169",
-      "timestamp": "2025-10-03T11:21:32.169700"
-    },
-    {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 9,
-      "predicted_color": "black",
-      "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
-      "risk_level": "medium",
-      "id": "pattern_1759501293888",
-      "timestamp": "2025-10-03T11:21:33.888376"
-    },
-    {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 9,
-      "predicted_color": "black",
-      "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
-      "risk_level": "medium",
-      "id": "pattern_1759501296571",
-      "timestamp": "2025-10-03T11:21:36.571560"
+      "id": "pattern_1759526467682",
+      "timestamp": "2025-10-03T18:21:07.682881"
     },
     {
       "pattern_type": "Desequilíbrio de Cores",
-      "detected_number": 9,
+      "detected_number": 2,
       "predicted_color": "white",
-      "confidence": 0.7619047619047619,
+      "confidence": 0.8,
       "reasoning": "Desequilíbrio detectado: white sub-representada",
       "risk_level": "low",
-      "id": "pattern_1759501297677",
-      "timestamp": "2025-10-03T11:21:37.677385"
+      "id": "pattern_1759526468098",
+      "timestamp": "2025-10-03T18:21:08.098584"
+    },
+    {
+      "pattern_type": "Paroli (Progressão Positiva)",
+      "detected_number": 2,
+      "predicted_color": "black",
+      "confidence": 0.82,
+      "reasoning": "Sequência de 4 vitórias em black detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759526468198",
+      "timestamp": "2025-10-03T18:21:08.198688"
+    },
+    {
+      "pattern_type": "Oscar's Grind",
+      "detected_number": 2,
+      "predicted_color": "black",
+      "confidence": 0.74,
+      "reasoning": "Equilíbrio detectado com tendência recente de red",
+      "risk_level": "low",
+      "id": "pattern_1759526468267",
+      "timestamp": "2025-10-03T18:21:08.267286"
+    },
+    {
+      "pattern_type": "1-3-2-6 System",
+      "detected_number": 2,
+      "predicted_color": "red",
+      "confidence": 0.76,
+      "reasoning": "Sequência de 4 reds - ideal para sistema 1-3-2-6",
+      "risk_level": "medium",
+      "id": "pattern_1759526468316",
+      "timestamp": "2025-10-03T18:21:08.316938"
+    },
+    {
+      "pattern_type": "Anti-Martingale (Reverse)",
+      "detected_number": 2,
+      "predicted_color": "black",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 blacks - momentum detectado",
+      "risk_level": "high",
+      "id": "pattern_1759526468381",
+      "timestamp": "2025-10-03T18:21:08.381473"
+    },
+    {
+      "pattern_type": "Setor Betting",
+      "detected_number": 2,
+      "predicted_color": "black",
+      "confidence": 0.7714285714285714,
+      "reasoning": "Setor 10-14 (Preto) está quente (42.9%)",
+      "risk_level": "medium",
+      "id": "pattern_1759526468449",
+      "timestamp": "2025-10-03T18:21:08.449326"
+    },
+    {
+      "pattern_type": "Neighbor Betting (Vizinhos)",
+      "detected_number": 2,
+      "predicted_color": "red",
+      "confidence": 0.84,
+      "reasoning": "Grupo vizinho [4, 5, 6] está quente (8 aparições)",
+      "risk_level": "medium",
+      "id": "pattern_1759526468496",
+      "timestamp": "2025-10-03T18:21:08.496667"
+    },
+    {
+      "pattern_type": "Middle Numbers (Números do Meio)",
+      "detected_number": 2,
+      "predicted_color": "black",
+      "confidence": 0.7666666666666666,
+      "reasoning": "8/12 números recentes são do meio (4-10)",
+      "risk_level": "medium",
+      "id": "pattern_1759526468567",
+      "timestamp": "2025-10-03T18:21:08.567362"
+    },
+    {
+      "pattern_type": "Hot Hand",
+      "detected_number": 2,
+      "predicted_color": "black",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 red consecutivos",
+      "risk_level": "high",
+      "id": "pattern_1759526468666",
+      "timestamp": "2025-10-03T18:21:08.666220"
+    },
+    {
+      "pattern_type": "White Cold (Branco Frio)",
+      "detected_number": 2,
+      "predicted_color": "black",
+      "confidence": 0.75,
+      "reasoning": "Zero não apareceu nos últimos 20 resultados",
+      "risk_level": "medium",
+      "id": "pattern_1759526473394",
+      "timestamp": "2025-10-03T18:21:13.394858"
+    },
+    {
+      "pattern_type": "Red Streak (Sequência Vermelha)",
+      "detected_number": 2,
+      "predicted_color": "black",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 números vermelhos consecutivos",
+      "risk_level": "high",
+      "id": "pattern_1759526478859",
+      "timestamp": "2025-10-03T18:21:18.859549"
+    },
+    {
+      "pattern_type": "Hot/Cold Numbers",
+      "detected_number": 10,
+      "predicted_color": "red",
+      "confidence": 0.9,
+      "reasoning": "Números quentes: [13, 11, 4], frios: [12, 9, 2]",
+      "risk_level": "medium",
+      "id": "pattern_1759526491581",
+      "timestamp": "2025-10-03T18:21:31.581334"
+    },
+    {
+      "pattern_type": "Sequência de Cores",
+      "detected_number": 10,
+      "predicted_color": "red",
+      "confidence": 0.9,
+      "reasoning": "Sequência de 4 blacks detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759526491602",
+      "timestamp": "2025-10-03T18:21:31.602838"
+    },
+    {
+      "pattern_type": "Desequilíbrio de Cores",
+      "detected_number": 10,
+      "predicted_color": "white",
+      "confidence": 0.8,
+      "reasoning": "Desequilíbrio detectado: white sub-representada",
+      "risk_level": "low",
+      "id": "pattern_1759526491796",
+      "timestamp": "2025-10-03T18:21:31.796932"
+    },
+    {
+      "pattern_type": "Paroli (Progressão Positiva)",
+      "detected_number": 10,
+      "predicted_color": "black",
+      "confidence": 0.82,
+      "reasoning": "Sequência de 4 vitórias em black detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759526491897",
+      "timestamp": "2025-10-03T18:21:31.897722"
+    },
+    {
+      "pattern_type": "Oscar's Grind",
+      "detected_number": 10,
+      "predicted_color": "black",
+      "confidence": 0.74,
+      "reasoning": "Equilíbrio detectado com tendência recente de red",
+      "risk_level": "low",
+      "id": "pattern_1759526492027",
+      "timestamp": "2025-10-03T18:21:32.028573"
+    },
+    {
+      "pattern_type": "1-3-2-6 System",
+      "detected_number": 10,
+      "predicted_color": "red",
+      "confidence": 0.76,
+      "reasoning": "Sequência de 4 reds - ideal para sistema 1-3-2-6",
+      "risk_level": "medium",
+      "id": "pattern_1759526492166",
+      "timestamp": "2025-10-03T18:21:32.166337"
+    },
+    {
+      "pattern_type": "Anti-Martingale (Reverse)",
+      "detected_number": 10,
+      "predicted_color": "black",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 blacks - momentum detectado",
+      "risk_level": "high",
+      "id": "pattern_1759526492448",
+      "timestamp": "2025-10-03T18:21:32.448303"
+    },
+    {
+      "pattern_type": "Setor Betting",
+      "detected_number": 10,
+      "predicted_color": "black",
+      "confidence": 0.8181818181818181,
+      "reasoning": "Setor 10-14 (Preto) está quente (45.5%)",
+      "risk_level": "medium",
+      "id": "pattern_1759526492549",
+      "timestamp": "2025-10-03T18:21:32.549398"
+    },
+    {
+      "pattern_type": "Neighbor Betting (Vizinhos)",
+      "detected_number": 10,
+      "predicted_color": "red",
+      "confidence": 0.84,
+      "reasoning": "Grupo vizinho [4, 5, 6] está quente (8 aparições)",
+      "risk_level": "medium",
+      "id": "pattern_1759526492615",
+      "timestamp": "2025-10-03T18:21:32.615172"
+    },
+    {
+      "pattern_type": "Middle Numbers (Números do Meio)",
+      "detected_number": 10,
+      "predicted_color": "red",
+      "confidence": 0.8,
+      "reasoning": "9/12 números recentes são do meio (4-10)",
+      "risk_level": "medium",
+      "id": "pattern_1759526492728",
+      "timestamp": "2025-10-03T18:21:32.728828"
+    },
+    {
+      "pattern_type": "Hot Hand",
+      "detected_number": 10,
+      "predicted_color": "red",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 black consecutivos",
+      "risk_level": "high",
+      "id": "pattern_1759526492777",
+      "timestamp": "2025-10-03T18:21:32.777382"
+    },
+    {
+      "pattern_type": "White Cold (Branco Frio)",
+      "detected_number": 10,
+      "predicted_color": "red",
+      "confidence": 0.75,
+      "reasoning": "Zero não apareceu nos últimos 20 resultados",
+      "risk_level": "medium",
+      "id": "pattern_1759526492976",
+      "timestamp": "2025-10-03T18:21:32.976482"
+    },
+    {
+      "pattern_type": "Red Streak (Sequência Vermelha)",
+      "detected_number": 10,
+      "predicted_color": "red",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 números vermelhos consecutivos",
+      "risk_level": "high",
+      "id": "pattern_1759526493097",
+      "timestamp": "2025-10-03T18:21:33.097489"
+    },
+    {
+      "pattern_type": "Sequência de Cores",
+      "detected_number": 8,
+      "predicted_color": "red",
+      "confidence": 0.9,
+      "reasoning": "Sequência de 4 blacks detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759526665125",
+      "timestamp": "2025-10-03T18:24:25.125057"
+    },
+    {
+      "pattern_type": "Paroli (Progressão Positiva)",
+      "detected_number": 8,
+      "predicted_color": "red",
+      "confidence": 0.82,
+      "reasoning": "Sequência de 4 vitórias em red detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759526668708",
+      "timestamp": "2025-10-03T18:24:28.708138"
+    },
+    {
+      "pattern_type": "1-3-2-6 System",
+      "detected_number": 8,
+      "predicted_color": "red",
+      "confidence": 0.76,
+      "reasoning": "Sequência de 4 reds - ideal para sistema 1-3-2-6",
+      "risk_level": "medium",
+      "id": "pattern_1759526672641",
+      "timestamp": "2025-10-03T18:24:32.641390"
+    },
+    {
+      "pattern_type": "Anti-Martingale (Reverse)",
+      "detected_number": 8,
+      "predicted_color": "red",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 reds - momentum detectado",
+      "risk_level": "high",
+      "id": "pattern_1759526677980",
+      "timestamp": "2025-10-03T18:24:37.980231"
+    },
+    {
+      "pattern_type": "Red Streak (Sequência Vermelha)",
+      "detected_number": 8,
+      "predicted_color": "red",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 números vermelhos consecutivos",
+      "risk_level": "high",
+      "id": "pattern_1759526682466",
+      "timestamp": "2025-10-03T18:24:42.466329"
+    },
+    {
+      "pattern_type": "Red After Red (Vermelho Após Vermelho)",
+      "detected_number": 8,
+      "predicted_color": "red",
+      "confidence": 0.7666666666666666,
+      "reasoning": "Após 6 vermelhos, 4 foram seguidos por outro vermelho (66.7%)",
+      "risk_level": "medium",
+      "id": "pattern_1759526685973",
+      "timestamp": "2025-10-03T18:24:45.973926"
+    },
+    {
+      "pattern_type": "Sequência de Cores",
+      "detected_number": 6,
+      "predicted_color": "red",
+      "confidence": 0.9,
+      "reasoning": "Sequência de 4 reds detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759526688273",
+      "timestamp": "2025-10-03T18:24:48.273783"
+    },
+    {
+      "pattern_type": "Paroli (Progressão Positiva)",
+      "detected_number": 6,
+      "predicted_color": "red",
+      "confidence": 0.82,
+      "reasoning": "Sequência de 4 vitórias em red detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759526688323",
+      "timestamp": "2025-10-03T18:24:48.324754"
+    },
+    {
+      "pattern_type": "1-3-2-6 System",
+      "detected_number": 6,
+      "predicted_color": "red",
+      "confidence": 0.76,
+      "reasoning": "Sequência de 4 reds - ideal para sistema 1-3-2-6",
+      "risk_level": "medium",
+      "id": "pattern_1759526688339",
+      "timestamp": "2025-10-03T18:24:48.339353"
+    },
+    {
+      "pattern_type": "Anti-Martingale (Reverse)",
+      "detected_number": 6,
+      "predicted_color": "red",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 reds - momentum detectado",
+      "risk_level": "high",
+      "id": "pattern_1759526688351",
+      "timestamp": "2025-10-03T18:24:48.351908"
+    },
+    {
+      "pattern_type": "Red Streak (Sequência Vermelha)",
+      "detected_number": 6,
+      "predicted_color": "red",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 números vermelhos consecutivos",
+      "risk_level": "high",
+      "id": "pattern_1759526688430",
+      "timestamp": "2025-10-03T18:24:48.430286"
+    },
+    {
+      "pattern_type": "Red After Red (Vermelho Após Vermelho)",
+      "detected_number": 6,
+      "predicted_color": "red",
+      "confidence": 0.7666666666666666,
+      "reasoning": "Após 6 vermelhos, 4 foram seguidos por outro vermelho (66.7%)",
+      "risk_level": "medium",
+      "id": "pattern_1759526688452",
+      "timestamp": "2025-10-03T18:24:48.452218"
+    },
+    {
+      "pattern_type": "Paroli (Progressão Positiva)",
+      "detected_number": 8,
+      "predicted_color": "red",
+      "confidence": 0.82,
+      "reasoning": "Sequência de 4 vitórias em red detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759526708602",
+      "timestamp": "2025-10-03T18:25:08.602787"
+    },
+    {
+      "pattern_type": "Oscar's Grind",
+      "detected_number": 8,
+      "predicted_color": "red",
+      "confidence": 0.74,
+      "reasoning": "Equilíbrio detectado com tendência recente de black",
+      "risk_level": "low",
+      "id": "pattern_1759526711626",
+      "timestamp": "2025-10-03T18:25:11.626716"
+    },
+    {
+      "pattern_type": "1-3-2-6 System",
+      "detected_number": 8,
+      "predicted_color": "red",
+      "confidence": 0.76,
+      "reasoning": "Sequência de 4 reds - ideal para sistema 1-3-2-6",
+      "risk_level": "medium",
+      "id": "pattern_1759526711637",
+      "timestamp": "2025-10-03T18:25:11.637790"
+    },
+    {
+      "pattern_type": "Anti-Martingale (Reverse)",
+      "detected_number": 8,
+      "predicted_color": "red",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 reds - momentum detectado",
+      "risk_level": "high",
+      "id": "pattern_1759526711695",
+      "timestamp": "2025-10-03T18:25:11.695408"
+    },
+    {
+      "pattern_type": "Middle Numbers (Números do Meio)",
+      "detected_number": 8,
+      "predicted_color": "red",
+      "confidence": 0.82,
+      "reasoning": "10/12 números recentes são do meio (4-10)",
+      "risk_level": "medium",
+      "id": "pattern_1759526715530",
+      "timestamp": "2025-10-03T18:25:15.530830"
+    },
+    {
+      "pattern_type": "Red After Red (Vermelho Após Vermelho)",
+      "detected_number": 8,
+      "predicted_color": "red",
+      "confidence": 0.7285714285714285,
+      "reasoning": "Após 7 vermelhos, 4 foram seguidos por outro vermelho (57.1%)",
+      "risk_level": "medium",
+      "id": "pattern_1759526715547",
+      "timestamp": "2025-10-03T18:25:15.547008"
+    },
+    {
+      "pattern_type": "Paroli (Progressão Positiva)",
+      "detected_number": 0,
+      "predicted_color": "red",
+      "confidence": 0.82,
+      "reasoning": "Sequência de 4 vitórias em red detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759526733557",
+      "timestamp": "2025-10-03T18:25:33.557953"
+    },
+    {
+      "pattern_type": "1-3-2-6 System",
+      "detected_number": 0,
+      "predicted_color": "red",
+      "confidence": 0.76,
+      "reasoning": "Sequência de 4 reds - ideal para sistema 1-3-2-6",
+      "risk_level": "medium",
+      "id": "pattern_1759526733569",
+      "timestamp": "2025-10-03T18:25:33.569757"
+    },
+    {
+      "pattern_type": "Anti-Martingale (Reverse)",
+      "detected_number": 0,
+      "predicted_color": "red",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 reds - momentum detectado",
+      "risk_level": "high",
+      "id": "pattern_1759526733582",
+      "timestamp": "2025-10-03T18:25:33.582380"
+    },
+    {
+      "pattern_type": "Middle Numbers (Números do Meio)",
+      "detected_number": 0,
+      "predicted_color": "red",
+      "confidence": 0.8,
+      "reasoning": "9/12 números recentes são do meio (4-10)",
+      "risk_level": "medium",
+      "id": "pattern_1759526733884",
+      "timestamp": "2025-10-03T18:25:33.884229"
+    },
+    {
+      "pattern_type": "Red After Red (Vermelho Após Vermelho)",
+      "detected_number": 0,
+      "predicted_color": "red",
+      "confidence": 0.7285714285714285,
+      "reasoning": "Após 7 vermelhos, 4 foram seguidos por outro vermelho (57.1%)",
+      "risk_level": "medium",
+      "id": "pattern_1759526734084",
+      "timestamp": "2025-10-03T18:25:34.084248"
     },
     {
       "pattern_type": "Paroli (Progressão Positiva)",
       "detected_number": 9,
       "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
+      "confidence": 0.82,
+      "reasoning": "Sequência de 4 vitórias em red detectada",
       "risk_level": "medium",
-      "id": "pattern_1759501297706",
-      "timestamp": "2025-10-03T11:21:37.706367"
+      "id": "pattern_1759526759453",
+      "timestamp": "2025-10-03T18:25:59.453520"
     },
     {
       "pattern_type": "Oscar's Grind",
@@ -689,518 +769,438 @@
       "confidence": 0.74,
       "reasoning": "Equilíbrio detectado com tendência recente de black",
       "risk_level": "low",
-      "id": "pattern_1759501297839",
-      "timestamp": "2025-10-03T11:21:37.839291"
+      "id": "pattern_1759526759529",
+      "timestamp": "2025-10-03T18:25:59.529315"
     },
     {
       "pattern_type": "Anti-Martingale (Reverse)",
       "detected_number": 9,
       "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 reds - momentum detectado",
       "risk_level": "high",
-      "id": "pattern_1759501297870",
-      "timestamp": "2025-10-03T11:21:37.870273"
+      "id": "pattern_1759526759716",
+      "timestamp": "2025-10-03T18:25:59.716117"
+    },
+    {
+      "pattern_type": "Middle Numbers (Números do Meio)",
+      "detected_number": 9,
+      "predicted_color": "red",
+      "confidence": 0.82,
+      "reasoning": "10/12 números recentes são do meio (4-10)",
+      "risk_level": "medium",
+      "id": "pattern_1759526759823",
+      "timestamp": "2025-10-03T18:25:59.823132"
+    },
+    {
+      "pattern_type": "Red After Red (Vermelho Após Vermelho)",
+      "detected_number": 9,
+      "predicted_color": "red",
+      "confidence": 0.7285714285714285,
+      "reasoning": "Após 7 vermelhos, 4 foram seguidos por outro vermelho (57.1%)",
+      "risk_level": "medium",
+      "id": "pattern_1759526759929",
+      "timestamp": "2025-10-03T18:25:59.930676"
+    },
+    {
+      "pattern_type": "Paroli (Progressão Positiva)",
+      "detected_number": 14,
+      "predicted_color": "red",
+      "confidence": 0.82,
+      "reasoning": "Sequência de 4 vitórias em red detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759526787303",
+      "timestamp": "2025-10-03T18:26:27.303549"
+    },
+    {
+      "pattern_type": "Oscar's Grind",
+      "detected_number": 14,
+      "predicted_color": "red",
+      "confidence": 0.74,
+      "reasoning": "Equilíbrio detectado com tendência recente de black",
+      "risk_level": "low",
+      "id": "pattern_1759526787341",
+      "timestamp": "2025-10-03T18:26:27.341527"
+    },
+    {
+      "pattern_type": "Anti-Martingale (Reverse)",
+      "detected_number": 14,
+      "predicted_color": "red",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 reds - momentum detectado",
+      "risk_level": "high",
+      "id": "pattern_1759526787399",
+      "timestamp": "2025-10-03T18:26:27.399854"
     },
     {
       "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 9,
+      "detected_number": 14,
       "predicted_color": "red",
       "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
+      "reasoning": "Grupo vizinho [4, 5, 6] está quente (6 aparições)",
       "risk_level": "medium",
-      "id": "pattern_1759501297886",
-      "timestamp": "2025-10-03T11:21:37.886264"
+      "id": "pattern_1759526791183",
+      "timestamp": "2025-10-03T18:26:31.183537"
     },
     {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 9,
+      "pattern_type": "Middle Numbers (Números do Meio)",
+      "detected_number": 14,
+      "predicted_color": "red",
+      "confidence": 0.8,
+      "reasoning": "9/12 números recentes são do meio (4-10)",
+      "risk_level": "medium",
+      "id": "pattern_1759526791819",
+      "timestamp": "2025-10-03T18:26:31.819184"
+    },
+    {
+      "pattern_type": "Red After Red (Vermelho Após Vermelho)",
+      "detected_number": 14,
+      "predicted_color": "red",
+      "confidence": 0.7285714285714285,
+      "reasoning": "Após 7 vermelhos, 4 foram seguidos por outro vermelho (57.1%)",
+      "risk_level": "medium",
+      "id": "pattern_1759526791969",
+      "timestamp": "2025-10-03T18:26:31.969698"
+    },
+    {
+      "pattern_type": "Paroli (Progressão Positiva)",
+      "detected_number": 4,
+      "predicted_color": "red",
+      "confidence": 0.82,
+      "reasoning": "Sequência de 4 vitórias em red detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759526806561",
+      "timestamp": "2025-10-03T18:26:46.562265"
+    },
+    {
+      "pattern_type": "Oscar's Grind",
+      "detected_number": 4,
+      "predicted_color": "red",
+      "confidence": 0.74,
+      "reasoning": "Equilíbrio detectado com tendência recente de black",
+      "risk_level": "low",
+      "id": "pattern_1759526806742",
+      "timestamp": "2025-10-03T18:26:46.742842"
+    },
+    {
+      "pattern_type": "Anti-Martingale (Reverse)",
+      "detected_number": 4,
+      "predicted_color": "red",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 reds - momentum detectado",
+      "risk_level": "high",
+      "id": "pattern_1759526806858",
+      "timestamp": "2025-10-03T18:26:46.858803"
+    },
+    {
+      "pattern_type": "Neighbor Betting (Vizinhos)",
+      "detected_number": 4,
+      "predicted_color": "red",
+      "confidence": 0.84,
+      "reasoning": "Grupo vizinho [4, 5, 6] está quente (7 aparições)",
+      "risk_level": "medium",
+      "id": "pattern_1759526806940",
+      "timestamp": "2025-10-03T18:26:46.940496"
+    },
+    {
+      "pattern_type": "Middle Numbers (Números do Meio)",
+      "detected_number": 4,
+      "predicted_color": "red",
+      "confidence": 0.8,
+      "reasoning": "9/12 números recentes são do meio (4-10)",
+      "risk_level": "medium",
+      "id": "pattern_1759526806974",
+      "timestamp": "2025-10-03T18:26:46.974988"
+    },
+    {
+      "pattern_type": "Red After Red (Vermelho Após Vermelho)",
+      "detected_number": 4,
+      "predicted_color": "red",
+      "confidence": 0.7285714285714285,
+      "reasoning": "Após 7 vermelhos, 4 foram seguidos por outro vermelho (57.1%)",
+      "risk_level": "medium",
+      "id": "pattern_1759526807006",
+      "timestamp": "2025-10-03T18:26:47.006971"
+    },
+    {
+      "pattern_type": "Paroli (Progressão Positiva)",
+      "detected_number": 1,
+      "predicted_color": "red",
+      "confidence": 0.79,
+      "reasoning": "Sequência de 3 vitórias em red detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759526829705",
+      "timestamp": "2025-10-03T18:27:09.705504"
+    },
+    {
+      "pattern_type": "Anti-Martingale (Reverse)",
+      "detected_number": 1,
+      "predicted_color": "red",
+      "confidence": 0.81,
+      "reasoning": "Sequência de 3 reds - momentum detectado",
+      "risk_level": "high",
+      "id": "pattern_1759526829716",
+      "timestamp": "2025-10-03T18:27:09.716497"
+    },
+    {
+      "pattern_type": "Neighbor Betting (Vizinhos)",
+      "detected_number": 1,
+      "predicted_color": "red",
+      "confidence": 0.84,
+      "reasoning": "Grupo vizinho [4, 5, 6] está quente (7 aparições)",
+      "risk_level": "medium",
+      "id": "pattern_1759526829762",
+      "timestamp": "2025-10-03T18:27:09.762806"
+    },
+    {
+      "pattern_type": "Middle Numbers (Números do Meio)",
+      "detected_number": 1,
       "predicted_color": "red",
       "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
+      "reasoning": "8/12 números recentes são do meio (4-10)",
       "risk_level": "medium",
-      "id": "pattern_1759501297900",
-      "timestamp": "2025-10-03T11:21:37.900257"
+      "id": "pattern_1759526829796",
+      "timestamp": "2025-10-03T18:27:09.796134"
     },
     {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 9,
+      "pattern_type": "Red After Red (Vermelho Após Vermelho)",
+      "detected_number": 1,
+      "predicted_color": "red",
+      "confidence": 0.75,
+      "reasoning": "Após 8 vermelhos, 5 foram seguidos por outro vermelho (62.5%)",
+      "risk_level": "medium",
+      "id": "pattern_1759526829809",
+      "timestamp": "2025-10-03T18:27:09.809127"
+    },
+    {
+      "pattern_type": "Oscar's Grind",
+      "detected_number": 14,
+      "predicted_color": "red",
+      "confidence": 0.74,
+      "reasoning": "Equilíbrio detectado com tendência recente de black",
+      "risk_level": "low",
+      "id": "pattern_1759526854109",
+      "timestamp": "2025-10-03T18:27:34.109094"
+    },
+    {
+      "pattern_type": "Neighbor Betting (Vizinhos)",
+      "detected_number": 14,
+      "predicted_color": "red",
+      "confidence": 0.84,
+      "reasoning": "Grupo vizinho [4, 5, 6] está quente (7 aparições)",
+      "risk_level": "medium",
+      "id": "pattern_1759526854120",
+      "timestamp": "2025-10-03T18:27:34.120568"
+    },
+    {
+      "pattern_type": "Middle Numbers (Números do Meio)",
+      "detected_number": 14,
+      "predicted_color": "red",
+      "confidence": 0.7666666666666666,
+      "reasoning": "8/12 números recentes são do meio (4-10)",
+      "risk_level": "medium",
+      "id": "pattern_1759526854156",
+      "timestamp": "2025-10-03T18:27:34.156265"
+    },
+    {
+      "pattern_type": "Red After Red (Vermelho Após Vermelho)",
+      "detected_number": 14,
+      "predicted_color": "red",
+      "confidence": 0.7222222222222222,
+      "reasoning": "Após 9 vermelhos, 5 foram seguidos por outro vermelho (55.6%)",
+      "risk_level": "medium",
+      "id": "pattern_1759526854229",
+      "timestamp": "2025-10-03T18:27:34.229282"
+    },
+    {
+      "pattern_type": "Sequência de Cores",
+      "detected_number": 10,
+      "predicted_color": "black",
+      "confidence": 0.9,
+      "reasoning": "Sequência de 4 blacks detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759527004134",
+      "timestamp": "2025-10-03T18:30:04.134775"
+    },
+    {
+      "pattern_type": "Paroli (Progressão Positiva)",
+      "detected_number": 10,
+      "predicted_color": "black",
+      "confidence": 0.82,
+      "reasoning": "Sequência de 4 vitórias em black detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759527008117",
+      "timestamp": "2025-10-03T18:30:08.117685"
+    },
+    {
+      "pattern_type": "1-3-2-6 System",
+      "detected_number": 10,
+      "predicted_color": "black",
+      "confidence": 0.76,
+      "reasoning": "Sequência de 4 blacks - ideal para sistema 1-3-2-6",
+      "risk_level": "medium",
+      "id": "pattern_1759527013454",
+      "timestamp": "2025-10-03T18:30:13.454740"
+    },
+    {
+      "pattern_type": "Anti-Martingale (Reverse)",
+      "detected_number": 10,
       "predicted_color": "black",
       "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
-      "risk_level": "medium",
-      "id": "pattern_1759501298239",
-      "timestamp": "2025-10-03T11:21:38.239706"
-    },
-    {
-      "pattern_type": "Desequilíbrio de Cores",
-      "detected_number": 9,
-      "predicted_color": "white",
-      "confidence": 0.7619047619047619,
-      "reasoning": "Desequilíbrio detectado: white sub-representada",
-      "risk_level": "low",
-      "id": "pattern_1759501298269",
-      "timestamp": "2025-10-03T11:21:38.269638"
-    },
-    {
-      "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
-      "risk_level": "medium",
-      "id": "pattern_1759501298335",
-      "timestamp": "2025-10-03T11:21:38.335254"
-    },
-    {
-      "pattern_type": "Oscar's Grind",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.74,
-      "reasoning": "Equilíbrio detectado com tendência recente de black",
-      "risk_level": "low",
-      "id": "pattern_1759501298355",
-      "timestamp": "2025-10-03T11:21:38.355189"
-    },
-    {
-      "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
+      "reasoning": "Sequência de 4 blacks - momentum detectado",
       "risk_level": "high",
-      "id": "pattern_1759501298387",
-      "timestamp": "2025-10-03T11:21:38.387904"
+      "id": "pattern_1759527019191",
+      "timestamp": "2025-10-03T18:30:19.191496"
     },
     {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501298453",
-      "timestamp": "2025-10-03T11:21:38.453870"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501298488",
-      "timestamp": "2025-10-03T11:21:38.488846"
-    },
-    {
-      "pattern_type": "Desequilíbrio de Cores",
-      "detected_number": 9,
-      "predicted_color": "white",
-      "confidence": 0.7619047619047619,
-      "reasoning": "Desequilíbrio detectado: white sub-representada",
-      "risk_level": "low",
-      "id": "pattern_1759501299622",
-      "timestamp": "2025-10-03T11:21:39.622471"
-    },
-    {
-      "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
-      "risk_level": "medium",
-      "id": "pattern_1759501299632",
-      "timestamp": "2025-10-03T11:21:39.632640"
-    },
-    {
-      "pattern_type": "Oscar's Grind",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.74,
-      "reasoning": "Equilíbrio detectado com tendência recente de black",
-      "risk_level": "low",
-      "id": "pattern_1759501299647",
-      "timestamp": "2025-10-03T11:21:39.647502"
-    },
-    {
-      "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
-      "risk_level": "high",
-      "id": "pattern_1759501299654",
-      "timestamp": "2025-10-03T11:21:39.654810"
-    },
-    {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501299667",
-      "timestamp": "2025-10-03T11:21:39.667804"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501299673",
-      "timestamp": "2025-10-03T11:21:39.673896"
-    },
-    {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 9,
+      "pattern_type": "Hot Hand",
+      "detected_number": 10,
       "predicted_color": "black",
       "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
-      "risk_level": "medium",
-      "id": "pattern_1759501300137",
-      "timestamp": "2025-10-03T11:21:40.137891"
-    },
-    {
-      "pattern_type": "Desequilíbrio de Cores",
-      "detected_number": 9,
-      "predicted_color": "white",
-      "confidence": 0.7619047619047619,
-      "reasoning": "Desequilíbrio detectado: white sub-representada",
-      "risk_level": "low",
-      "id": "pattern_1759501300156",
-      "timestamp": "2025-10-03T11:21:40.156880"
-    },
-    {
-      "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
-      "risk_level": "medium",
-      "id": "pattern_1759501300215",
-      "timestamp": "2025-10-03T11:21:40.215043"
-    },
-    {
-      "pattern_type": "Oscar's Grind",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.74,
-      "reasoning": "Equilíbrio detectado com tendência recente de black",
-      "risk_level": "low",
-      "id": "pattern_1759501300262",
-      "timestamp": "2025-10-03T11:21:40.263352"
-    },
-    {
-      "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
+      "reasoning": "Sequência de 4 black consecutivos",
       "risk_level": "high",
-      "id": "pattern_1759501300290",
-      "timestamp": "2025-10-03T11:21:40.290216"
+      "id": "pattern_1759527022205",
+      "timestamp": "2025-10-03T18:30:22.205865"
     },
     {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501300322",
-      "timestamp": "2025-10-03T11:21:40.322822"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501300365",
-      "timestamp": "2025-10-03T11:21:40.365485"
-    },
-    {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 9,
+      "pattern_type": "Black Streak (Sequência Preta)",
+      "detected_number": 0,
       "predicted_color": "black",
       "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
-      "risk_level": "medium",
-      "id": "pattern_1759501302255",
-      "timestamp": "2025-10-03T11:21:42.255109"
+      "reasoning": "Sequência de 4 números pretos consecutivos",
+      "risk_level": "high",
+      "id": "pattern_1759527025222",
+      "timestamp": "2025-10-03T18:30:25.222252"
     },
     {
-      "pattern_type": "Desequilíbrio de Cores",
-      "detected_number": 9,
-      "predicted_color": "white",
-      "confidence": 0.7619047619047619,
-      "reasoning": "Desequilíbrio detectado: white sub-representada",
-      "risk_level": "low",
-      "id": "pattern_1759501302304",
-      "timestamp": "2025-10-03T11:21:42.304346"
+      "pattern_type": "Number 14 Followed by Black (Número 14 Seguido por Preto)",
+      "detected_number": 0,
+      "predicted_color": "black",
+      "confidence": 0.75,
+      "reasoning": "Após 2 números 14, 1 foram seguidos por BLACK (50.0%)",
+      "risk_level": "medium",
+      "id": "pattern_1759527028822",
+      "timestamp": "2025-10-03T18:30:28.822356"
+    },
+    {
+      "pattern_type": "Sequência de Cores",
+      "detected_number": 0,
+      "predicted_color": "black",
+      "confidence": 0.9,
+      "reasoning": "Sequência de 4 whites detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759527031288",
+      "timestamp": "2025-10-03T18:30:31.288281"
     },
     {
       "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
+      "detected_number": 0,
+      "predicted_color": "black",
+      "confidence": 0.82,
+      "reasoning": "Sequência de 4 vitórias em black detectada",
       "risk_level": "medium",
-      "id": "pattern_1759501302349",
-      "timestamp": "2025-10-03T11:21:42.349181"
+      "id": "pattern_1759527031317",
+      "timestamp": "2025-10-03T18:30:31.317176"
     },
     {
-      "pattern_type": "Oscar's Grind",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.74,
-      "reasoning": "Equilíbrio detectado com tendência recente de black",
-      "risk_level": "low",
-      "id": "pattern_1759501302367",
-      "timestamp": "2025-10-03T11:21:42.367546"
+      "pattern_type": "1-3-2-6 System",
+      "detected_number": 0,
+      "predicted_color": "black",
+      "confidence": 0.76,
+      "reasoning": "Sequência de 4 blacks - ideal para sistema 1-3-2-6",
+      "risk_level": "medium",
+      "id": "pattern_1759527031357",
+      "timestamp": "2025-10-03T18:30:31.357521"
     },
     {
       "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
-      "risk_level": "high",
-      "id": "pattern_1759501302383",
-      "timestamp": "2025-10-03T11:21:42.383644"
-    },
-    {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501302406",
-      "timestamp": "2025-10-03T11:21:42.406593"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501302454",
-      "timestamp": "2025-10-03T11:21:42.454023"
-    },
-    {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 9,
+      "detected_number": 0,
       "predicted_color": "black",
       "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
-      "risk_level": "medium",
-      "id": "pattern_1759501304614",
-      "timestamp": "2025-10-03T11:21:44.614997"
-    },
-    {
-      "pattern_type": "Desequilíbrio de Cores",
-      "detected_number": 9,
-      "predicted_color": "white",
-      "confidence": 0.7619047619047619,
-      "reasoning": "Desequilíbrio detectado: white sub-representada",
-      "risk_level": "low",
-      "id": "pattern_1759501304670",
-      "timestamp": "2025-10-03T11:21:44.670963"
-    },
-    {
-      "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
-      "risk_level": "medium",
-      "id": "pattern_1759501304751",
-      "timestamp": "2025-10-03T11:21:44.751916"
-    },
-    {
-      "pattern_type": "Oscar's Grind",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.74,
-      "reasoning": "Equilíbrio detectado com tendência recente de black",
-      "risk_level": "low",
-      "id": "pattern_1759501304985",
-      "timestamp": "2025-10-03T11:21:44.985783"
-    },
-    {
-      "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
+      "reasoning": "Sequência de 4 blacks - momentum detectado",
       "risk_level": "high",
-      "id": "pattern_1759501305022",
-      "timestamp": "2025-10-03T11:21:45.022763"
+      "id": "pattern_1759527031421",
+      "timestamp": "2025-10-03T18:30:31.421352"
     },
     {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501305084",
-      "timestamp": "2025-10-03T11:21:45.084726"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501305182",
-      "timestamp": "2025-10-03T11:21:45.182670"
-    },
-    {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 9,
+      "pattern_type": "Hot Hand",
+      "detected_number": 0,
       "predicted_color": "black",
       "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
-      "risk_level": "medium",
-      "id": "pattern_1759501306754",
-      "timestamp": "2025-10-03T11:21:46.754293"
-    },
-    {
-      "pattern_type": "Desequilíbrio de Cores",
-      "detected_number": 9,
-      "predicted_color": "white",
-      "confidence": 0.7619047619047619,
-      "reasoning": "Desequilíbrio detectado: white sub-representada",
-      "risk_level": "low",
-      "id": "pattern_1759501306853",
-      "timestamp": "2025-10-03T11:21:46.853581"
-    },
-    {
-      "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
-      "risk_level": "medium",
-      "id": "pattern_1759501306950",
-      "timestamp": "2025-10-03T11:21:46.950531"
-    },
-    {
-      "pattern_type": "Oscar's Grind",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.74,
-      "reasoning": "Equilíbrio detectado com tendência recente de black",
-      "risk_level": "low",
-      "id": "pattern_1759501307006",
-      "timestamp": "2025-10-03T11:21:47.006496"
-    },
-    {
-      "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
+      "reasoning": "Sequência de 4 white consecutivos",
       "risk_level": "high",
-      "id": "pattern_1759501307085",
-      "timestamp": "2025-10-03T11:21:47.085449"
+      "id": "pattern_1759527031434",
+      "timestamp": "2025-10-03T18:30:31.435188"
     },
     {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501307105",
-      "timestamp": "2025-10-03T11:21:47.105440"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501307120",
-      "timestamp": "2025-10-03T11:21:47.120668"
-    },
-    {
-      "pattern_type": "Hot/Cold Numbers",
-      "detected_number": 9,
+      "pattern_type": "Black Streak (Sequência Preta)",
+      "detected_number": 0,
       "predicted_color": "black",
       "confidence": 0.85,
-      "reasoning": "Números quentes: [5, 11], frios: [2, 6, 13]",
-      "risk_level": "medium",
-      "id": "pattern_1759501308123",
-      "timestamp": "2025-10-03T11:21:48.123301"
+      "reasoning": "Sequência de 4 números pretos consecutivos",
+      "risk_level": "high",
+      "id": "pattern_1759527031466",
+      "timestamp": "2025-10-03T18:30:31.466863"
     },
     {
-      "pattern_type": "Desequilíbrio de Cores",
-      "detected_number": 9,
+      "pattern_type": "Number 14 Followed by Black (Número 14 Seguido por Preto)",
+      "detected_number": 0,
+      "predicted_color": "black",
+      "confidence": 0.75,
+      "reasoning": "Após 2 números 14, 1 foram seguidos por BLACK (50.0%)",
+      "risk_level": "medium",
+      "id": "pattern_1759527031507",
+      "timestamp": "2025-10-03T18:30:31.507777"
+    },
+    {
+      "pattern_type": "Sequência de Cores",
+      "detected_number": 0,
       "predicted_color": "white",
-      "confidence": 0.7619047619047619,
-      "reasoning": "Desequilíbrio detectado: white sub-representada",
-      "risk_level": "low",
-      "id": "pattern_1759501308136",
-      "timestamp": "2025-10-03T11:21:48.136292"
+      "confidence": 0.9,
+      "reasoning": "Sequência de 4 whites detectada",
+      "risk_level": "medium",
+      "id": "pattern_1759527050255",
+      "timestamp": "2025-10-03T18:30:50.255048"
     },
     {
       "pattern_type": "Paroli (Progressão Positiva)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.79,
-      "reasoning": "Sequência de 3 vitórias em red detectada",
+      "detected_number": 0,
+      "predicted_color": "black",
+      "confidence": 0.82,
+      "reasoning": "Sequência de 4 vitórias em black detectada",
       "risk_level": "medium",
-      "id": "pattern_1759501308151",
-      "timestamp": "2025-10-03T11:21:48.151285"
+      "id": "pattern_1759527050278",
+      "timestamp": "2025-10-03T18:30:50.278140"
     },
     {
-      "pattern_type": "Oscar's Grind",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.74,
-      "reasoning": "Equilíbrio detectado com tendência recente de black",
-      "risk_level": "low",
-      "id": "pattern_1759501308166",
-      "timestamp": "2025-10-03T11:21:48.166354"
+      "pattern_type": "1-3-2-6 System",
+      "detected_number": 0,
+      "predicted_color": "black",
+      "confidence": 0.76,
+      "reasoning": "Sequência de 4 blacks - ideal para sistema 1-3-2-6",
+      "risk_level": "medium",
+      "id": "pattern_1759527050311",
+      "timestamp": "2025-10-03T18:30:50.311628"
     },
     {
       "pattern_type": "Anti-Martingale (Reverse)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.81,
-      "reasoning": "Sequência de 3 reds - momentum detectado",
+      "detected_number": 0,
+      "predicted_color": "black",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 blacks - momentum detectado",
       "risk_level": "high",
-      "id": "pattern_1759501308171",
-      "timestamp": "2025-10-03T11:21:48.171344"
+      "id": "pattern_1759527050332",
+      "timestamp": "2025-10-03T18:30:50.332930"
     },
     {
-      "pattern_type": "Neighbor Betting (Vizinhos)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.84,
-      "reasoning": "Grupo vizinho [1, 2, 3] está quente (5 aparições)",
-      "risk_level": "medium",
-      "id": "pattern_1759501308185",
-      "timestamp": "2025-10-03T11:21:48.185624"
-    },
-    {
-      "pattern_type": "Number 5 → 5th Position Red (Número 5 → 5ª Posição Vermelho)",
-      "detected_number": 9,
-      "predicted_color": "red",
-      "confidence": 0.7666666666666666,
-      "reasoning": "Após 3 números 5: 1 reds na 5ª posição + 1 reds na 6ª posição (Gale) = 66.7%",
-      "risk_level": "medium",
-      "id": "pattern_1759501308215",
-      "timestamp": "2025-10-03T11:21:48.215623"
+      "pattern_type": "Black Streak (Sequência Preta)",
+      "detected_number": 0,
+      "predicted_color": "white",
+      "confidence": 0.85,
+      "reasoning": "Sequência de 4 números pretos consecutivos",
+      "risk_level": "high",
+      "id": "pattern_1759527050370",
+      "timestamp": "2025-10-03T18:30:50.370539"
     }
   ],
   "predictions": [],
@@ -1219,6 +1219,6 @@
     "total_results": 25,
     "total_patterns": 100,
     "accuracy": 0.0,
-    "last_updated": "2025-10-03T11:21:48.215623"
+    "last_updated": "2025-10-03T18:30:50.370539"
   }
 }

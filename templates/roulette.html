@@ -497,6 +497,374 @@
           transform: rotate(360deg);
         }
       }
+
+      /* ==================== ESTILOS PARA SISTEMA DE PADRÕES ==================== */
+
+      .card-full-width {
+        grid-column: 1 / -1;
+      }
+
+      .card-header-with-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+
+      .card-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .status-active {
+        background: #d4edda !important;
+        color: #155724;
+      }
+
+      .status-inactive {
+        background: #f8d7da !important;
+        color: #721c24;
+      }
+
+      .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+      }
+
+      .btn-secondary {
+        background: #6c757d;
+      }
+
+      .btn-secondary:hover {
+        background: #5a6268;
+      }
+
+      .pattern-alerts-container {
+        max-height: 600px;
+        overflow-y: auto;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      /* Estilos para os cards de padrões */
+      .pattern-alert {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 12px;
+        margin: 0;
+        min-width: 280px;
+        max-width: 320px;
+        flex: 1;
+        transition: all 0.3s ease;
+        position: relative;
+        backdrop-filter: blur(10px);
+      }
+
+      .pattern-alert:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        border-color: rgba(255, 255, 255, 0.4);
+      }
+
+      .alert-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-weight: bold;
+      }
+
+      .alert-icon {
+        font-size: 18px;
+        margin-right: 8px;
+      }
+
+      .alert-title {
+        flex: 1;
+        font-size: 14px;
+        color: #fff;
+      }
+
+      .alert-confidence {
+        background: rgba(0, 255, 0, 0.2);
+        color: #00ff00;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      .alert-close {
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 18px;
+        cursor: pointer;
+        padding: 0;
+        margin-left: 8px;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+
+      .alert-close:hover {
+        opacity: 1;
+      }
+
+      .alert-description {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 6px;
+        line-height: 1.4;
+      }
+
+      .alert-suggestion {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.9);
+        background: rgba(255, 255, 255, 0.05);
+        padding: 6px;
+        border-radius: 4px;
+        margin-bottom: 6px;
+      }
+
+      .alert-data {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      .data-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2px;
+      }
+
+      .data-key {
+        font-weight: bold;
+      }
+
+      .data-value {
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      /* Cores por nível de confiança */
+      .alert-high {
+        border-left: 4px solid #ff4444;
+      }
+
+      .alert-medium {
+        border-left: 4px solid #ffaa00;
+      }
+
+      .alert-low {
+        border-left: 4px solid #44ff44;
+      }
+
+      /* Animação de entrada */
+      .pattern-alert {
+        animation: slideIn 0.3s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      /* Animação de atualização */
+      .alert-updated {
+        animation: pulse 0.5s ease-in-out;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .pattern-alerts-container::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .pattern-alerts-container::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+      }
+
+      .pattern-alerts-container::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+      }
+
+      .pattern-alerts-container::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      /* Modal de Configurações */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(5px);
+      }
+
+      .modal-content {
+        background: white;
+        border-radius: 15px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: modalSlideIn 0.3s ease;
+      }
+
+      @keyframes modalSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-50px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 2px solid #ecf0f1;
+      }
+
+      .modal-header h2 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 1.5rem;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 28px;
+        color: #95a5a6;
+        cursor: pointer;
+        transition: color 0.2s;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+      }
+
+      .modal-close:hover {
+        color: #e74c3c;
+      }
+
+      .modal-body {
+        padding: 20px;
+      }
+
+      .setting-group {
+        margin-bottom: 20px;
+      }
+
+      .setting-group label {
+        display: block;
+        color: #2c3e50;
+        font-weight: 500;
+        margin-bottom: 8px;
+      }
+
+      .setting-group input[type="checkbox"] {
+        margin-right: 8px;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+
+      .setting-group input[type="number"] {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #ecf0f1;
+        border-radius: 8px;
+        font-size: 1rem;
+        margin-top: 5px;
+        transition: border-color 0.2s;
+      }
+
+      .setting-group input[type="number"]:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .modal-footer {
+        padding: 20px;
+        border-top: 2px solid #ecf0f1;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .card-header-with-actions {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        .card-actions {
+          width: 100%;
+          justify-content: space-between;
+        }
+
+        .pattern-alerts-container {
+          max-height: 400px;
+          flex-direction: column;
+        }
+
+        .pattern-alert {
+          min-width: 100%;
+          max-width: 100%;
+        }
+
+        .modal-content {
+          width: 95%;
+          max-height: 95vh;
+        }
+      }
     </style>
   </head>
   <body>
@@ -607,439 +975,109 @@
             </div>
           </div>
         </div>
+
+        <!-- Card NOVO: Alertas de Padrões Detectados -->
+        <div class="card card-full-width">
+          <div class="card-header-with-actions">
+            <h2>🎯 Alertas de Padrões em Tempo Real</h2>
+            <div class="card-actions">
+              <span id="pattern-status" class="status-badge">🔴 Inativo</span>
+              <button
+                class="btn btn-sm"
+                id="clearAlertsBtn"
+                title="Limpar alertas"
+              >
+                🗑️ Limpar
+              </button>
+              <button class="btn btn-sm" id="settingsBtn" title="Configurações">
+                ⚙️ Config
+              </button>
+            </div>
+          </div>
+          <div id="pattern-alerts" class="pattern-alerts-container">
+            <!-- Alertas serão inseridos aqui dinamicamente pelo AlertManager -->
+            <div class="empty-state">
+              <div class="empty-state-icon">🔍</div>
+              <p>Aguardando detecção de padrões...</p>
+              <small
+                >O sistema analisa automaticamente os resultados e exibe alertas
+                quando padrões são detectados</small
+              >
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <script>
-      let colorChart = null;
-      let updateInterval = null;
-      let isMonitoring = false;
+    <!-- Modal de Configurações -->
+    <div id="settings-modal" class="modal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>⚙️ Configurações de Detecção</h2>
+          <button
+            class="modal-close"
+            onclick="window.roulettePatterns.closeSettings()"
+          >
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="setting-group">
+            <label>
+              <input type="checkbox" id="sound-enabled" checked />
+              🔊 Alertas sonoros
+            </label>
+          </div>
+          <div class="setting-group">
+            <label>
+              <input type="checkbox" id="notification-enabled" checked />
+              🔔 Notificações do navegador
+            </label>
+          </div>
+          <div class="setting-group">
+            <label>
+              Intervalo análise básica (segundos):
+              <input
+                type="number"
+                id="basic-interval"
+                value="5"
+                min="3"
+                max="30"
+              />
+            </label>
+          </div>
+          <div class="setting-group">
+            <label>
+              Intervalo análise avançada (segundos):
+              <input
+                type="number"
+                id="advanced-interval"
+                value="30"
+                min="10"
+                max="120"
+              />
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" onclick="window.roulettePatterns.saveSettings()">
+            💾 Salvar
+          </button>
+          <button
+            class="btn btn-secondary"
+            onclick="window.roulettePatterns.closeSettings()"
+          >
+            ❌ Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
 
-      // Inicializar ao carregar a página
-      window.addEventListener("DOMContentLoaded", () => {
-        checkStatus();
-        initColorChart();
-      });
-
-      // Verificar status do monitoramento
-      async function checkStatus() {
-        try {
-          const response = await fetch("/api/roulette/status");
-          const data = await response.json();
-
-          const isActive = data.connected && data.available;
-          isMonitoring = isActive;
-          updateStatusUI(isActive);
-
-          if (isActive) {
-            loadResults();
-            startAutoUpdate();
-          }
-        } catch (error) {
-          console.error("Erro ao verificar status:", error);
-          updateStatusUI(false);
-        }
-      }
-
-      // Atualizar interface de status
-      function updateStatusUI(monitoring) {
-        const statusDot = document.getElementById("statusDot");
-        const statusText = document.getElementById("statusText");
-        const startBtn = document.getElementById("startBtn");
-        const stopBtn = document.getElementById("stopBtn");
-
-        if (monitoring) {
-          statusDot.classList.remove("offline");
-          statusText.textContent = "Monitoramento Ativo";
-          startBtn.disabled = true;
-          stopBtn.disabled = false;
-        } else {
-          statusDot.classList.add("offline");
-          statusText.textContent = "Monitoramento Inativo";
-          startBtn.disabled = false;
-          stopBtn.disabled = true;
-        }
-      }
-
-      // Iniciar monitoramento
-      async function startMonitoring() {
-        try {
-          const response = await fetch("/api/roulette/start", {
-            method: "POST",
-          });
-          const data = await response.json();
-
-          if (data.success) {
-            isMonitoring = true;
-            updateStatusUI(true);
-            loadResults(); // Carregar resultados imediatamente
-            startAutoUpdate();
-            alert("✅ Monitoramento iniciado com sucesso!");
-          } else {
-            alert("❌ Erro ao iniciar: " + (data.error || data.message));
-          }
-        } catch (error) {
-          console.error("Erro ao iniciar monitoramento:", error);
-          alert("❌ Erro ao conectar com o servidor");
-        }
-      }
-
-      // Parar monitoramento
-      async function stopMonitoring() {
-        try {
-          const response = await fetch("/api/roulette/stop", {
-            method: "POST",
-          });
-          const data = await response.json();
-
-          if (data.success) {
-            isMonitoring = false;
-            updateStatusUI(false);
-            stopAutoUpdate();
-            alert("✅ Monitoramento parado!");
-          } else {
-            alert("❌ Erro ao parar: " + (data.error || data.message));
-          }
-        } catch (error) {
-          console.error("Erro ao parar monitoramento:", error);
-          alert("❌ Erro ao conectar com o servidor");
-        }
-      }
-
-      // Iniciar atualizações automáticas
-      function startAutoUpdate() {
-        if (updateInterval) clearInterval(updateInterval);
-        updateInterval = setInterval(loadResults, 3000); // A cada 3 segundos
-      }
-
-      // Parar atualizações automáticas
-      function stopAutoUpdate() {
-        if (updateInterval) {
-          clearInterval(updateInterval);
-          updateInterval = null;
-        }
-      }
-
-      // Carregar resultados
-      async function loadResults() {
-        try {
-          const response = await fetch("/api/roulette/results");
-          const data = await response.json();
-
-          console.log("Resultados recebidos:", data); // Debug
-
-          if (data.success && data.results && data.results.length > 0) {
-            displayResults(data.results);
-            updateLastUpdate();
-            loadStats();
-          } else if (
-            data.success &&
-            data.results &&
-            data.results.length === 0
-          ) {
-            // Mostrar mensagem de sem dados
-            const container = document.getElementById("resultsContainer");
-            container.innerHTML =
-              '<div class="empty-state"><div class="empty-state-icon">🎰</div><p>Aguardando resultados...</p></div>';
-          }
-        } catch (error) {
-          console.error("Erro ao carregar resultados:", error);
-          const container = document.getElementById("resultsContainer");
-          container.innerHTML =
-            '<div class="error">Erro ao carregar resultados. Verifique a conexão.</div>';
-        }
-      }
-
-      // Exibir resultados na grade
-      function displayResults(results) {
-        const container = document.getElementById("resultsContainer");
-        container.innerHTML = "";
-
-        // Mostrar últimos 20 resultados
-        const last20 = results.slice(0, 20);
-
-        last20.forEach((result) => {
-          const item = document.createElement("div");
-          item.className = `result-item ${result.color}`;
-
-          const number = document.createElement("div");
-          number.className = "result-number";
-          number.textContent = result.number;
-
-          const time = document.createElement("div");
-          time.className = "result-time";
-          time.textContent = new Date(result.timestamp).toLocaleTimeString(
-            "pt-BR",
-            {
-              hour: "2-digit",
-              minute: "2-digit",
-            }
-          );
-
-          item.appendChild(number);
-          item.appendChild(time);
-          container.appendChild(item);
-        });
-
-        // Detectar padrões
-        detectPatterns(results);
-        generateAlerts(results);
-      }
-
-      // Carregar estatísticas
-      async function loadStats() {
-        try {
-          const response = await fetch("/api/roulette/analysis");
-          const data = await response.json();
-
-          if (data.success && data.analysis) {
-            // Converter análise para formato de estatísticas
-            const analysis = data.analysis;
-            const total = analysis.total_spins || 1;
-
-            const stats = {
-              red: {
-                count: analysis.colors?.red || 0,
-                percentage: ((analysis.colors?.red || 0) / total) * 100,
-              },
-              black: {
-                count: analysis.colors?.black || 0,
-                percentage: ((analysis.colors?.black || 0) / total) * 100,
-              },
-              green: {
-                count: analysis.colors?.green || 0,
-                percentage: ((analysis.colors?.green || 0) / total) * 100,
-              },
-            };
-
-            updateStatsDisplay(stats);
-            updateColorChart(stats);
-          }
-        } catch (error) {
-          console.error("Erro ao carregar estatísticas:", error);
-        }
-      }
-
-      // Atualizar exibição de estatísticas
-      function updateStatsDisplay(stats) {
-        document.getElementById("redCount").textContent = stats.red.count;
-        document.getElementById("redPercent").textContent =
-          stats.red.percentage.toFixed(1) + "%";
-
-        document.getElementById("blackCount").textContent = stats.black.count;
-        document.getElementById("blackPercent").textContent =
-          stats.black.percentage.toFixed(1) + "%";
-
-        document.getElementById("greenCount").textContent = stats.green.count;
-        document.getElementById("greenPercent").textContent =
-          stats.green.percentage.toFixed(1) + "%";
-      }
-
-      // Inicializar gráfico de cores
-      function initColorChart() {
-        const ctx = document.getElementById("colorChart").getContext("2d");
-        colorChart = new Chart(ctx, {
-          type: "doughnut",
-          data: {
-            labels: ["Vermelho", "Preto", "Verde"],
-            datasets: [
-              {
-                data: [0, 0, 0],
-                backgroundColor: [
-                  "rgba(231, 76, 60, 0.8)",
-                  "rgba(44, 62, 80, 0.8)",
-                  "rgba(39, 174, 96, 0.8)",
-                ],
-                borderColor: [
-                  "rgba(231, 76, 60, 1)",
-                  "rgba(44, 62, 80, 1)",
-                  "rgba(39, 174, 96, 1)",
-                ],
-                borderWidth: 2,
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: "bottom",
-              },
-            },
-          },
-        });
-      }
-
-      // Atualizar gráfico de cores
-      function updateColorChart(stats) {
-        if (colorChart) {
-          colorChart.data.datasets[0].data = [
-            stats.red.count,
-            stats.black.count,
-            stats.green.count,
-          ];
-          colorChart.update();
-        }
-      }
-
-      // Detectar padrões de sequência
-      function detectPatterns(results) {
-        const patternsList = document.getElementById("patternsList");
-        patternsList.innerHTML = "";
-
-        if (results.length < 3) {
-          patternsList.innerHTML =
-            '<div class="empty-state"><p>Aguardando mais dados...</p></div>';
-          return;
-        }
-
-        const patterns = {};
-
-        // Analisar sequências de 3 cores
-        for (let i = 0; i <= results.length - 3; i++) {
-          const sequence = results
-            .slice(i, i + 3)
-            .map((r) => r.color)
-            .join("-");
-          patterns[sequence] = (patterns[sequence] || 0) + 1;
-        }
-
-        // Ordenar por frequência
-        const sortedPatterns = Object.entries(patterns)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 5); // Top 5 padrões
-
-        if (sortedPatterns.length === 0) {
-          patternsList.innerHTML =
-            '<div class="empty-state"><p>Nenhum padrão detectado</p></div>';
-          return;
-        }
-
-        sortedPatterns.forEach(([pattern, count]) => {
-          const item = document.createElement("div");
-          item.className = "pattern-item";
-
-          const sequence = document.createElement("div");
-          sequence.className = "pattern-sequence";
-
-          pattern.split("-").forEach((color) => {
-            const colorDiv = document.createElement("div");
-            colorDiv.className = `pattern-color ${color}`;
-            colorDiv.textContent =
-              color === "red" ? "V" : color === "black" ? "P" : "0";
-            sequence.appendChild(colorDiv);
-          });
-
-          const countDiv = document.createElement("div");
-          countDiv.className = "pattern-count";
-          countDiv.textContent = `${count}x`;
-
-          item.appendChild(sequence);
-          item.appendChild(countDiv);
-          patternsList.appendChild(item);
-        });
-      }
-
-      // Gerar alertas e recomendações
-      function generateAlerts(results) {
-        const alertsContainer = document.getElementById("alertsContainer");
-        alertsContainer.innerHTML = "";
-
-        if (results.length < 10) {
-          alertsContainer.innerHTML =
-            '<div class="empty-state"><p>Aguardando mais dados...</p></div>';
-          return;
-        }
-
-        const alerts = [];
-        const last10 = results.slice(0, 10);
-
-        // Detectar números quentes (aparecem 2+ vezes nos últimos 10)
-        const numberCounts = {};
-        last10.forEach((r) => {
-          numberCounts[r.number] = (numberCounts[r.number] || 0) + 1;
-        });
-
-        Object.entries(numberCounts).forEach(([number, count]) => {
-          if (count >= 2) {
-            alerts.push({
-              type: "hot-number",
-              message: `🔥 Número ${number} apareceu ${count}x nos últimos 10 giros`,
-              priority: count,
-            });
-          }
-        });
-
-        // Detectar sequências de mesma cor
-        let sameColorStreak = 1;
-        let streakColor = last10[0].color;
-
-        for (let i = 1; i < last10.length; i++) {
-          if (last10[i].color === streakColor) {
-            sameColorStreak++;
-          } else {
-            break;
-          }
-        }
-
-        if (sameColorStreak >= 3) {
-          const colorName =
-            streakColor === "red"
-              ? "Vermelho"
-              : streakColor === "black"
-              ? "Preto"
-              : "Verde";
-          alerts.push({
-            type: "sequence",
-            message: `📍 Sequência de ${sameColorStreak} resultados ${colorName}`,
-            priority: sameColorStreak,
-          });
-        }
-
-        // Detectar ausência de verde
-        const greenInLast10 = last10.filter((r) => r.color === "green").length;
-        if (greenInLast10 === 0 && results.length >= 20) {
-          const last20 = results.slice(0, 20);
-          const greenInLast20 = last20.filter(
-            (r) => r.color === "green"
-          ).length;
-          if (greenInLast20 === 0) {
-            alerts.push({
-              type: "cold-number",
-              message: `❄️ Verde (0) não aparece há ${last20.length} giros`,
-              priority: 3,
-            });
-          }
-        }
-
-        // Mostrar alertas
-        if (alerts.length === 0) {
-          alertsContainer.innerHTML =
-            '<div class="empty-state"><p>Nenhum alerta no momento</p></div>';
-          return;
-        }
-
-        // Ordenar por prioridade
-        alerts.sort((a, b) => b.priority - a.priority);
-
-        alerts.forEach((alert) => {
-          const item = document.createElement("div");
-          item.className = `alert-item ${alert.type}`;
-          item.innerHTML = `
-            <span>${alert.message}</span>
-            <span>⚡</span>
-          `;
-          alertsContainer.appendChild(item);
-        });
-      }
-
-      // Atualizar timestamp da última atualização
-      function updateLastUpdate() {
-        const lastUpdate = document.getElementById("lastUpdate");
-        const now = new Date().toLocaleTimeString("pt-BR");
-        lastUpdate.textContent = `Última atualização: ${now}`;
-      }
-    </script>
+    <!-- Scripts externos - Ordem importa! -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/js/roulette-legacy.js"></script>
+    <script src="/static/js/pattern-detector.js"></script>
+    <script src="/static/js/alert-manager.js"></script>
+    <script src="/static/js/roulette-patterns.js"></script>
   </body>
 </html>
