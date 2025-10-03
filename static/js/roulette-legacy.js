@@ -43,7 +43,10 @@ async function checkStatus() {
     } else if (data.auto_start_failed && data.auto_start_enabled) {
       // Só mostra erro se auto-start estava habilitado
       console.warn("⚠️ Falha ao inicializar automaticamente:", data.message);
-      showNotification(`⚠️ Auto-start falhou. Clique em "Iniciar Monitoramento"`, "warning");
+      showNotification(
+        `⚠️ Auto-start falhou. Clique em "Iniciar Monitoramento"`,
+        "warning"
+      );
     } else if (!data.connected) {
       // Sistema não conectado, mas sem erros - modo normal
       console.log("ℹ️ Sistema aguardando inicialização manual");

@@ -873,8 +873,9 @@ def roulette_status():
             # Tentar inicializar automaticamente se tiver credenciais E auto-start habilitado
             if has_credentials and auto_start_enabled:
                 print("🔄 Tentando inicializar automaticamente...")
-                try:
-                    init_roulette_integrator()
+                success = init_roulette_integrator()
+                
+                if success and roulette_integrator is not None:
                     print("✅ Integrador inicializado automaticamente com sucesso!")
                     
                     # Verificar se realmente conectou
@@ -889,9 +890,8 @@ def roulette_status():
                         'auto_started': True,
                         'message': 'Integrador inicializado automaticamente'
                     })
-                except Exception as e:
-                    error_msg = str(e)
-                    print(f"❌ Falha ao inicializar automaticamente: {error_msg}")
+                else:
+                    print("❌ Falha ao inicializar automaticamente")
                     
                     # Se auto-start falhar, não retornar erro - permitir uso manual
                     return jsonify({
@@ -901,7 +901,7 @@ def roulette_status():
                         'has_credentials': has_credentials,
                         'auto_start_failed': True,
                         'auto_start_enabled': True,
-                        'message': f'Auto-start falhou: {error_msg}. Clique em "Iniciar Monitoramento" para tentar manualmente.'
+                        'message': 'Auto-start falhou. Clique em "Iniciar Monitoramento" para tentar manualmente.'
                     })
             
             # Auto-start desabilitado ou sem credenciais
@@ -990,7 +990,7 @@ def init_roulette_integrator():
             error_msg = "Falha ao fazer login na Roleta Brasileira - credenciais inválidas ou erro de conexão"
             print(f"❌ {error_msg}")
             roulette_integrator = None
-            raise Exception(error_msg)
+            return False  # Retorna False em vez de lançar exceção
         
         print("✅ Integrador da Roleta Brasileira inicializado com sucesso")
         print(f"   JSESSIONID: {'✅ Obtido' if roulette_integrator.jsessionid else '❌ Não obtido'}")
@@ -1002,7 +1002,7 @@ def init_roulette_integrator():
         import traceback
         traceback.print_exc()
         roulette_integrator = None
-        raise Exception(error_msg)
+        return False  # Retorna False em vez de lançar exceção
 
 @app.route('/api/roulette/start', methods=['POST'])
 def roulette_start():
@@ -1024,20 +1024,31 @@ def roulette_start():
         
         # Inicializar integrador se necessário
         print("🔄 Chamando init_roulette_integrator()...")
-        init_roulette_integrator()
+        success = init_roulette_integrator()
         
-        print("✅ Integrador inicializado com sucesso")
-        print("="*60 + "\n")
-        
-        return jsonify({
-            'success': True,
-            'message': 'Monitoramento da Roleta Brasileira iniciado',
-            'connected': True,
-            'monitoring': True
-        })
+        if success:
+            print("✅ Integrador inicializado com sucesso")
+            print("="*60 + "\n")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Monitoramento da Roleta Brasileira iniciado',
+                'connected': True,
+                'monitoring': True
+            })
+        else:
+            print("❌ Falha ao inicializar integrador")
+            print("="*60 + "\n")
+            
+            return jsonify({
+                'success': False,
+                'error': 'Falha ao inicializar integrador da Roleta Brasileira',
+                'details': 'Verifique as credenciais (PRAGMATIC_USERNAME e PRAGMATIC_PASSWORD) e os logs do servidor'
+            }), 500
+            
     except Exception as e:
         error_msg = str(e)
-        print(f"\n❌ [ROULETTE START] ERRO: {error_msg}")
+        print(f"\n❌ [ROULETTE START] ERRO INESPERADO: {error_msg}")
         import traceback
         traceback.print_exc()
         print("="*60 + "\n")
@@ -1045,7 +1056,7 @@ def roulette_start():
         return jsonify({
             'success': False,
             'error': error_msg,
-            'details': 'Verifique os logs do servidor para mais informações'
+            'details': 'Erro inesperado. Verifique os logs do servidor'
         }), 500
 
 @app.route('/api/roulette/stop', methods=['POST'])
