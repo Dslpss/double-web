@@ -59,10 +59,10 @@ class RoulettePatternDetector {
       }
     }
 
-    if (streak >= 5) {
+    if (streak >= 6) {
       const colorName = this.getColorName(currentColor);
       const oppositeColor = this.getOppositeColor(currentColor);
-      const confidence = Math.min(40 + (streak - 5) * 3, 55);
+      const confidence = Math.min(45 + (streak - 6) * 3, 60);
 
       return {
         id: "color-sequence",
@@ -139,10 +139,10 @@ class RoulettePatternDetector {
     const redPerc = (colorCounts.red / total) * 100;
     const blackPerc = (colorCounts.black / total) * 100;
 
-    if (redPerc >= 70 || blackPerc >= 70) {
+    if (redPerc >= 75 || blackPerc >= 75) {
       const dominantColor = redPerc > blackPerc ? "red" : "black";
       const percentage = Math.max(redPerc, blackPerc);
-      const confidence = Math.min(50 + (percentage - 70) * 1.5, 65);
+      const confidence = Math.min(50 + (percentage - 75) * 1.5, 70);
       const colorName = this.getColorName(dominantColor);
 
       return {
@@ -187,11 +187,11 @@ class RoulettePatternDetector {
     const evenPerc = (evenCount / total) * 100;
     const oddPerc = (oddCount / total) * 100;
 
-    if (evenPerc >= 65 || oddPerc >= 65) {
+    if (evenPerc >= 70 || oddPerc >= 70) {
       const dominant = evenPerc > oddPerc ? "Par" : "Ímpar";
       const count = Math.max(evenCount, oddCount);
       const percentage = Math.max(evenPerc, oddPerc);
-      const confidence = Math.min(40 + (percentage - 65) * 1.2, 58);
+      const confidence = Math.min(50 + (percentage - 70) * 1.5, 65);
 
       return {
         id: "parity-imbalance",
@@ -226,7 +226,7 @@ class RoulettePatternDetector {
     });
 
     const hotNums = Object.entries(frequency)
-      .filter(([num, count]) => count >= 3)
+      .filter(([num, count]) => count >= 4)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
@@ -234,6 +234,10 @@ class RoulettePatternDetector {
       const topNumber = hotNums[0];
       const expected = last50.length / 37;
       const deviation = ((topNumber[1] - expected) / expected) * 100;
+
+      // Só alertar se o desvio for significativo (>100%)
+      if (deviation < 100) return null;
+
       const confidence = Math.min(60 + deviation * 0.5, 78);
 
       return {
