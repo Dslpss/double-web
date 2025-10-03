@@ -7,6 +7,8 @@ Com renovação automática de JSESSIONID
 """
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import json
 import time
 import re
@@ -37,19 +39,36 @@ class PragmaticBrazilianRoulette:
         self.game_launch_base = "https://games.pragmaticplaylive.net"
         self.history_api_base = "https://games.pragmaticplaylive.net/api/ui/statisticHistory"
         
-        # Configuração de sessão
+        # Configuração de sessão com retry automático
         self.session = requests.Session()
+        
+        # Configurar estratégia de retry (tentar novamente em caso de erro)
+        retry_strategy = Retry(
+            total=3,  # 3 tentativas
+            backoff_factor=1,  # 1s, 2s, 4s entre tentativas
+            status_forcelist=[429, 500, 502, 503, 504],  # Códigos que triggam retry
+            allowed_methods=["GET", "POST"]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+        
         self.jsessionid = None
         self.token_cassino = None
         self.table_id = "rwbrzportrwa16rg"  # ID da mesa Brasileira
         self.last_login_time = 0
         self.session_duration = 3600  # 1 hora (ajuste conforme necessário)
         
-        # Headers padrão
+        # Headers padrão mais completos (simular navegador real)
         self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:143.0) Gecko/20100101 Firefox/143.0',
-            'Accept-Language': 'pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
             'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'DNT': '1',
+            'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"'
         })
         
         logger.info("Pragmatic Brazilian Roulette Integrator inicializado")
@@ -152,7 +171,7 @@ class PragmaticBrazilianRoulette:
     
     def _launch_game(self) -> bool:
         """
-        Lança o jogo para obter JSESSIONID.
+        Lança o jogo para obter JSESSIONID com múltiplas estratégias e retry.
         
         Returns:
             bool: True se obteve JSESSIONID
@@ -176,44 +195,161 @@ class PragmaticBrazilianRoulette:
                 f"&stylename=weebet_playnabet"
             )
             
-            headers = {
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Referer': 'https://playnabets.com/',
-                'Upgrade-Insecure-Requests': '1',
-                'Sec-Fetch-Dest': 'iframe',
-                'Sec-Fetch-Mode': 'navigate',
-                'Sec-Fetch-Site': 'cross-site',
-            }
+            logger.info(f"URL do jogo: {game_launch_url[:100]}...")
             
-            # Fazer requisição (não seguir redirect automaticamente)
-            response = self.session.get(
-                game_launch_url,
-                headers=headers,
-                allow_redirects=False,
-                timeout=10
-            )
+            # Tentar múltiplas estratégias
+            strategies = [
+                {
+                    "name": "Redirect OFF + Timeout 20s",
+                    "allow_redirects": False,
+                    "timeout": 20,
+                    "headers": {
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                        'Referer': 'https://playnabets.com/',
+                        'Upgrade-Insecure-Requests': '1',
+                        'Sec-Fetch-Dest': 'document',
+                        'Sec-Fetch-Mode': 'navigate',
+                        'Sec-Fetch-Site': 'cross-site',
+                        'Sec-Fetch-User': '?1'
+                    }
+                },
+                {
+                    "name": "Redirect ON + Timeout 25s",
+                    "allow_redirects": True,
+                    "timeout": 25,
+                    "headers": {
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Referer': 'https://playnabets.com/',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                },
+                {
+                    "name": "Redirect OFF + Timeout 30s + Authorization",
+                    "allow_redirects": False,
+                    "timeout": 30,
+                    "headers": {
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Referer': 'https://playnabets.com/',
+                        'Authorization': f'Bearer {self.token_cassino}',
+                        'Sec-Fetch-Dest': 'iframe',
+                        'Sec-Fetch-Mode': 'navigate'
+                    }
+                }
+            ]
             
-            if response.status_code == 302:
-                # Extrair JSESSIONID da URL de redirecionamento
-                location = response.headers.get('Location', '')
-                
-                # Procurar JSESSIONID na URL
+            for attempt, strategy in enumerate(strategies, 1):
+                try:
+                    logger.info(f"🔄 Tentativa {attempt}/{len(strategies)}: {strategy['name']}")
+                    
+                    # Delay entre tentativas (exceto primeira)
+                    if attempt > 1:
+                        wait_time = 2 ** (attempt - 1)  # 2s, 4s
+                        logger.info(f"⏳ Aguardando {wait_time}s...")
+                        time.sleep(wait_time)
+                    
+                    # Fazer requisição
+                    response = self.session.get(
+                        game_launch_url,
+                        headers=strategy['headers'],
+                        allow_redirects=strategy['allow_redirects'],
+                        timeout=strategy['timeout']
+                    )
+                    
+                    logger.info(f"📡 Status: {response.status_code}")
+                    
+                    # Tentar extrair JSESSIONID de várias formas
+                    jsessionid = self._extract_jsessionid(response)
+                    
+                    if jsessionid:
+                        self.jsessionid = jsessionid
+                        self.last_login_time = time.time()
+                        logger.info(f"✅ JSESSIONID obtido com sucesso: {jsessionid[:30]}...")
+                        return True
+                    
+                    # Log de erro específico
+                    if response.status_code == 500:
+                        logger.error("❌ API retornou 500 - possível bloqueio de IP ou região")
+                        logger.error(f"Resposta: {response.text[:300]}")
+                    elif response.status_code == 403:
+                        logger.error("❌ API retornou 403 - acesso negado")
+                        break  # Não adianta tentar novamente
+                    elif response.status_code == 401:
+                        logger.error("❌ API retornou 401 - token inválido")
+                        break  # Token problem
+                    else:
+                        logger.warning(f"⚠️ Status {response.status_code} mas JSESSIONID não encontrado")
+                    
+                except requests.exceptions.Timeout:
+                    logger.warning(f"⏱️ Timeout na tentativa {attempt}/{len(strategies)}")
+                except requests.exceptions.ConnectionError as e:
+                    logger.warning(f"🔌 Erro de conexão: {e}")
+                except Exception as e:
+                    logger.error(f"❌ Erro na tentativa {attempt}: {e}")
+            
+            # Se chegou aqui, todas as tentativas falharam
+            logger.error("❌ Todas as tentativas de obter JSESSIONID falharam")
+            logger.warning("💡 Possíveis causas:")
+            logger.warning("   1. IP do Railway bloqueado pela Pragmatic Play")
+            logger.warning("   2. Rate limiting ativado")
+            logger.warning("   3. Região geográfica não permitida")
+            logger.warning("   4. API da Pragmatic temporariamente indisponível")
+            return False
+            
+        except Exception as e:
+            logger.error(f"❌ Erro geral ao lançar jogo: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    def _extract_jsessionid(self, response) -> Optional[str]:
+        """
+        Tenta extrair JSESSIONID de várias fontes na resposta HTTP.
+        
+        Args:
+            response: Objeto response do requests
+            
+        Returns:
+            JSESSIONID ou None
+        """
+        # Método 1: Cookie direto
+        if 'JSESSIONID' in response.cookies:
+            jsessionid = response.cookies['JSESSIONID']
+            logger.info(f"✅ JSESSIONID encontrado via cookie")
+            return jsessionid
+        
+        # Método 2: Set-Cookie header
+        if 'Set-Cookie' in response.headers:
+            set_cookie = response.headers.get('Set-Cookie', '')
+            if 'JSESSIONID=' in set_cookie:
+                match = re.search(r'JSESSIONID=([^;]+)', set_cookie)
+                if match:
+                    jsessionid = match.group(1)
+                    logger.info(f"✅ JSESSIONID encontrado via Set-Cookie header")
+                    return jsessionid
+        
+        # Método 3: Location header (redirect 302)
+        if response.status_code == 302 and 'Location' in response.headers:
+            location = response.headers.get('Location', '')
+            logger.info(f"Location header: {location[:150]}...")
+            if 'JSESSIONID=' in location:
                 match = re.search(r'JSESSIONID=([^&]+)', location)
                 if match:
-                    self.jsessionid = match.group(1)
-                    self.last_login_time = time.time()
-                    logger.info(f"JSESSIONID obtido com sucesso: {self.jsessionid[:30]}...")
-                    return True
-                else:
-                    logger.error("JSESSIONID não encontrado na resposta")
-                    return False
-            else:
-                logger.error(f"Erro ao lançar jogo: {response.status_code}")
-                return False
-                
-        except Exception as e:
-            logger.error(f"Erro ao lançar jogo: {e}")
-            return False
+                    jsessionid = match.group(1)
+                    logger.info(f"✅ JSESSIONID encontrado via Location header")
+                    return jsessionid
+        
+        # Método 4: Response body (HTML/JavaScript)
+        if 'JSESSIONID=' in response.text:
+            match = re.search(r'JSESSIONID["\']?\s*[:=]\s*["\']?([a-zA-Z0-9\-\.]+)', response.text)
+            if match:
+                jsessionid = match.group(1)
+                logger.info(f"✅ JSESSIONID encontrado no body da resposta")
+                return jsessionid
+        
+        # Nenhum método funcionou
+        logger.warning("⚠️ JSESSIONID não encontrado em nenhuma fonte")
+        return None
     
     def get_history(self, num_games: int = 500) -> Optional[List[Dict]]:
         """
