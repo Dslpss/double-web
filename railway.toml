@@ -1,0 +1,29 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "python app.py"
+healthcheckPath = "/api/pragmatic/status"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[build.nixpacks]
+providers = ["python", "nix"]
+
+[build.nixpacks.variables]
+PYTHON_VERSION = "3.12"
+PLAYWRIGHT_BROWSERS = "chromium"
+
+[build.nixpacks.buildCommand]
+command = "pip install -r requirements.txt && playwright install --with-deps chromium"
+
+[build.nixpacks.startCommand]
+command = "python app.py"
+
+[env]
+FLASK_ENV = "production"
+PORT = "5000"
+HOST = "0.0.0.0"
+SECRET_KEY = "railway_pragmatic_secret_key_change_in_production"
+PRAGMATIC_AUTO_START = "false"

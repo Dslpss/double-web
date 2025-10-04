@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pragmatic Play - Roleta Brasileira</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+        color: white;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .header p {
+        font-size: 1.2rem;
+        opacity: 0.9;
+      }
+
+      .status-panel {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .status-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+      }
+
+      .status-item h3 {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+      }
+
+      .status-item .value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+      }
+
+      .status-connected .value {
+        color: #28a745;
+      }
+
+      .status-disconnected .value {
+        color: #dc3545;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .btn-primary {
+        background: #007bff;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #0056b3;
+        transform: translateY(-2px);
+      }
+
+      .btn-success {
+        background: #28a745;
+        color: white;
+      }
+
+      .btn-success:hover {
+        background: #1e7e34;
+        transform: translateY(-2px);
+      }
+
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+      }
+
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .results-panel {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .results-header h2 {
+        color: #333;
+      }
+
+      .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .result-item {
+        aspect-ratio: 1;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        transition: transform 0.3s ease;
+      }
+
+      .result-item:hover {
+        transform: scale(1.1);
+      }
+
+      .result-red {
+        background: #dc3545;
+      }
+
+      .result-black {
+        background: #333;
+      }
+
+      .result-green {
+        background: #28a745;
+      }
+
+      .chart-panel {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .chart-container {
+        position: relative;
+        height: 400px;
+      }
+
+      .alerts-panel {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .alert-item {
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        border-left: 4px solid;
+      }
+
+      .alert-info {
+        background: #d1ecf1;
+        border-color: #17a2b8;
+        color: #0c5460;
+      }
+
+      .alert-success {
+        background: #d4edda;
+        border-color: #28a745;
+        color: #155724;
+      }
+
+      .alert-warning {
+        background: #fff3cd;
+        border-color: #ffc107;
+        color: #856404;
+      }
+
+      .alert-error {
+        background: #f8d7da;
+        border-color: #dc3545;
+        color: #721c24;
+      }
+
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .fade-in {
+        animation: fadeIn 0.5s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 10px;
+        }
+
+        .header h1 {
+          font-size: 2rem;
+        }
+
+        .status-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .controls {
+          flex-direction: column;
+        }
+
+        .btn {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🎰 Pragmatic Play</h1>
+        <p>Roleta Brasileira - Monitoramento em Tempo Real</p>
+      </div>
+
+      <div class="status-panel">
+        <div class="status-grid">
+          <div class="status-item" id="connection-status">
+            <h3>Status da Conexão</h3>
+            <div class="value">Desconectado</div>
+          </div>
+          <div class="status-item" id="monitoring-status">
+            <h3>Monitoramento</h3>
+            <div class="value">Parado</div>
+          </div>
+          <div class="status-item" id="results-count">
+            <h3>Resultados</h3>
+            <div class="value">0</div>
+          </div>
+          <div class="status-item" id="uptime">
+            <h3>Tempo Ativo</h3>
+            <div class="value">00:00:00</div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button
+            class="btn btn-primary"
+            id="start-btn"
+            onclick="startMonitoring()"
+          >
+            ▶️ Iniciar
+          </button>
+          <button
+            class="btn btn-danger"
+            id="stop-btn"
+            onclick="stopMonitoring()"
+            disabled
+          >
+            ⏹️ Parar
+          </button>
+          <button
+            class="btn btn-success"
+            id="refresh-btn"
+            onclick="refreshStatus()"
+          >
+            🔄 Atualizar
+          </button>
+        </div>
+      </div>
+
+      <div class="results-panel">
+        <div class="results-header">
+          <h2>🎲 Últimos Resultados</h2>
+          <span id="results-total">Total: 0</span>
+        </div>
+        <div class="results-grid" id="results-grid">
+          <!-- Resultados serão inseridos aqui -->
+        </div>
+      </div>
+
+      <div class="chart-panel">
+        <h2>📊 Gráfico de Cores</h2>
+        <div class="chart-container">
+          <canvas id="colorChart"></canvas>
+        </div>
+      </div>
+
+      <div class="alerts-panel">
+        <h2>🔔 Alertas</h2>
+        <div id="alerts-container">
+          <div class="alert-item alert-info">
+            Sistema inicializado. Clique em "Iniciar" para começar o
+            monitoramento.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Configuração do Socket.IO
+      const socket = io();
+
+      // Estado da aplicação
+      let isConnected = false;
+      let isMonitoring = false;
+      let resultsCount = 0;
+      let startTime = null;
+      let colorChart = null;
+      let colorStats = { red: 0, black: 0, green: 0 };
+
+      // Elementos DOM
+      const connectionStatus = document.getElementById("connection-status");
+      const monitoringStatus = document.getElementById("monitoring-status");
+      const resultsCountEl = document.getElementById("results-count");
+      const uptimeEl = document.getElementById("uptime");
+      const startBtn = document.getElementById("start-btn");
+      const stopBtn = document.getElementById("stop-btn");
+      const resultsGrid = document.getElementById("results-grid");
+      const resultsTotal = document.getElementById("results-total");
+      const alertsContainer = document.getElementById("alerts-container");
+
+      // Inicializar gráfico
+      function initChart() {
+        const ctx = document.getElementById("colorChart").getContext("2d");
+        colorChart = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: ["Vermelho", "Preto", "Verde"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#dc3545", "#333", "#28a745"],
+                borderWidth: 2,
+                borderColor: "#fff",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  padding: 20,
+                  font: {
+                    size: 14,
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Atualizar status da conexão
+      function updateConnectionStatus(connected) {
+        isConnected = connected;
+        const statusEl = connectionStatus.querySelector(".value");
+
+        if (connected) {
+          statusEl.textContent = "Conectado";
+          connectionStatus.className = "status-item status-connected";
+        } else {
+          statusEl.textContent = "Desconectado";
+          connectionStatus.className = "status-item status-disconnected";
+        }
+      }
+
+      // Atualizar status do monitoramento
+      function updateMonitoringStatus(monitoring) {
+        isMonitoring = monitoring;
+        const statusEl = monitoringStatus.querySelector(".value");
+
+        if (monitoring) {
+          statusEl.textContent = "Ativo";
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
+        } else {
+          statusEl.textContent = "Parado";
+          startBtn.disabled = false;
+          stopBtn.disabled = true;
+        }
+      }
+
+      // Atualizar contador de resultados
+      function updateResultsCount(count) {
+        resultsCount = count;
+        resultsCountEl.textContent = count;
+        resultsTotal.textContent = `Total: ${count}`;
+      }
+
+      // Atualizar tempo ativo
+      function updateUptime() {
+        if (startTime) {
+          const now = Date.now();
+          const diff = now - startTime;
+          const hours = Math.floor(diff / 3600000);
+          const minutes = Math.floor((diff % 3600000) / 60000);
+          const seconds = Math.floor((diff % 60000) / 1000);
+
+          uptimeEl.textContent = `${hours.toString().padStart(2, "0")}:${minutes
+            .toString()
+            .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+        } else {
+          uptimeEl.textContent = "00:00:00";
+        }
+      }
+
+      // Adicionar resultado ao grid
+      function addResult(result) {
+        const resultEl = document.createElement("div");
+        resultEl.className = `result-item result-${result.color} fade-in`;
+        resultEl.textContent = result.number;
+        resultEl.title = `Número: ${result.number}, Cor: ${
+          result.color
+        }, Tempo: ${new Date(result.time).toLocaleTimeString()}`;
+
+        // Inserir no início
+        resultsGrid.insertBefore(resultEl, resultsGrid.firstChild);
+
+        // Manter apenas últimos 50 resultados visíveis
+        while (resultsGrid.children.length > 50) {
+          resultsGrid.removeChild(resultsGrid.lastChild);
+        }
+
+        // Atualizar estatísticas
+        colorStats[result.color]++;
+        updateChart();
+      }
+
+      // Atualizar gráfico
+      function updateChart() {
+        if (colorChart) {
+          const total = colorStats.red + colorStats.black + colorStats.green;
+          if (total > 0) {
+            colorChart.data.datasets[0].data = [
+              colorStats.red,
+              colorStats.black,
+              colorStats.green,
+            ];
+            colorChart.update();
+          }
+        }
+      }
+
+      // Adicionar alerta
+      function addAlert(message, type = "info") {
+        const alertEl = document.createElement("div");
+        alertEl.className = `alert-item alert-${type} fade-in`;
+        alertEl.textContent = message;
+
+        alertsContainer.insertBefore(alertEl, alertsContainer.firstChild);
+
+        // Manter apenas últimos 10 alertas
+        while (alertsContainer.children.length > 10) {
+          alertsContainer.removeChild(alertsContainer.lastChild);
+        }
+      }
+
+      // Iniciar monitoramento
+      function startMonitoring() {
+        fetch("/api/start", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              addAlert("Monitoramento iniciado!", "success");
+              startTime = Date.now();
+            } else {
+              addAlert(`Erro ao iniciar: ${data.error}`, "error");
+            }
+          })
+          .catch((error) => {
+            addAlert(`Erro de conexão: ${error.message}`, "error");
+          });
+      }
+
+      // Parar monitoramento
+      function stopMonitoring() {
+        fetch("/api/stop", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              addAlert("Monitoramento parado!", "warning");
+              startTime = null;
+            } else {
+              addAlert(`Erro ao parar: ${data.error}`, "error");
+            }
+          })
+          .catch((error) => {
+            addAlert(`Erro de conexão: ${error.message}`, "error");
+          });
+      }
+
+      // Atualizar status
+      function refreshStatus() {
+        fetch("/api/status")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              const status = data.status;
+              updateConnectionStatus(status.app_running);
+              updateMonitoringStatus(status.monitoring);
+              updateResultsCount(status.results_count);
+
+              if (status.start_time) {
+                startTime = status.start_time * 1000;
+              }
+            }
+          })
+          .catch((error) => {
+            addAlert(`Erro ao atualizar status: ${error.message}`, "error");
+          });
+      }
+
+      // Eventos do Socket.IO
+      socket.on("connect", function () {
+        updateConnectionStatus(true);
+        addAlert("Conectado ao servidor!", "success");
+      });
+
+      socket.on("disconnect", function () {
+        updateConnectionStatus(false);
+        addAlert("Desconectado do servidor!", "warning");
+      });
+
+      socket.on("new_result", function (result) {
+        addResult(result);
+        updateResultsCount(resultsCount + 1);
+      });
+
+      socket.on("status_update", function (status) {
+        updateConnectionStatus(status.app_running);
+        updateMonitoringStatus(status.monitoring);
+        updateResultsCount(status.results_count);
+      });
+
+      socket.on("recent_results", function (data) {
+        // Limpar resultados existentes
+        resultsGrid.innerHTML = "";
+        colorStats = { red: 0, black: 0, green: 0 };
+
+        // Adicionar resultados recentes
+        data.results.forEach((result) => {
+          addResult(result);
+        });
+
+        updateResultsCount(data.total);
+      });
+
+      // Inicializar aplicação
+      function init() {
+        initChart();
+        refreshStatus();
+
+        // Atualizar tempo ativo a cada segundo
+        setInterval(updateUptime, 1000);
+
+        // Atualizar status a cada 30 segundos
+        setInterval(refreshStatus, 30000);
+
+        addAlert("Aplicação inicializada!", "info");
+      }
+
+      // Inicializar quando a página carregar
+      document.addEventListener("DOMContentLoaded", init);
+    </script>
+  </body>
+</html>

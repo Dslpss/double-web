@@ -232,7 +232,11 @@
         </a>
 
         <!-- Card PlayNabets -->
-        <a href="https://playnabets.com/cadastro?refId=NjMzMTRyZWZJZA==" target="_blank" class="game-card">
+        <a
+          href="https://playnabets.com/cadastro?refId=NjMzMTRyZWZJZA=="
+          target="_blank"
+          class="game-card"
+        >
           <div class="game-badge exclusivo">Exclusivo</div>
           <div class="game-icon">🚀</div>
           <div class="game-title">Cadastrar na PlayNabets</div>
@@ -262,13 +266,13 @@
       // Adicionar efeitos de hover suaves
       document.addEventListener("DOMContentLoaded", function () {
         const cards = document.querySelectorAll(".game-card");
-        
-        cards.forEach(card => {
-          card.addEventListener("mouseenter", function() {
+
+        cards.forEach((card) => {
+          card.addEventListener("mouseenter", function () {
             this.style.transform = "translateY(-10px) scale(1.02)";
           });
-          
-          card.addEventListener("mouseleave", function() {
+
+          card.addEventListener("mouseleave", function () {
             this.style.transform = "translateY(0) scale(1)";
           });
         });

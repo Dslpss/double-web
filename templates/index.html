@@ -270,6 +270,103 @@
         color: #666;
       }
 
+
+      .invite-section {
+        text-align: center;
+        margin: 20px 0;
+      }
+
+      .invite-btn {
+        display: inline-block;
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        color: white;
+        text-decoration: none;
+        padding: 15px 30px;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+      }
+
+      .invite-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+        background: linear-gradient(135deg, #ee5a24, #ff6b6b);
+      }
+
+      .invite-btn:active {
+        transform: translateY(0);
+      }
+
+      .invite-text {
+
+      .games-section {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 25px;
+        margin: 20px 0;
+        text-align: center;
+      }
+
+      .games-title {
+        font-size: 1.8rem;
+        color: #2c3e50;
+        margin-bottom: 10px;
+        font-weight: bold;
+      }
+
+      .games-subtitle {
+        color: #7f8c8d;
+        margin-bottom: 20px;
+        font-size: 1.1rem;
+      }
+
+      .games-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .game-card {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 15px;
+        padding: 20px;
+        color: white;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      }
+
+      .game-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+      }
+
+      .game-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+      }
+
+      .game-name {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      .game-description {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+        color: white;
+        margin-bottom: 10px;
+        font-size: 1rem;
+        opacity: 0.9;
+      }
       .error {
         background: #ffebee;
         color: #c62828;
@@ -295,6 +392,13 @@
       <div class="header">
         <h1>ðŸ”¥ Blaze Double Analyzer</h1>
         <p>AnÃ¡lise de padrÃµes em tempo real</p>
+
+      <div class="invite-section">
+        <p class="invite-text">í¾° Cadastre-se na PlayNabets e comece a jogar!</p>
+        <a href="https://playnabets.com/cadastro?refId=NjMzMTRyZWZJZA==" target="_blank" class="invite-btn">
+          ï¿½ï¿½ Cadastrar na PlayNabets
+        </a>
+      </div>
       </div>
 
       <div class="status-bar">
@@ -313,6 +417,31 @@
         </div>
       </div>
 
+
+      <div class="games-section">
+        <h2 class="games-title">í¾® Plataforma de AnÃ¡lise de Jogos</h2>
+        <p class="games-subtitle">Escolha o jogo que deseja analisar em tempo real</p>
+        
+        <div class="games-grid">
+          <a href="/roulette" class="game-card">
+            <div class="game-icon">í¾°</div>
+            <div class="game-name">Roleta Brasileira</div>
+            <div class="game-description">Pragmatic Play</div>
+          </a>
+          
+          <a href="/pragmatic" class="game-card">
+            <div class="game-icon">í¾²</div>
+            <div class="game-name">Pragmatic Play</div>
+            <div class="game-description">AnÃ¡lise AvanÃ§ada</div>
+          </a>
+          
+          <a href="https://playnabets.com/cadastro?refId=NjMzMTRyZWZJZA==" target="_blank" class="game-card">
+            <div class="game-icon">íº€</div>
+            <div class="game-name">Cadastrar na PlayNabets</div>
+            <div class="game-description">Comece a jogar agora!</div>
+          </a>
+        </div>
+      </div>
       <div class="main-content">
         <div class="card">
           <h2>ðŸ“Š Ãšltimos Resultados</h2>
