@@ -85,6 +85,17 @@ except ImportError as e:
     traceback.print_exc()
     statistics_client_available = False
 
+# Importar cliente de estatísticas aprimorado
+try:
+    from integrators.pragmatic_statistics_enhanced import PragmaticStatisticsClientEnhanced
+    statistics_enhanced_available = True
+    print("✅ PragmaticStatisticsClientEnhanced importado com sucesso")
+except ImportError as e:
+    print(f"❌ Erro ao importar PragmaticStatisticsClientEnhanced: {e}")
+    import traceback
+    traceback.print_exc()
+    statistics_enhanced_available = False
+
 # Inicializar Flask
 app = Flask(__name__, template_folder='templates')
 CORS(app)
@@ -94,6 +105,7 @@ analyzer = None
 playnabets_integrator = None
 roulette_integrator = None
 statistics_client = None  # Cliente para API de estatísticas da Pragmatic Play
+statistics_enhanced_client = None  # Cliente aprimorado para API de estatísticas
 ws_connected = False
 ws_thread = None
 last_results = []
@@ -1039,26 +1051,42 @@ def update_statistics_client_session():
     Atualiza o JSESSIONID do cliente de estatísticas com base no integrador principal.
     Esta função deve ser chamada após qualquer renovação de sessão do integrador.
     """
-    global roulette_integrator, statistics_client, statistics_client_available
+    global roulette_integrator, statistics_client, statistics_enhanced_client, statistics_client_available, statistics_enhanced_available
     
-    if not statistics_client_available:
+    if not (statistics_client_available or statistics_enhanced_available):
         return False
         
     if roulette_integrator is None or roulette_integrator.jsessionid is None:
         return False
         
     try:
-        if statistics_client is None:
-            # Cliente ainda não foi inicializado
-            statistics_client = PragmaticStatisticsClient(
-                table_id="rwbrzportrwa16rg",  # ID da Roleta Brasileira
-                jsessionid=roulette_integrator.jsessionid
-            )
-            print("✅ Cliente de estatísticas inicializado com JSESSIONID atual")
-        else:
-            # Atualizar JSESSIONID do cliente existente
-            statistics_client.set_jsessionid(roulette_integrator.jsessionid)
-            print("✅ JSESSIONID do cliente de estatísticas atualizado")
+        # Atualizar cliente padrão se disponível
+        if statistics_client_available:
+            if statistics_client is None:
+                # Cliente ainda não foi inicializado
+                statistics_client = PragmaticStatisticsClient(
+                    table_id="rwbrzportrwa16rg",  # ID da Roleta Brasileira
+                    jsessionid=roulette_integrator.jsessionid
+                )
+                print("✅ Cliente de estatísticas inicializado com JSESSIONID atual")
+            else:
+                # Atualizar JSESSIONID do cliente existente
+                statistics_client.set_jsessionid(roulette_integrator.jsessionid)
+                print("✅ JSESSIONID do cliente de estatísticas atualizado")
+        
+        # Atualizar cliente aprimorado se disponível
+        if statistics_enhanced_available:
+            if statistics_enhanced_client is None:
+                # Cliente ainda não foi inicializado
+                statistics_enhanced_client = PragmaticStatisticsClientEnhanced(
+                    table_id="rwbrzportrwa16rg",  # ID da Roleta Brasileira
+                    jsessionid=roulette_integrator.jsessionid
+                )
+                print("✅ Cliente de estatísticas aprimorado inicializado com JSESSIONID atual")
+            else:
+                # Atualizar JSESSIONID do cliente existente
+                statistics_enhanced_client.set_jsessionid(roulette_integrator.jsessionid)
+                print("✅ JSESSIONID do cliente de estatísticas aprimorado atualizado")
             
         return True
     except Exception as e:
@@ -1066,7 +1094,6 @@ def update_statistics_client_session():
         import traceback
         traceback.print_exc()
         return False
-        return False  # Retorna False em vez de lançar exceção
 
 def update_statistics_client():
     """
@@ -1214,14 +1241,14 @@ def roulette_results():
 def roulette_statistics():
     """Estatísticas da Roleta Brasileira usando a API direta de estatísticas."""
     try:
-        global roulette_integrator, statistics_client_available
+        global roulette_integrator, statistics_client_available, statistics_enhanced_available
         
-        # Verificar se o cliente de estatísticas está disponível
-        if not statistics_client_available:
+        # Verificar se algum cliente de estatísticas está disponível
+        if not (statistics_client_available or statistics_enhanced_available):
             return jsonify({
                 'success': False,
                 'message': 'Cliente de estatísticas não disponível',
-                'error': 'Módulo PragmaticStatisticsClient não está disponível'
+                'error': 'Nenhum módulo de estatísticas está disponível'
             }), 500
         
         # Verificar se o integrador principal está inicializado (necessário para o JSESSIONID)
@@ -1244,27 +1271,66 @@ def roulette_statistics():
         num_games = request.args.get('games', default=100, type=int)
         num_games = min(500, max(10, num_games))  # Entre 10 e 500 jogos
         
-        # Usar cliente de estatísticas global ou criar um temporário com o JSESSIONID atual
-        global statistics_client
+        # Determinar qual cliente de estatísticas usar (priorizar o aprimorado)
+        global statistics_client, statistics_enhanced_client
+        processed_results = None
+        client_type = "enhanced" if statistics_enhanced_available else "standard"
+        is_real_data = True
         
-        if statistics_client is None or statistics_client.jsessionid != roulette_integrator.jsessionid:
-            # JSESSIONID diferente ou cliente não inicializado, criar um novo
-            stats_client = PragmaticStatisticsClient(jsessionid=roulette_integrator.jsessionid)
-        else:
-            stats_client = statistics_client
+        # Tentar usar o cliente aprimorado primeiro (mais resiliente)
+        if statistics_enhanced_available:
+            try:
+                if statistics_enhanced_client is None or statistics_enhanced_client.jsessionid != roulette_integrator.jsessionid:
+                    # JSESSIONID diferente ou cliente não inicializado, criar um novo
+                    stats_client = PragmaticStatisticsClientEnhanced(jsessionid=roulette_integrator.jsessionid)
+                else:
+                    stats_client = statistics_enhanced_client
+                
+                # Usar o método de alto nível que já tem fallback para dados simulados
+                processed_results = stats_client.get_history(games_count=num_games)
+                
+                # Verificar se são dados simulados
+                if processed_results and processed_results[0].get('simulated', False):
+                    is_real_data = False
+            except Exception as e:
+                print(f"Erro ao usar cliente aprimorado: {e}")
+                processed_results = None
         
-        # Buscar histórico de estatísticas
-        status_code, response_data = stats_client.fetch_history(games_count=num_games)
+        # Fallback para o cliente padrão se necessário
+        if processed_results is None and statistics_client_available:
+            try:
+                client_type = "standard"
+                
+                if statistics_client is None or statistics_client.jsessionid != roulette_integrator.jsessionid:
+                    # JSESSIONID diferente ou cliente não inicializado, criar um novo
+                    stats_client = PragmaticStatisticsClient(jsessionid=roulette_integrator.jsessionid)
+                else:
+                    stats_client = statistics_client
+                
+                # Buscar histórico de estatísticas
+                status_code, response_data = stats_client.fetch_history(games_count=num_games)
+                
+                if status_code == 200 and response_data:
+                    processed_results = stats_client.process_history(response_data)
+                else:
+                    print(f"Cliente padrão falhou com status {status_code}")
+            except Exception as e:
+                print(f"Erro ao usar cliente padrão: {e}")
         
-        if status_code != 200 or not response_data:
-            return jsonify({
-                'success': False,
-                'message': f'Erro ao obter estatísticas (HTTP {status_code})',
-                'error': 'Falha na requisição à API de estatísticas'
-            }), 500
-        
-        # Processar o histórico em formato padronizado
-        processed_results = stats_client.process_history(response_data)
+        # Verificar se temos resultados
+        if not processed_results:
+            # Último recurso: usar dados sintéticos
+            if statistics_enhanced_available:
+                stats_client = statistics_enhanced_client or PragmaticStatisticsClientEnhanced()
+                processed_results = stats_client.generate_realistic_data(count=num_games)
+                client_type = "synthetic"
+                is_real_data = False
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Não foi possível obter dados de estatísticas',
+                    'error': 'Todos os métodos falharam'
+                }), 500
         
         # Calcular estatísticas básicas
         colors = {'red': 0, 'black': 0, 'green': 0}
@@ -1273,11 +1339,13 @@ def roulette_statistics():
         for result in processed_results:
             # Contar cores
             if 'color' in result:
-                colors[result['color']] = colors.get(result['color'], 0) + 1
+                color = result['color']
+                colors[color] = colors.get(color, 0) + 1
             
             # Contar números
             if 'number' in result:
-                numbers[result['number']] = numbers.get(result['number'], 0) + 1
+                number = result['number']
+                numbers[number] = numbers.get(number, 0) + 1
         
         # Obter os 5 números mais frequentes
         top_numbers = sorted(numbers.items(), key=lambda x: x[1], reverse=True)[:5]
@@ -1288,6 +1356,8 @@ def roulette_statistics():
             'results': processed_results,
             'total': len(processed_results),
             'timestamp': int(time.time()),
+            'client_type': client_type,
+            'is_real_data': is_real_data,
             'stats': {
                 'colors': colors,
                 'top_numbers': top_numbers

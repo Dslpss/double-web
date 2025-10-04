@@ -4,7 +4,34 @@ Versão web completa do Blaze Double Analyzer com interface moderna, autenticaç
 
 ## 🚀 Características
 
-- **Interface Web Moderna**: Design responsivo com gradientes e efeitos visuais
+- **I## 📡 Integrações
+
+### Pragmatic Play
+
+- **Roleta Brasileira**: Integração completa com a API da Roleta Brasileira
+- **GS12**: Acesso direto à API GS12 para obter resultados em tempo real
+- **Estatísticas**: API aprimorada de estatísticas com suporte a proxies e mecanismo de fallback
+- **Detecção de Manutenção**: Tratamento automático para períodos de manutenção
+
+Para mais detalhes, consulte:
+- [Documentação da Integração GS12](./docs/GS12_INTEGRATION.md)
+- [Lidando com Manutenções](./docs/PRAGMATIC_MAINTENANCE.md)
+- [Configuração de Proxies](./docs/PROXY_CONFIGURATION.md)
+- [Problemas com API no Railway](./docs/RAILWAY_API_ISSUES.md)
+- [Testando Cliente Aprimorado](./docs/TESTING_ENHANCED_CLIENT.md)
+
+### PlayNaBets
+
+- **Autenticação**: Login e gestão de sessão
+- **Resultados**: Obtenção e processamento de resultados
+
+## 📁 Próximos Passos
+
+1. **Conexão Real com Blaze**: Implementar WebSocket real
+2. **Autenticação**: Melhorar o sistema de usuários
+3. **Dashboard Avançado**: Gráficos e métricas adicionais
+4. **Mobile App**: Versão para dispositivos móveis
+5. **Deploy**: Otimização para hospedagem na nuveme Web Moderna**: Design responsivo com gradientes e efeitos visuais
 - **Dashboard Avançado**: Gráficos, métricas e visualizações em tempo real
 - **Sistema de Autenticação**: Login, registro e controle de acesso
 - **Tempo Real**: WebSocket para atualizações instantâneas
@@ -12,6 +39,8 @@ Versão web completa do Blaze Double Analyzer com interface moderna, autenticaç
 - **Reutilização Total**: Usa 100% da lógica do projeto original
 - **Validação de Alertas**: Sistema completo de validação de predições
 - **Gráficos Interativos**: Chart.js para visualizações avançadas
+- **Integradores de APIs**: Suporte para múltiplas plataformas de jogos
+- **Detecção de Manutenção**: Tratamento automático para períodos de manutenção das APIs
 
 ## 📁 Estrutura do Projeto
 
