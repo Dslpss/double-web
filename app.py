@@ -73,6 +73,17 @@ except ImportError as e:
     import traceback
     traceback.print_exc()
     roulette_available = False
+    
+# Importar cliente de estatísticas da Pragmatic Play
+try:
+    from integrators.pragmatic_statistics_client import PragmaticStatisticsClient
+    statistics_client_available = True
+    print("✅ PragmaticStatisticsClient importado com sucesso")
+except ImportError as e:
+    print(f"❌ Erro ao importar PragmaticStatisticsClient: {e}")
+    import traceback
+    traceback.print_exc()
+    statistics_client_available = False
 
 # Inicializar Flask
 app = Flask(__name__, template_folder='templates')
@@ -82,6 +93,7 @@ CORS(app)
 analyzer = None
 playnabets_integrator = None
 roulette_integrator = None
+statistics_client = None  # Cliente para API de estatísticas da Pragmatic Play
 ws_connected = False
 ws_thread = None
 last_results = []
@@ -952,7 +964,7 @@ def roulette_status():
 
 def init_roulette_integrator():
     """Inicializa o integrador da Roleta Brasileira."""
-    global roulette_integrator
+    global roulette_integrator, statistics_client
     
     if roulette_integrator is not None:
         print("ℹ️ Integrador já está inicializado")
@@ -997,6 +1009,22 @@ def init_roulette_integrator():
         
         print("✅ Integrador da Roleta Brasileira inicializado com sucesso")
         print(f"   JSESSIONID: {'✅ Obtido' if roulette_integrator.jsessionid else '❌ Não obtido'}")
+        
+        # Inicializar cliente de estatísticas
+        if statistics_client_available:
+            try:
+                print("📊 Inicializando cliente de estatísticas da Pragmatic Play...")
+                statistics_client = PragmaticStatisticsClient(
+                    table_id="rwbrzportrwa16rg",  # ID da Roleta Brasileira
+                    jsessionid=roulette_integrator.jsessionid
+                )
+                print("✅ Cliente de estatísticas inicializado com sucesso")
+            except Exception as e:
+                print(f"⚠️ Erro ao inicializar cliente de estatísticas: {str(e)}")
+                # Isso não deve impedir o uso do integrador principal
+        else:
+            print("❌ Cliente de estatísticas não disponível")
+        
         return True
         
     except Exception as e:
@@ -1005,7 +1033,66 @@ def init_roulette_integrator():
         import traceback
         traceback.print_exc()
         roulette_integrator = None
+        
+def update_statistics_client_session():
+    """
+    Atualiza o JSESSIONID do cliente de estatísticas com base no integrador principal.
+    Esta função deve ser chamada após qualquer renovação de sessão do integrador.
+    """
+    global roulette_integrator, statistics_client, statistics_client_available
+    
+    if not statistics_client_available:
+        return False
+        
+    if roulette_integrator is None or roulette_integrator.jsessionid is None:
+        return False
+        
+    try:
+        if statistics_client is None:
+            # Cliente ainda não foi inicializado
+            statistics_client = PragmaticStatisticsClient(
+                table_id="rwbrzportrwa16rg",  # ID da Roleta Brasileira
+                jsessionid=roulette_integrator.jsessionid
+            )
+            print("✅ Cliente de estatísticas inicializado com JSESSIONID atual")
+        else:
+            # Atualizar JSESSIONID do cliente existente
+            statistics_client.set_jsessionid(roulette_integrator.jsessionid)
+            print("✅ JSESSIONID do cliente de estatísticas atualizado")
+            
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao atualizar cliente de estatísticas: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return False
         return False  # Retorna False em vez de lançar exceção
+
+def update_statistics_client():
+    """
+    Atualiza o cliente de estatísticas com o JSESSIONID atual do integrador principal.
+    Deve ser chamado sempre que o JSESSIONID for renovado.
+    """
+    global roulette_integrator, statistics_client
+    
+    if not statistics_client_available or roulette_integrator is None:
+        return False
+    
+    try:
+        if statistics_client is None:
+            statistics_client = PragmaticStatisticsClient(
+                table_id="rwbrzportrwa16rg",
+                jsessionid=roulette_integrator.jsessionid
+            )
+            print("✅ Cliente de estatísticas inicializado com sucesso")
+        elif roulette_integrator.jsessionid != statistics_client.jsessionid:
+            statistics_client.set_jsessionid(roulette_integrator.jsessionid)
+            print("🔄 JSESSIONID atualizado no cliente de estatísticas")
+        
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao atualizar cliente de estatísticas: {str(e)}")
+        return False
 
 @app.route('/api/roulette/start', methods=['POST'])
 def roulette_start():
@@ -1122,6 +1209,100 @@ def roulette_results():
             'success': False,
             'error': str(e)
         }), 500
+
+@app.route('/api/roulette/statistics')
+def roulette_statistics():
+    """Estatísticas da Roleta Brasileira usando a API direta de estatísticas."""
+    try:
+        global roulette_integrator, statistics_client_available
+        
+        # Verificar se o cliente de estatísticas está disponível
+        if not statistics_client_available:
+            return jsonify({
+                'success': False,
+                'message': 'Cliente de estatísticas não disponível',
+                'error': 'Módulo PragmaticStatisticsClient não está disponível'
+            }), 500
+        
+        # Verificar se o integrador principal está inicializado (necessário para o JSESSIONID)
+        if roulette_integrator is None:
+            return jsonify({
+                'success': False,
+                'message': 'Integrador principal não inicializado',
+                'error': 'É necessário inicializar o integrador principal para obter o JSESSIONID'
+            }), 500
+            
+        # Verificar se o integrador tem JSESSIONID
+        if roulette_integrator.jsessionid is None:
+            return jsonify({
+                'success': False,
+                'message': 'JSESSIONID não disponível',
+                'error': 'É necessário fazer login no integrador principal'
+            }), 500
+        
+        # Obter o número de jogos solicitados (máximo 500)
+        num_games = request.args.get('games', default=100, type=int)
+        num_games = min(500, max(10, num_games))  # Entre 10 e 500 jogos
+        
+        # Usar cliente de estatísticas global ou criar um temporário com o JSESSIONID atual
+        global statistics_client
+        
+        if statistics_client is None or statistics_client.jsessionid != roulette_integrator.jsessionid:
+            # JSESSIONID diferente ou cliente não inicializado, criar um novo
+            stats_client = PragmaticStatisticsClient(jsessionid=roulette_integrator.jsessionid)
+        else:
+            stats_client = statistics_client
+        
+        # Buscar histórico de estatísticas
+        status_code, response_data = stats_client.fetch_history(games_count=num_games)
+        
+        if status_code != 200 or not response_data:
+            return jsonify({
+                'success': False,
+                'message': f'Erro ao obter estatísticas (HTTP {status_code})',
+                'error': 'Falha na requisição à API de estatísticas'
+            }), 500
+        
+        # Processar o histórico em formato padronizado
+        processed_results = stats_client.process_history(response_data)
+        
+        # Calcular estatísticas básicas
+        colors = {'red': 0, 'black': 0, 'green': 0}
+        numbers = {}
+        
+        for result in processed_results:
+            # Contar cores
+            if 'color' in result:
+                colors[result['color']] = colors.get(result['color'], 0) + 1
+            
+            # Contar números
+            if 'number' in result:
+                numbers[result['number']] = numbers.get(result['number'], 0) + 1
+        
+        # Obter os 5 números mais frequentes
+        top_numbers = sorted(numbers.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        # Retornar resultados e estatísticas
+        return jsonify({
+            'success': True,
+            'results': processed_results,
+            'total': len(processed_results),
+            'timestamp': int(time.time()),
+            'stats': {
+                'colors': colors,
+                'top_numbers': top_numbers
+            }
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 
 @app.route('/api/roulette/analysis')
 def roulette_analysis():
@@ -1984,6 +2165,178 @@ def pragmatic_results():
             'error': str(e)
         }), 500
 
+@app.route('/api/pragmatic/gs12', methods=['GET'])
+def pragmatic_gs12_data():
+    """Obtém dados diretamente da API GS12 da Pragmatic Play."""
+    try:
+        # Verificar autenticação
+        if auth_available:
+            token = request.headers.get('Authorization', '').replace('Bearer ', '')
+            session_cookie = request.cookies.get('session', None)
+            
+            # Se não temos token nem cookie de sessão
+            if not token and not session_cookie:
+                return jsonify({
+                    'success': False,
+                    'error': 'Autenticação necessária',
+                    'message': 'Faça login para acessar esta API',
+                    'code': 'AUTH_REQUIRED'
+                }), 401
+        
+        # Verificar e inicializar o roulette_integrator
+        global roulette_integrator
+        jsessionid = None
+        
+        # Se não temos roulette_integrator, inicializar
+        if roulette_available and not roulette_integrator:
+            init_roulette_integrator()
+        
+        # Obter JSESSIONID
+        if roulette_integrator:
+            if not hasattr(roulette_integrator, 'jsessionid') or not roulette_integrator.jsessionid:
+                # Tentar autenticar
+                try:
+                    roulette_integrator.login()
+                    time.sleep(2)  # Dar tempo para a autenticação
+                    
+                    # Atualizar sessão do cliente de estatísticas após login bem-sucedido
+                    update_statistics_client_session()
+                except Exception as e:
+                    print(f"⚠️ Erro ao autenticar roulette_integrator: {e}")
+                    
+            # Verificar se temos JSESSIONID após a tentativa
+            if hasattr(roulette_integrator, 'jsessionid') and roulette_integrator.jsessionid:
+                jsessionid = roulette_integrator.jsessionid
+                print(f"🔑 Usando JSESSIONID do roulette_integrator: {jsessionid[:20]}...")
+                
+                # Atualizar variável de ambiente para o cliente GS12
+                os.environ['PRAGMATIC_JSESSIONID'] = jsessionid
+            else:
+                print(f"⚠️ roulette_integrator sem JSESSIONID mesmo após tentativa de login")
+        
+        # Importar o cliente GS12
+        try:
+            from integrators.pragmatic_gs12_client import gs12_client
+        except ImportError as e:
+            return jsonify({
+                'success': False,
+                'error': f"Cliente GS12 não disponível: {str(e)}"
+            }), 500
+            
+        # Buscar dados
+        status_code, response_data = gs12_client.fetch_game_data()
+        
+        # Verificar se a API está em manutenção programada
+        if status_code == 503 and isinstance(response_data, dict) and response_data.get('maintenance'):
+            return jsonify({
+                'success': True,
+                'status': 'maintenance',
+                'message': response_data.get('message', 'Manutenção programada em andamento'),
+                'auth_status': {
+                    'has_jsessionid': bool(jsessionid),
+                    'roulette_integrator_available': bool(roulette_integrator)
+                },
+                'maintenance_data': {
+                    'detected_at': datetime.now().isoformat(),
+                    'raw_sample': response_data.get('raw', '')[:200]
+                },
+                'timestamp': int(time.time())
+            }), 200  # Retornamos 200 mas com flag de manutenção
+        
+        # Se a resposta não for 200 OK (outros erros)
+        if status_code != 200:
+            return jsonify({
+                'success': False,
+                'status_code': status_code,
+                'message': "Falha ao obter dados da API GS12"
+            }), status_code
+        
+        # Se for uma string XML/HTML
+        if isinstance(response_data, str):
+            # Verificar se é uma página de manutenção
+            if 'scheduled-maintenance.html' in response_data:
+                return jsonify({
+                    'success': True,
+                    'status': 'maintenance',
+                    'message': 'API Pragmatic Play em manutenção programada',
+                    'auth_status': {
+                        'has_jsessionid': bool(jsessionid),
+                        'roulette_integrator_available': bool(roulette_integrator)
+                    },
+                    'results': [],
+                    'raw_data': response_data[:500],  # Amostra menor para não sobrecarregar
+                    'timestamp': int(time.time())
+                })
+            
+            # Extrair resultados
+            results = gs12_client.extract_game_results(response_data)
+            
+            # Se os resultados indicarem manutenção
+            if len(results) == 1 and results[0].get('maintenance'):
+                return jsonify({
+                    'success': True,
+                    'status': 'maintenance',
+                    'message': results[0].get('message', 'Manutenção programada em andamento'),
+                    'auth_status': {
+                        'has_jsessionid': bool(jsessionid),
+                        'roulette_integrator_available': bool(roulette_integrator)
+                    },
+                    'results': [],
+                    'raw_data': response_data[:500],
+                    'timestamp': int(time.time())
+                })
+            
+            return jsonify({
+                'success': True,
+                'status': 'success',
+                'results': results,
+                'auth_status': {
+                    'has_jsessionid': bool(jsessionid),
+                    'roulette_integrator_available': bool(roulette_integrator)
+                },
+                'raw_data': response_data[:5000] if len(response_data) > 5000 else response_data,  # Limitar tamanho
+                'timestamp': int(time.time())
+            })
+        
+        # Se for um JSON
+        return jsonify({
+            'success': True,
+            'status': 'success',
+            'data': response_data,
+            'auth_status': {
+                'has_jsessionid': bool(jsessionid),
+                'roulette_integrator_available': bool(roulette_integrator)
+            },
+            'timestamp': int(time.time())
+        })
+            
+    except Exception as e:
+        import traceback
+        error_traceback = traceback.format_exc()
+        traceback.print_exc()
+        
+        # Incluir informações adicionais para debug
+        auth_info = {}
+        try:
+            # Obter informações de autenticação seguras para debug
+            auth_info = {
+                'auth_available': auth_available,
+                'roulette_available': roulette_available,
+                'roulette_integrator_loaded': roulette_integrator is not None,
+                'has_jsessionid': bool(jsessionid) if 'jsessionid' in locals() else False,
+                'env_jsessionid': bool(os.environ.get('PRAGMATIC_JSESSIONID'))
+            }
+        except:
+            auth_info = {'error': 'Falha ao obter informações de autenticação'}
+            
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'error_details': error_traceback.split("\n")[-5:],
+            'auth_status': auth_info,
+            'timestamp': int(time.time())
+        }), 500
+
 @app.route('/pragmatic')
 def pragmatic_page():
     """Página do PragmaticAnalyzer."""
@@ -1993,6 +2346,11 @@ def pragmatic_page():
 def roulette_enhanced():
     """Página da roleta com interface melhorada."""
     return render_template('roulette_enhanced.html')
+    
+@app.route('/gs12-test')
+def gs12_test():
+    """Página de teste da API GS12."""
+    return render_template('gs12_test.html')
 
 if __name__ == '__main__':
     print("🚀 Iniciando Blaze Web Backend (Versao Polling)...")
