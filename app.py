@@ -67,8 +67,11 @@ except ImportError as e:
 try:
     from integrators.pragmatic_brazilian_roulette import PragmaticBrazilianRoulette
     roulette_available = True
+    print("✅ PragmaticBrazilianRoulette importado com sucesso")
 except ImportError as e:
-    print(f"Aviso: Módulo Roleta Brasileira não disponível: {e}")
+    print(f"❌ Erro ao importar PragmaticBrazilianRoulette: {e}")
+    import traceback
+    traceback.print_exc()
     roulette_available = False
 
 # Inicializar Flask
