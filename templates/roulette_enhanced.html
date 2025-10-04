@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roleta Brasileira - Pragmatic Play</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .status-connected {
+            background: #4CAF50;
+            color: white;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        .status-disconnected {
+            background: #f44336;
+            color: white;
+            box-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
+        }
+
+        .status-simulated {
+            background: #ff9800;
+            color: white;
+            box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+        }
+
+        .back-button {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-red { color: #e74c3c; }
+        .stat-black { color: #2c3e50; }
+        .stat-green { color: #27ae60; }
+        .stat-total { color: #3498db; }
+
+        .live-feed {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .live-feed h3 {
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .live-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .recent-results {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .result-badge {
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            min-width: 50px;
+            text-align: center;
+            transition: transform 0.2s ease;
+        }
+
+        .result-badge:hover {
+            transform: scale(1.1);
+        }
+
+        .result-red {
+            background: #ffebee;
+            color: #c62828;
+            border: 2px solid #ef5350;
+        }
+
+        .result-black {
+            background: #f3e5f5;
+            color: #4a148c;
+            border: 2px solid #9c27b0;
+        }
+
+        .result-green {
+            background: #e8f5e8;
+            color: #1b5e20;
+            border: 2px solid #4caf50;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .result-item {
+            aspect-ratio: 1;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 1.2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .result-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-red {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .result-black {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+        }
+
+        .result-green {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(244, 67, 54, 0.6);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .pattern-alert {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+            animation: glow 2s infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(255, 107, 107, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.8); }
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .results-grid {
+                grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+                gap: 8px;
+            }
+
+            .result-item {
+                font-size: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 15px;
+            }
+
+            .control-panel {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-button" onclick="window.location.href='/'">← Voltar</button>
+            <h1>🎰 Roleta Brasileira</h1>
+            <p>Análise em Tempo Real - Pragmatic Play</p>
+            <div id="statusIndicator" class="status-indicator status-disconnected">
+                🔴 Desconectado
+            </div>
+        </div>
+
+        <!-- Estatísticas em Tempo Real -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value stat-total" id="totalResults">0</div>
+                <div class="stat-label">Total de Jogos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value stat-red" id="redCount">0</div>
+                <div class="stat-label">Vermelhos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value stat-black" id="blackCount">0</div>
+                <div class="stat-label">Pretos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value stat-green" id="greenCount">0</div>
+                <div class="stat-label">Verdes</div>
+            </div>
+        </div>
+
+        <!-- Feed ao Vivo -->
+        <div class="live-feed">
+            <h3>
+                <span class="live-indicator"></span>
+                Feed ao Vivo
+            </h3>
+            <div class="recent-results" id="recentResults">
+                <!-- Resultados recentes aparecerão aqui -->
+            </div>
+        </div>
+
+        <!-- Painel de Controle -->
+        <div class="control-panel">
+            <button class="btn btn-primary" id="startBtn" onclick="startMonitoring()">
+                ▶️ Iniciar Monitoramento
+            </button>
+            <button class="btn btn-danger" id="stopBtn" onclick="stopMonitoring()" disabled>
+                ⏹️ Parar Monitoramento
+            </button>
+            <button class="btn btn-success" onclick="refreshData()">
+                🔄 Atualizar Dados
+            </button>
+        </div>
+
+        <!-- Dashboard Principal -->
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2>📊 Resultados Recentes</h2>
+                <div class="results-grid" id="resultsGrid">
+                    <!-- Resultados aparecerão aqui -->
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📈 Gráfico de Tendências</h2>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alertas de Padrões -->
+        <div id="patternAlerts">
+            <!-- Alertas aparecerão aqui -->
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/roulette-legacy.js"></script>
+    <script src="/static/js/pattern-detector.js"></script>
+    <script src="/static/js/roulette-patterns.js"></script>
+    <script src="/static/js/alert-manager.js"></script>
+
+    <script>
+        // Variáveis globais
+        let isMonitoring = false;
+        let trendChart = null;
+        let recentResults = [];
+        let stats = {
+            total: 0,
+            red: 0,
+            black: 0,
+            green: 0
+        };
+
+        // Inicializar gráfico
+        function initChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Vermelhos',
+                        data: [],
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Pretos',
+                        data: [],
+                        borderColor: '#2c3e50',
+                        backgroundColor: 'rgba(44, 62, 80, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Verdes',
+                        data: [],
+                        borderColor: '#27ae60',
+                        backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 20
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+        }
+
+        // Atualizar estatísticas
+        function updateStats() {
+            document.getElementById('totalResults').textContent = stats.total;
+            document.getElementById('redCount').textContent = stats.red;
+            document.getElementById('blackCount').textContent = stats.black;
+            document.getElementById('greenCount').textContent = stats.green;
+        }
+
+        // Adicionar resultado recente
+        function addRecentResult(result) {
+            recentResults.unshift(result);
+            if (recentResults.length > 20) {
+                recentResults.pop();
+            }
+            updateRecentResultsDisplay();
+        }
+
+        // Atualizar display de resultados recentes
+        function updateRecentResultsDisplay() {
+            const container = document.getElementById('recentResults');
+            container.innerHTML = recentResults.map(result => {
+                const colorClass = `result-${result.color}`;
+                return `<div class="result-badge ${colorClass}">${result.number}</div>`;
+            }).join('');
+        }
+
+        // Adicionar resultado ao grid
+        function addResultToGrid(result) {
+            const grid = document.getElementById('resultsGrid');
+            const resultElement = document.createElement('div');
+            resultElement.className = `result-item result-${result.color}`;
+            resultElement.textContent = result.number;
+            resultElement.title = `Número: ${result.number}, Cor: ${result.color}`;
+            
+            grid.insertBefore(resultElement, grid.firstChild);
+            
+            // Manter apenas os últimos 50 resultados
+            while (grid.children.length > 50) {
+                grid.removeChild(grid.lastChild);
+            }
+        }
+
+        // Atualizar gráfico
+        function updateChart(result) {
+            if (!trendChart) return;
+            
+            const labels = trendChart.data.labels;
+            const redData = trendChart.data.datasets[0].data;
+            const blackData = trendChart.data.datasets[1].data;
+            const greenData = trendChart.data.datasets[2].data;
+            
+            // Adicionar novo ponto
+            const timeLabel = new Date().toLocaleTimeString();
+            labels.push(timeLabel);
+            
+            // Manter apenas os últimos 20 pontos
+            if (labels.length > 20) {
+                labels.shift();
+                redData.shift();
+                blackData.shift();
+                greenData.shift();
+            }
+            
+            // Atualizar dados baseado no resultado
+            redData.push(result.color === 'red' ? 1 : 0);
+            blackData.push(result.color === 'black' ? 1 : 0);
+            greenData.push(result.color === 'green' ? 1 : 0);
+            
+            trendChart.update();
+        }
+
+        // Iniciar monitoramento
+        function startMonitoring() {
+            if (isMonitoring) return;
+            
+            isMonitoring = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('statusIndicator').className = 'status-indicator status-simulated';
+            document.getElementById('statusIndicator').textContent = '🟡 Monitorando (Simulado)';
+            
+            // Simular dados em tempo real
+            simulateRealTimeData();
+        }
+
+        // Parar monitoramento
+        function stopMonitoring() {
+            isMonitoring = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('statusIndicator').className = 'status-indicator status-disconnected';
+            document.getElementById('statusIndicator').textContent = '🔴 Desconectado';
+        }
+
+        // Simular dados em tempo real
+        function simulateRealTimeData() {
+            if (!isMonitoring) return;
+            
+            // Gerar resultado aleatório
+            const number = Math.floor(Math.random() * 37);
+            let color;
+            if (number === 0) {
+                color = 'green';
+            } else if ([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36].includes(number)) {
+                color = 'red';
+            } else {
+                color = 'black';
+            }
+            
+            const result = {
+                number: number,
+                color: color,
+                timestamp: Date.now()
+            };
+            
+            // Atualizar estatísticas
+            stats.total++;
+            stats[color]++;
+            updateStats();
+            
+            // Adicionar aos displays
+            addRecentResult(result);
+            addResultToGrid(result);
+            updateChart(result);
+            
+            // Simular próximo resultado em 3-5 segundos
+            const nextDelay = Math.random() * 2000 + 3000;
+            setTimeout(simulateRealTimeData, nextDelay);
+        }
+
+        // Atualizar dados
+        function refreshData() {
+            // Implementar atualização de dados reais aqui
+            console.log('Atualizando dados...');
+        }
+
+        // Inicializar quando a página carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            initChart();
+            updateStats();
+        });
+    </script>
+</body>
+</html>

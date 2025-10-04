@@ -1989,6 +1989,11 @@ def pragmatic_page():
     """Página do PragmaticAnalyzer."""
     return render_template('pragmatic_websocket.html')
 
+@app.route('/roulette/enhanced')
+def roulette_enhanced():
+    """Página da roleta com interface melhorada."""
+    return render_template('roulette_enhanced.html')
+
 if __name__ == '__main__':
     print("🚀 Iniciando Blaze Web Backend (Versao Polling)...")
     

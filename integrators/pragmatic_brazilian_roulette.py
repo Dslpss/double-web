@@ -17,6 +17,14 @@ from typing import Dict, List, Optional
 import logging
 import websocket
 
+# Importar gerenciadores anti-detecção
+try:
+    from .proxy_manager import proxy_manager, anti_detection
+    PROXY_AVAILABLE = True
+except ImportError:
+    PROXY_AVAILABLE = False
+    print("⚠️ Proxy manager não disponível")
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -467,7 +475,7 @@ class PragmaticBrazilianRoulette:
             return None
     
     def _get_real_session(self) -> Optional[str]:
-        """Obtém sessão real com anti-detecção avançada."""
+        """Obtém sessão real com anti-detecção avançada e proxy."""
         try:
             logger.info("🌐 Tentando obter sessão real com anti-detecção...")
             
@@ -476,28 +484,48 @@ class PragmaticBrazilianRoulette:
                 logger.info("🔑 Usando JSESSIONID existente...")
                 return self._test_session_with_api()
             
-            # Estratégia 2: Simular sequência completa de navegador
+            # Estratégia 2: Usar proxy se disponível
+            proxy = None
+            if PROXY_AVAILABLE:
+                logger.info("🔄 Tentando obter proxy...")
+                proxy = proxy_manager.get_working_proxy()
+                if proxy:
+                    logger.info("✅ Proxy obtido, configurando sessão...")
+                    self.session.proxies.update(proxy)
+                else:
+                    logger.warning("⚠️ Nenhum proxy disponível, continuando sem proxy...")
+            
+            # Estratégia 3: Simular sequência completa de navegador
             logger.info("🔄 Simulando sequência completa de navegador...")
             
             # 1. Acessar página de login primeiro
             login_page_url = "https://loki1.weebet.tech/auth/login"
-            browser_headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-                'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-                'Accept-Encoding': 'gzip, deflate, br, zstd',
-                'DNT': '1',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1',
-                'Sec-Fetch-Dest': 'document',
-                'Sec-Fetch-Mode': 'navigate',
-                'Sec-Fetch-Site': 'none',
-                'Sec-Fetch-User': '?1',
-                'sec-ch-ua': '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
-                'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"',
-                'Cache-Control': 'max-age=0'
-            }
+            
+            # Usar headers anti-detecção
+            if PROXY_AVAILABLE:
+                browser_headers = anti_detection.get_random_headers()
+            else:
+                browser_headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                    'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+                    'Accept-Encoding': 'gzip, deflate, br, zstd',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
+                    'Sec-Fetch-Dest': 'document',
+                    'Sec-Fetch-Mode': 'navigate',
+                    'Sec-Fetch-Site': 'none',
+                    'Sec-Fetch-User': '?1',
+                    'sec-ch-ua': '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
+                    'sec-ch-ua-mobile': '?0',
+                    'sec-ch-ua-platform': '"Windows"',
+                    'Cache-Control': 'max-age=0'
+                }
+            
+            # Adicionar delay aleatório
+            if PROXY_AVAILABLE:
+                anti_detection.add_random_delay(1.0, 2.0)
             
             # Acessar página de login
             response = self.session.get(login_page_url, headers=browser_headers, timeout=15)
@@ -526,23 +554,26 @@ class PragmaticBrazilianRoulette:
             # Usar JSESSIONID do usuário ou gerar um novo
             test_session = self.jsessionid or 'kziwijo1wNzNh2TKOAQFUEWPNpWsB2-f60AUVqoGNAtbmJGkFdt7!-80873102-f6cb893a'
             
-            # Headers exatos do navegador
-            api_headers = {
-                'Accept': 'application/json, text/plain, */*',
-                'Accept-Encoding': 'gzip, deflate, br, zstd',
-                'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-                'Origin': 'https://client.pragmaticplaylive.net',
-                'Referer': 'https://client.pragmaticplaylive.net/',
-                'Sec-Ch-Ua': '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
-                'Sec-Ch-Ua-Mobile': '?0',
-                'Sec-Ch-Ua-Platform': '"Windows"',
-                'Sec-Fetch-Dest': 'empty',
-                'Sec-Fetch-Mode': 'cors',
-                'Sec-Fetch-Site': 'same-site',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
-                'Priority': 'u=1, i',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+            # Headers anti-detecção
+            if PROXY_AVAILABLE:
+                api_headers = anti_detection.get_api_headers()
+            else:
+                api_headers = {
+                    'Accept': 'application/json, text/plain, */*',
+                    'Accept-Encoding': 'gzip, deflate, br, zstd',
+                    'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+                    'Origin': 'https://client.pragmaticplaylive.net',
+                    'Referer': 'https://client.pragmaticplaylive.net/',
+                    'Sec-Ch-Ua': '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
+                    'Sec-Ch-Ua-Mobile': '?0',
+                    'Sec-Ch-Ua-Platform': '"Windows"',
+                    'Sec-Fetch-Dest': 'empty',
+                    'Sec-Fetch-Mode': 'cors',
+                    'Sec-Fetch-Site': 'same-site',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+                    'Priority': 'u=1, i',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             
             # Parâmetros da API
             params = {
