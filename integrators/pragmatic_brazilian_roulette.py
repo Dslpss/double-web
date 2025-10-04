@@ -471,8 +471,8 @@ class PragmaticBrazilianRoulette:
         try:
             logger.info("📡 MODO FALLBACK: Usando API do cassino com token...")
             
-            # URL alternativa da API do cassino
-            url = f"https://loki1.weebet.tech/game/brazilianroulette/history?limit={num_games}"
+            # URL da API oficial da Pragmatic Play
+            url = f"https://games.pragmaticplaylive.net/api/ui/statisticHistory?tableId=rwbrzportrwa16rg&limit={num_games}"
             
             headers = {
                 'Authorization': f'Bearer {self.token_cassino}',
