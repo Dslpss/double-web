@@ -25,6 +25,14 @@ except ImportError:
     PROXY_AVAILABLE = False
     print("⚠️ Proxy manager não disponível")
 
+# Importar fetcher de dados reais
+try:
+    from .real_data_fetcher import RealDataFetcher
+    REAL_DATA_FETCHER_AVAILABLE = True
+except ImportError:
+    REAL_DATA_FETCHER_AVAILABLE = False
+    print("⚠️ Real data fetcher não disponível")
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -67,6 +75,16 @@ class PragmaticBrazilianRoulette:
         self.table_id = "rwbrzportrwa16rg"  # ID da mesa Brasileira
         self.last_login_time = 0
         self.session_duration = 3600  # 1 hora (ajuste conforme necessário)
+        
+        # Inicializar fetcher de dados reais
+        self.real_data_fetcher = None
+        if REAL_DATA_FETCHER_AVAILABLE:
+            try:
+                self.real_data_fetcher = RealDataFetcher(username, password)
+                logger.info("✅ RealDataFetcher inicializado")
+            except Exception as e:
+                logger.error(f"❌ Erro ao inicializar RealDataFetcher: {e}")
+                self.real_data_fetcher = None
         
         # Headers padrão mais completos (simular navegador real)
         self.session.headers.update({
@@ -632,14 +650,25 @@ class PragmaticBrazilianRoulette:
             return None
 
     def _get_history_fallback(self, num_games: int) -> Optional[List[Dict]]:
-        """Obtém histórico usando API real da Pragmatic Play."""
+        """Obtém histórico usando fetcher de dados reais."""
         try:
-            logger.info("📡 MODO REAL: Usando API oficial da Pragmatic Play...")
+            logger.info("📡 MODO REAL: Tentando obter dados reais...")
             
-            # Tentar obter sessão real primeiro
+            # Estratégia 1: Usar RealDataFetcher se disponível
+            if self.real_data_fetcher:
+                logger.info("🔄 Usando RealDataFetcher...")
+                real_data = self.real_data_fetcher.get_real_data(num_games)
+                if real_data:
+                    logger.info(f"✅ Dados reais obtidos: {len(real_data)} resultados")
+                    return real_data
+                else:
+                    logger.warning("⚠️ RealDataFetcher não retornou dados")
+            
+            # Estratégia 2: Tentar APIs tradicionais
+            logger.info("🔄 Tentando APIs tradicionais...")
             real_session = self._get_real_session()
             if not real_session:
-                logger.warning("⚠️ Não foi possível obter sessão real, usando fallback")
+                logger.warning("⚠️ Não foi possível obter sessão real")
                 return self._generate_realistic_data(num_games)
             
             # URL real descoberta pelo usuário
