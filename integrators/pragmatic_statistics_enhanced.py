@@ -25,7 +25,7 @@ class PragmaticStatisticsClientEnhanced:
     Obtém resultados históricos dos jogos com maior resiliência para ambientes de produção.
     """
     
-    def __init__(self, table_id: str = "rwbrzportrwa16rg", jsessionid: str = None, base_url: str = None):
+    def __init__(self, table_id: str = "rwbrzportrwa16rg", jsessionid: Optional[str] = None, base_url: Optional[str] = None):
         """
         Inicializa o cliente de estatísticas da Pragmatic Play com recursos aprimorados.
         
@@ -150,84 +150,148 @@ class PragmaticStatisticsClientEnhanced:
         # Limitar número de jogos entre 10 e 500
         games_count = min(500, max(10, games_count))
         
-        # Parâmetros da requisição
+        # Verificar se temos JSESSIONID
+        if not self.jsessionid:
+            logger.warning("⚠️ JSESSIONID não disponível - isso é normal no Railway")
+            return 401, {'error': 'JSESSIONID não fornecido', 'railway_compatible': True}
+        
+        # Parâmetros da requisição baseados na URL real que funciona
         params = {
-            "tableid": self.table_id,
-            "gamesCount": games_count
+            "tableId": self.table_id,
+            "numberOfGames": games_count,
+            "JSESSIONID": self.jsessionid,
+            "ck": int(time.time() * 1000),  # Timestamp em milissegundos
+            "game_mode": "lobby_desktop"
         }
         
-        # Headers básicos
+        # Lista de User-Agents mais variados para Railway
+        railway_user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0'
+        ]
+        
+        # Headers mais robustos para Railway
         headers = {
-            "User-Agent": self._get_random_user_agent(),
-            "Accept": "application/json",
-            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-            "Referer": "https://games.pragmaticplaylive.net/br/app/ui/client",
-            "Connection": "keep-alive",
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "same-origin"
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Encoding': 'gzip, deflate, br, zstd',
+            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6',
+            'Cache-Control': 'no-cache',
+            'Origin': 'https://client.pragmaticplaylive.net',
+            'Pragma': 'no-cache',
+            'Referer': 'https://client.pragmaticplaylive.net/',
+            'Sec-Ch-Ua': '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
+            'Sec-Ch-Ua-Mobile': '?0',
+            'Sec-Ch-Ua-Platform': '"Windows"',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-site',
+            'User-Agent': random.choice(railway_user_agents),
+            'X-Requested-With': 'XMLHttpRequest'
         }
         
-        # Cookies para autenticação
-        cookies = {
-            "JSESSIONID": self.jsessionid
-        }
+        # Detectar se estamos no Railway
+        is_railway = os.environ.get('RAILWAY_ENVIRONMENT') is not None
+        
+        if is_railway:
+            logger.info("🚂 Detectado ambiente Railway - usando configuração otimizada")
+            # Headers específicos para Railway
+            headers.update({
+                'DNT': '1',
+                'Upgrade-Insecure-Requests': '1',
+                'Connection': 'keep-alive'
+            })
         
         # Implementação de retry com exponential backoff
-        for attempt in range(self.max_retries):
+        for attempt in range(max(3, self.max_retries)):  # Pelo menos 3 tentativas
             try:
-                # Selecionar proxy se habilitado
-                proxies = self._get_random_proxy() if use_proxy and (self.http_proxies or self.socks_proxies) else None
+                # Rotacionar User-Agent a cada tentativa
+                headers['User-Agent'] = random.choice(railway_user_agents)
                 
                 # Log de tentativa
-                logger.info(f"🌐 Tentativa {attempt+1}/{self.max_retries}: Solicitando histórico para {games_count} jogos na roleta {self.table_id}")
-                if proxies:
-                    logger.info(f"🔄 Usando proxy: {list(proxies.values())[0]}")
+                logger.info(f"🌐 Tentativa {attempt+1}: Solicitando histórico para {games_count} jogos")
+                if is_railway:
+                    logger.info(f"🚂 Railway: Usando User-Agent {headers['User-Agent'][:50]}...")
                 
-                # Renovar User-Agent a cada tentativa
-                headers["User-Agent"] = self._get_random_user_agent()
-                
-                # Faz a requisição para a API
+                # URL da API
                 url = f"{self.base_url}{self.history_endpoint}"
                 
+                # Configurar timeout mais conservador para Railway
+                timeout = 30 if is_railway else 20
+                
+                # Fazer a requisição
                 response = requests.get(
                     url, 
                     params=params, 
-                    headers=headers, 
-                    cookies=cookies,
-                    proxies=proxies,
-                    timeout=20
+                    headers=headers,
+                    timeout=timeout,
+                    allow_redirects=True,
+                    verify=True  # Manter verificação SSL
                 )
                 
                 # Log do status da resposta
-                logger.info(f"📊 Status da API de estatísticas: {response.status_code}")
+                logger.info(f"📊 Status da API: {response.status_code}")
                 
-                # Retorna o código de status e os dados JSON se bem-sucedido
+                # Verificar se obteve sucesso
                 if response.status_code == 200:
-                    return response.status_code, response.json()
+                    try:
+                        data = response.json()
+                        logger.info(f"✅ Dados obtidos com sucesso ({len(str(data))} chars)")
+                        return 200, data
+                    except ValueError as e:
+                        logger.error(f"❌ Resposta não é JSON válido: {e}")
+                        return 500, {'error': 'Resposta inválida da API'}
+                
+                elif response.status_code == 401:
+                    logger.warning("🔐 JSESSIONID inválido ou expirado")
+                    return 401, {'error': 'JSESSIONID inválido', 'needs_refresh': True}
+                
+                elif response.status_code == 403:
+                    logger.warning("🚫 Acesso negado - possível bloqueio de IP")
+                    if is_railway:
+                        logger.warning("🚂 Railway detectado - isso é esperado, usando fallback")
+                    return 403, {'error': 'Acesso negado', 'railway_blocked': True}
+                
+                elif response.status_code == 503:
+                    logger.warning("⚠️ Serviço indisponível")
+                    return 503, {'error': 'Serviço indisponível'}
+                
+                else:
+                    logger.error(f"❌ Erro HTTP {response.status_code}: {response.text[:200]}")
                     
-                # Se houve erro mas já é a última tentativa, retorna o erro
-                elif attempt == self.max_retries - 1:
-                    logger.error(f"❌ Erro final ao obter histórico: {response.status_code} - {response.text[:200]}")
-                    return response.status_code, {"error": f"Erro {response.status_code}", "response": response.text[:500]}
+                    # Se é a última tentativa, retornar erro
+                    if attempt == max(3, self.max_retries) - 1:
+                        return response.status_code, {'error': f'HTTP {response.status_code}'}
                     
-                # Caso contrário, aguarda e tenta novamente
-                wait_time = self.retry_delay * (2 ** attempt)  # Backoff exponencial
-                logger.warning(f"⚠️ Tentativa {attempt+1} falhou com status {response.status_code}. Aguardando {wait_time}s antes da próxima tentativa...")
-                time.sleep(wait_time)
+                    # Aguardar antes de tentar novamente
+                    wait_time = (2 ** attempt) + random.uniform(0.5, 2.0)  # Jitter
+                    logger.info(f"⏳ Aguardando {wait_time:.1f}s antes da próxima tentativa...")
+                    time.sleep(wait_time)
+                    
+            except requests.exceptions.Timeout:
+                logger.error(f"⏰ Timeout na tentativa {attempt+1}")
+                if attempt == max(3, self.max_retries) - 1:
+                    return 408, {'error': 'Timeout na requisição'}
+                    
+            except requests.exceptions.ConnectionError as e:
+                logger.error(f"🔌 Erro de conexão na tentativa {attempt+1}: {e}")
+                if attempt == max(3, self.max_retries) - 1:
+                    return 503, {'error': 'Erro de conexão'}
                     
             except Exception as e:
-                # Se é a última tentativa, retorna o erro
-                if attempt == self.max_retries - 1:
-                    logger.error(f"❌ Exceção final ao solicitar histórico: {str(e)}")
-                    return 500, {"error": str(e)}
-                
-                # Caso contrário, aguarda e tenta novamente
-                wait_time = self.retry_delay * (2 ** attempt)
-                logger.warning(f"⚠️ Exceção na tentativa {attempt+1}: {str(e)}. Aguardando {wait_time}s antes da próxima tentativa...")
+                logger.error(f"💥 Erro inesperado na tentativa {attempt+1}: {e}")
+                if attempt == max(3, self.max_retries) - 1:
+                    return 500, {'error': str(e)}
+            
+            # Aguardar entre tentativas (com backoff exponencial)
+            if attempt < max(3, self.max_retries) - 1:
+                wait_time = (2 ** attempt) + random.uniform(0.5, 2.0)
                 time.sleep(wait_time)
                 
         # Se chegou aqui, todas as tentativas falharam
+        logger.error("❌ Todas as tentativas falharam")
         return 500, {"error": "Todas as tentativas falharam"}
     
     def process_history(self, history_data: Dict) -> List[Dict]:
@@ -242,43 +306,142 @@ class PragmaticStatisticsClientEnhanced:
         """
         results = []
         
-        # Verifica se o histórico está presente
-        if "history" not in history_data:
-            logger.error("❌ Dados de histórico não encontrados na resposta")
+        # Debug: Imprimir estrutura dos dados recebidos
+        logger.info(f"🔍 DEBUG: Tipo dos dados recebidos: {type(history_data)}")
+        logger.info(f"🔍 DEBUG: Chaves dos dados: {list(history_data.keys()) if isinstance(history_data, dict) else 'Não é dict'}")
+        
+        # Tentar diferentes estruturas de dados possíveis
+        games_data = None
+        
+        if isinstance(history_data, dict):
+            # Tentar diferentes chaves possíveis
+            for key in ['history', 'results', 'data', 'games', 'gameHistory', 'statisticHistory']:
+                if key in history_data:
+                    games_data = history_data[key]
+                    logger.info(f"🔍 DEBUG: Encontrados dados na chave '{key}', tipo: {type(games_data)}")
+                    break
+            
+            # Se não encontrou em chaves específicas, verificar se os dados estão no nível raiz
+            if games_data is None:
+                # Procurar por qualquer lista nos dados
+                for key, value in history_data.items():
+                    if isinstance(value, list) and value:
+                        games_data = value
+                        logger.info(f"🔍 DEBUG: Encontrada lista na chave '{key}' com {len(value)} itens")
+                        break
+        elif isinstance(history_data, list):
+            games_data = history_data
+            logger.info(f"🔍 DEBUG: Dados são uma lista com {len(games_data)} itens")
+        
+        if not games_data:
+            logger.warning("❌ Nenhum dado de jogos encontrado na resposta")
+            logger.info(f"🔍 DEBUG: Dados completos recebidos: {str(history_data)[:500]}...")
             return []
         
+        # Processar cada item
+        for i, item in enumerate(games_data[:5]):  # Apenas os primeiros 5 para debug
+            logger.info(f"🔍 DEBUG: Item {i}: {item}")
+            
         try:
             # Processa cada item do histórico
-            for item in history_data["history"]:
-                # Extrair dados básicos
-                result_text = item.get("outcomeText", "")
-                timestamp = item.get("timestamp", 0)
-                dealer_name = item.get("dealerName", "")
-                
-                # Processar o texto do resultado para extrair número e cor
-                result_data = self._parse_game_result(result_text)
-                
-                # Adicionar informações de timestamp e dealer
-                if timestamp:
-                    # Converter timestamp para formato ISO
-                    dt = datetime.fromtimestamp(timestamp / 1000)
-                    result_data["timestamp"] = timestamp
-                    result_data["datetime"] = dt.isoformat()
-                
-                if dealer_name:
-                    result_data["dealer"] = dealer_name
-                
-                # Adicionar resultado à lista
-                results.append(result_data)
+            for item in games_data:
+                result_data = self._process_single_game_item(item)
+                if result_data:
+                    results.append(result_data)
             
             # Log do total de resultados processados
             logger.info(f"✅ Processados {len(results)} resultados de jogos")
             
-            return results
-            
         except Exception as e:
-            logger.error(f"❌ Erro ao processar histórico: {str(e)}")
+            logger.error(f"❌ Erro ao processar histórico: {e}")
             return []
+        
+        return results
+    
+    def _process_single_game_item(self, item) -> Optional[Dict]:
+        """
+        Processa um único item de jogo da API
+        """
+        if not isinstance(item, dict):
+            return None
+            
+        # Tentar extrair número e cor de diferentes campos possíveis
+        number = None
+        color = None
+        timestamp = None
+        
+        # Primeiro, tentar o campo gameResult que contém "31 Black", "6 Black", etc.
+        if 'gameResult' in item:
+            result_text = str(item['gameResult'])
+            parsed = self._parse_game_result(result_text)
+            if parsed and parsed.get('number', -1) != -1:
+                number = parsed['number']
+                color = parsed['color']
+        
+        # Se não conseguiu pelo gameResult, tentar outros campos
+        if number is None:
+            # Campos possíveis para o número
+            for field in ['number', 'winningNumber', 'result', 'outcome', 'value', 'ball']:
+                if field in item:
+                    try:
+                        number = int(item[field])
+                        break
+                    except (ValueError, TypeError):
+                        continue
+        
+        # Campos possíveis para cor
+        if color is None:
+            for field in ['color', 'colour', 'winningColor']:
+                if field in item:
+                    color = str(item[field]).lower()
+                    break
+        
+        # Se não tem cor mas tem número, determinar cor
+        if number is not None and color is None:
+            if number == 0:
+                color = 'green'
+            elif number in [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]:
+                color = 'red'
+            else:
+                color = 'black'
+        
+        # Campos possíveis para timestamp
+        for field in ['timestamp', 'time', 'gameTime', 'created', 'date']:
+            if field in item:
+                try:
+                    timestamp = int(item[field])
+                    break
+                except (ValueError, TypeError):
+                    continue
+        
+        # Se não conseguiu extrair número, tentar parseador de texto em outros campos
+        if number is None:
+            for field in ['outcomeText', 'resultText', 'text', 'description']:
+                if field in item:
+                    parsed = self._parse_game_result(str(item[field]))
+                    if parsed and parsed.get('number', -1) != -1:
+                        number = parsed['number']
+                        color = parsed['color']
+                        break
+        
+        # Se ainda não tem número, retornar None
+        if number is None:
+            # Log de debug apenas se o item tem gameResult
+            if 'gameResult' in item:
+                logger.warning(f"⚠️ Não foi possível extrair número do gameResult: '{item.get('gameResult', 'N/A')}'")
+            return None
+        
+        # Criar timestamp se não existir
+        if timestamp is None:
+            timestamp = int(time.time() * 1000)
+        
+        return {
+            'number': number,
+            'color': color,
+            'timestamp': timestamp,
+            'table_id': self.table_id,
+            'game_id': item.get('gameId', 'unknown')
+        }
             
     def generate_realistic_data(self, count: int = 100) -> List[Dict]:
         """
@@ -363,5 +526,37 @@ class PragmaticStatisticsClientEnhanced:
             return self.generate_realistic_data(games_count)
             
         except Exception as e:
-            logger.error(f"❌ Erro ao obter histórico: {str(e)}")
+            # Em caso de exceção, também gerar dados simulados
+            logger.error(f"❌ Erro ao obter dados da API: {e}")
             return self.generate_realistic_data(games_count)
+    
+    def test_connection(self) -> Dict:
+        """
+        Testa a conexão com a API
+        """
+        if not self.jsessionid:
+            return {
+                'success': False,
+                'error': 'JSESSIONID não configurado'
+            }
+        
+        try:
+            status_code, data = self.fetch_history(10)  # Teste com 10 jogos
+            
+            return {
+                'success': status_code == 200,
+                'status_code': status_code,
+                'has_data': bool(data),
+                'jsessionid_valid': status_code != 401,
+                'message': 'Conexão OK' if status_code == 200 else f'Erro: {status_code}'
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def set_jsessionid(self, jsessionid: str):
+        """Atualiza o JSESSIONID"""
+        self.jsessionid = jsessionid
