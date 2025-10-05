@@ -326,7 +326,36 @@ function updatePatterns(results) {
   patterns.forEach((pattern) => {
     const item = document.createElement("div");
     item.className = "pattern-item";
-    item.textContent = pattern.message;
+
+    // Adicionar o número do último resultado ao padrão
+    pattern.numero = results[0].number;
+    pattern.cor = results[0].color;
+
+    // HTML base do padrão
+    let patternHTML = `<span class="pattern-message">${pattern.message}</span>`;
+
+    // Adicionar o número do resultado
+    const colorClass =
+      pattern.cor === "red"
+        ? "result-red"
+        : pattern.cor === "black"
+        ? "result-black"
+        : "result-green";
+
+    patternHTML += `
+      <div class="pattern-result">
+        <div class="result-number ${colorClass}">${pattern.numero}</div>
+        <div class="result-color">${
+          pattern.cor === "red"
+            ? "Vermelho"
+            : pattern.cor === "black"
+            ? "Preto"
+            : "Verde"
+        }</div>
+      </div>
+    `;
+
+    item.innerHTML = patternHTML;
     container.appendChild(item);
   });
 }
@@ -346,6 +375,8 @@ function updateAlerts(results) {
       type: "hot-color",
       message: `🔥 Vermelho quente: ${redInLast10}/10 últimos giros`,
       priority: 5,
+      numero: last10[0].number,
+      cor: last10[0].color,
     });
   }
 
@@ -356,6 +387,8 @@ function updateAlerts(results) {
       type: "hot-color",
       message: `🔥 Preto quente: ${blackInLast10}/10 últimos giros`,
       priority: 5,
+      numero: last10[0].number,
+      cor: last10[0].color,
     });
   }
 
@@ -369,6 +402,8 @@ function updateAlerts(results) {
         type: "cold-number",
         message: `❄️ Verde (0) não aparece há ${last20.length} giros`,
         priority: 3,
+        numero: last10[0].number,
+        cor: last10[0].color,
       });
     }
   }
@@ -386,10 +421,40 @@ function updateAlerts(results) {
   alerts.forEach((alert) => {
     const item = document.createElement("div");
     item.className = `alert-item ${alert.type}`;
-    item.innerHTML = `
+
+    // HTML base do alerta
+    let alertHTML = `
             <span>${alert.message}</span>
             <span>⚡</span>
         `;
+
+    // Adicionar o número do resultado se disponível
+    if (alert.numero !== undefined) {
+      const colorClass =
+        alert.cor === "red"
+          ? "result-red"
+          : alert.cor === "black"
+          ? "result-black"
+          : "result-green";
+
+      alertHTML += `
+        <div class="alert-result">
+          <div class="result-header">Número da Jogada:</div>
+          <div class="result-content">
+            <div class="result-number ${colorClass}">${alert.numero}</div>
+            <div class="result-color">${
+              alert.cor === "red"
+                ? "Vermelho"
+                : alert.cor === "black"
+                ? "Preto"
+                : "Verde"
+            }</div>
+          </div>
+        </div>
+      `;
+    }
+
+    item.innerHTML = alertHTML;
     container.appendChild(item);
   });
 }

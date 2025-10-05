@@ -3,6 +3,7 @@
 ## ❌ Problema Identificado
 
 O sistema estava enviando sinais em **TODAS as rodadas**, ao invés de:
+
 1. Analisar várias rodadas consecutivas
 2. Identificar um padrão consistente
 3. Enviar sinal APENAS quando detectar oportunidade real
@@ -11,6 +12,7 @@ O sistema estava enviando sinais em **TODAS as rodadas**, ao invés de:
 ## ✅ Correções Implementadas
 
 ### 1. **Cooldown Rigoroso entre Sinais**
+
 - **Antes**: 30 segundos entre sinais
 - **Depois**: 180 segundos (3 minutos) entre sinais
 - **Motivo**: Permite analisar mais rodadas antes de enviar novo sinal
@@ -21,6 +23,7 @@ self.last_pattern_detected_at = 0  # Timestamp do último padrão detectado
 ```
 
 ### 2. **Requisito Mínimo de Rodadas para Análise**
+
 - **Antes**: 3-5 rodadas mínimas
 - **Depois**: 8 rodadas mínimas
 - **Motivo**: Análise mais robusta e confiável
@@ -32,16 +35,19 @@ self.min_rounds_for_analysis = 8  # Mínimo de 8 rodadas para analisar
 ### 3. **Detecção de Padrões Mais Seletiva**
 
 #### Sequências:
+
 - **Antes**: 4 rodadas consecutivas da mesma cor
 - **Depois**: 6 rodadas consecutivas da mesma cor
 - **Confiança base**: Aumentada de 65% para 72%
 
 #### Predominância de Cor:
+
 - **Antes**: 70% de uma cor em 6 rodadas
 - **Depois**: 75% de uma cor em 8 rodadas
 - **Confiança base**: Aumentada de 45% para 68%
 
 ### 4. **Verificação de Previsão Pendente**
+
 O sistema agora verifica se há previsão pendente no banco antes de gerar novo sinal:
 
 ```python
@@ -52,6 +58,7 @@ if pending:
 ```
 
 ### 5. **Desabilitar Re-sinais Imediatos**
+
 - **Antes**: 1 tentativa de re-sinal após acerto/erro
 - **Depois**: 0 tentativas (desabilitado)
 - **Motivo**: Evitar spam de sinais consecutivos
@@ -61,6 +68,7 @@ self.immediate_resignal_limit = 0  # Desabilitar re-sinais imediatos
 ```
 
 ### 6. **Logs Visuais Informativos**
+
 Novo sistema de logs que mostra claramente o que está acontecendo:
 
 ```
@@ -119,12 +127,14 @@ Ou quando não detecta padrão:
 ## 🎯 Resultados Esperados
 
 ### Antes:
+
 - ❌ Sinal em TODAS as rodadas
 - ❌ Spam de notificações
 - ❌ Sinais de baixa qualidade
 - ❌ Difícil identificar oportunidades reais
 
 ### Depois:
+
 - ✅ Sinal apenas quando detectar padrão forte
 - ✅ Intervalo mínimo de 3 minutos entre sinais
 - ✅ Análise de 8-12 rodadas antes de decidir
@@ -174,6 +184,7 @@ git push origin deploy
 ```
 
 ## 📅 Data da Correção
+
 5 de outubro de 2025
 
 ---

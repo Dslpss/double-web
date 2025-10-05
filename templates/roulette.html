@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Roleta Brasileira - Pragmatic Play</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/css/roulette.css" />
+    <link rel="stylesheet" href="/static/css/realtime-alerts.css" />
     <style>
       * {
         margin: 0;
@@ -54,7 +56,7 @@
       }
 
       .status-connected {
-        background: #4CAF50;
+        background: #4caf50;
         color: white;
         box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
       }
@@ -1037,18 +1039,26 @@
           </div>
         </div>
 
-        <!-- Card NOVO: Alertas de Padrões Detectados -->
+        <!-- Card NOVO: Alertas de Padrões em Tempo Real -->
         <div class="card card-full-width">
           <div class="card-header-with-actions">
             <h2>🎯 Alertas de Padrões em Tempo Real</h2>
             <div class="card-actions">
+              <span
+                id="alert-counter"
+                class="status-badge"
+                style="background: #2196f3; margin-right: 8px"
+              >
+                📊 <span id="alert-count">0</span>/15 alertas
+              </span>
               <span id="pattern-status" class="status-badge">🔴 Inativo</span>
               <button
                 class="btn btn-sm"
                 id="clearAlertsBtn"
-                title="Limpar alertas"
+                title="Limpar todos os alertas (mantém apenas os 3 mais recentes)"
+                style="background: #f44336; color: white"
               >
-                🗑️ Limpar
+                🗑️ Limpar Antigos
               </button>
               <button class="btn btn-sm" id="settingsBtn" title="Configurações">
                 ⚙️ Config
@@ -1061,8 +1071,10 @@
               <div class="empty-state-icon">🔍</div>
               <p>Aguardando detecção de padrões...</p>
               <small
-                >O sistema analisa automaticamente os resultados e exibe alertas
-                quando padrões são detectados</small
+                >⏱️ Alertas permanecem visíveis por 5 minutos ou até atingir 15
+                alertas.<br />
+                Use o botão "Limpar Antigos" para remover alertas
+                manualmente.</small
               >
             </div>
           </div>

@@ -7,8 +7,10 @@ class AlertManager {
   constructor(containerId = "pattern-alerts") {
     this.container = document.getElementById(containerId);
     this.activeAlerts = new Map(); // Mapa de alertas ativos (ID -> elemento)
-    this.maxAlerts = 10; // Máximo de alertas visíveis (aumentado de 8 para 10)
-    this.autoHideTimeout = 0; // 0 = DESABILITADO - alertas ficam permanentes até limpar manualmente
+    this.maxAlerts = 15; // Máximo de alertas visíveis (aumentado para permitir mais histórico)
+    this.autoHideTimeout = 300000; // 5 minutos (300000ms) - alertas ficam visíveis por 5 minutos
+    this.cooldownTime = 300000; // 5 minutos de cooldown
+    this.lastAlertTimes = {};
 
     if (!this.container) {
       console.error("Container de alertas não encontrado:", containerId);
@@ -22,6 +24,21 @@ class AlertManager {
     if (!this.container) return;
 
     const patternId = pattern.id || `pattern-${Date.now()}`;
+
+    const now = Date.now();
+    if (
+      this.lastAlertTimes[patternId] &&
+      now - this.lastAlertTimes[patternId] < this.cooldownTime
+    ) {
+      console.log(
+        `Cooldown ativo para o padrão ${patternId}. Alerta não disparado.`
+      );
+      return;
+    }
+    this.lastAlertTimes[patternId] = now;
+
+    // Adicionar hora de detecção para análise posterior
+    pattern.detectedAt = new Date().toLocaleTimeString();
 
     // Se já existe, atualizar
     if (this.activeAlerts.has(patternId)) {
@@ -50,13 +67,16 @@ class AlertManager {
     // Animação de entrada
     setTimeout(() => {
       alertElement.classList.add("alert-show");
+      // Atualizar contador após animação
+      this.updateCounter();
     }, 10);
 
     // Auto-hide após timeout (se configurado)
-    // autoHideTimeout = 0 significa alertas permanentes (até limpar manualmente)
+    // autoHideTimeout > 0 significa que alertas expiram automaticamente
     if (this.autoHideTimeout > 0 && pattern.type !== "critical") {
       setTimeout(() => {
         this.removeAlert(patternId);
+        this.updateCounter();
       }, this.autoHideTimeout);
     }
   }
@@ -76,7 +96,9 @@ class AlertManager {
     header.className = "alert-header";
     header.innerHTML = `
             <span class="alert-icon">${pattern.icon || "🎲"}</span>
-            <span class="alert-title">${pattern.title}</span>
+            <span class="alert-title">${pattern.title} ${
+      pattern.numero ? "- Número: " + pattern.numero : ""
+    }</span>
             <span class="alert-confidence">${pattern.confidence}%</span>
             <button class="alert-close" onclick="window.alertManager.removeAlert('${
               pattern.id
@@ -109,6 +131,35 @@ class AlertManager {
     div.appendChild(suggestion);
     if (dataSection) {
       div.innerHTML += dataSection;
+    }
+
+    // Exibe o número do resultado representado pelo alerta com estilo melhorado
+    if (pattern.numero) {
+      const resultBox = document.createElement("div");
+      resultBox.className = "alert-result";
+
+      // Determinar a classe CSS para a cor do resultado
+      const colorClass =
+        pattern.cor === "red"
+          ? "result-red"
+          : pattern.cor === "black"
+          ? "result-black"
+          : "result-green";
+
+      resultBox.innerHTML = `
+        <div class="result-header">Número da Jogada:</div>
+        <div class="result-content">
+          <div class="result-number ${colorClass}">${pattern.numero}</div>
+          <div class="result-color">${
+            pattern.cor === "red"
+              ? "Vermelho"
+              : pattern.cor === "black"
+              ? "Preto"
+              : "Verde"
+          }</div>
+        </div>
+      `;
+      div.appendChild(resultBox);
     }
 
     return div;
@@ -153,7 +204,9 @@ class AlertManager {
         alertData.element.parentNode.removeChild(alertData.element);
       }
       this.activeAlerts.delete(patternId);
-    }, 300);
+      // Atualizar contador após remover
+      this.updateCounter();
+    }, 3000);
   }
 
   /**
@@ -185,16 +238,62 @@ class AlertManager {
   }
 
   /**
-   * Atualiza todos os alertas com novos padrões
+   * Limpa alertas antigos mantendo apenas os N mais recentes
+   * @param {number} keepCount - Número de alertas mais recentes a manter
    */
-  updateAlerts(patterns) {
-    // Remover alertas que não estão mais presentes
-    const currentIds = new Set(patterns.map((p) => p.id));
-    for (const alertId of this.activeAlerts.keys()) {
-      if (!currentIds.has(alertId)) {
-        this.removeAlert(alertId);
+  clearOldAlerts(keepCount = 3) {
+    // Ordenar alertas por timestamp (mais recentes primeiro)
+    const sortedAlerts = Array.from(this.activeAlerts.entries()).sort(
+      (a, b) => b[1].timestamp - a[1].timestamp
+    );
+
+    // Remover alertas além do limite
+    for (let i = keepCount; i < sortedAlerts.length; i++) {
+      this.removeAlert(sortedAlerts[i][0]);
+    }
+
+    console.log(
+      `🗑️ Alertas antigos removidos. Mantidos: ${Math.min(
+        keepCount,
+        this.activeAlerts.size
+      )}`
+    );
+    this.updateCounter();
+  }
+
+  /**
+   * Atualiza o contador de alertas na interface
+   */
+  updateCounter() {
+    const countElement = document.getElementById("alert-count");
+    if (countElement) {
+      const count = this.activeAlerts.size;
+      countElement.textContent = count;
+
+      // Mudar cor do badge baseado na quantidade
+      const counterBadge = document.getElementById("alert-counter");
+      if (counterBadge) {
+        if (count === 0) {
+          counterBadge.style.background = "#9E9E9E"; // Cinza
+        } else if (count < 5) {
+          counterBadge.style.background = "#4CAF50"; // Verde
+        } else if (count < 10) {
+          counterBadge.style.background = "#FF9800"; // Laranja
+        } else {
+          counterBadge.style.background = "#f44336"; // Vermelho
+        }
       }
     }
+  }
+
+  /**
+   * Atualiza todos os alertas com novos padrões
+   * NÃO remove alertas existentes - deixa expirar por timeout ou limite
+   */
+  updateAlerts(patterns) {
+    // NÃO remover alertas antigos automaticamente
+    // Deixar o timeout (5 minutos) ou limite (15 alertas) gerenciar
+    // Isso mantém histórico visível dos padrões detectados
 
     // Adicionar ou atualizar padrões
     for (const pattern of patterns) {
@@ -260,6 +359,20 @@ class AlertManager {
       oscillator.stop(audioContext.currentTime + 0.5);
     } catch (e) {
       console.log("Audio não disponível:", e);
+    }
+  }
+
+  /**
+   * Finaliza o ciclo de análise: exibe o padrão atual para a jogada seguinte e zera a análise.
+   */
+  completeCycle() {
+    // Exibe os padrões avaliados (aqui, apenas um log para simular a exibição)
+    this.activeAlerts.forEach((alertData, patternId) => {
+      console.log(`Padrão avaliado para a próxima jogada: ${patternId}`);
+    });
+    // Zera a análise removendo todos os alertas ativos com animação
+    for (const patternId of Array.from(this.activeAlerts.keys())) {
+      this.removeAlert(patternId);
     }
   }
 }

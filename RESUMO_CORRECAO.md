@@ -3,7 +3,9 @@
 ## 📋 Resumo das Mudanças
 
 ### 🎯 Objetivo Principal
+
 **Corrigir o sistema para NÃO enviar sinais em todas as rodadas**, mas sim:
+
 1. Analisar 8-12 rodadas consecutivas
 2. Detectar padrão forte e consistente
 3. Enviar sinal apenas quando oportunidade real for identificada
@@ -14,6 +16,7 @@
 ## ✅ Correções Implementadas
 
 ### 1. **Cooldown Aumentado**
+
 ```python
 # Antes: 30 segundos
 self.signal_cooldown_seconds = 30
@@ -23,6 +26,7 @@ self.signal_cooldown_seconds = 180
 ```
 
 ### 2. **Requisitos Mínimos Aumentados**
+
 ```python
 # Rodadas mínimas para análise
 # Antes: 3-5 rodadas
@@ -34,11 +38,12 @@ self.min_rounds_for_analysis = 8
 # Depois: 6 da mesma cor
 
 # Predominância
-# Antes: 70% em 6 rodadas  
+# Antes: 70% em 6 rodadas
 # Depois: 75% em 8 rodadas
 ```
 
 ### 3. **Confiança Aumentada**
+
 ```python
 # Sequências
 # Antes: 65% confiança base
@@ -50,6 +55,7 @@ self.min_rounds_for_analysis = 8
 ```
 
 ### 4. **Re-sinais Desabilitados**
+
 ```python
 # Antes: 1 tentativa após acerto/erro
 self.immediate_resignal_limit = 1
@@ -59,7 +65,9 @@ self.immediate_resignal_limit = 0
 ```
 
 ### 5. **Verificação de Previsão Pendente**
+
 Agora o sistema verifica se já existe uma previsão pendente antes de gerar novo sinal:
+
 ```python
 pending = db.get_last_unverified_prediction()
 if pending:
@@ -67,7 +75,9 @@ if pending:
 ```
 
 ### 6. **Logs Visuais Informativos**
+
 Sistema agora mostra claramente o que está acontecendo:
+
 ```
 ============================================================
 🔍 ANALISANDO PADRÕES: 10 rodadas
@@ -81,16 +91,19 @@ Sistema agora mostra claramente o que está acontecendo:
 ## 📊 Resultados dos Testes
 
 ### ✅ Teste 1: Configurações de Cooldown
+
 - Cooldown: 180s ✓
 - Rodadas mínimas: 8 ✓
 - Re-sinais: 0 ✓
 
 ### ✅ Teste 2: Lógica de Detecção
+
 - Bloqueia com menos de 8 rodadas ✓
 - Bloqueia durante cooldown ✓
 - Verifica previsões pendentes ✓
 
 ### ✅ Teste 3: Limiares de Detecção
+
 - Sequência mínima: 6 rodadas ✓
 - Predominância mínima: 75% ✓
 - Confiança sequências: 72% ✓
@@ -101,6 +114,7 @@ Sistema agora mostra claramente o que está acontecendo:
 ## 🚀 Como Testar em Produção
 
 1. **Deploy no Railway**:
+
 ```bash
 git add .
 git commit -m "fix: Sistema de detecção - sinais a cada 3min após 8+ rodadas"
@@ -108,6 +122,7 @@ git push origin deploy
 ```
 
 2. **Monitorar Logs**:
+
    - Acesse Railway → Seu projeto → Logs
    - Procure por linhas começando com:
      - `🔍 ANALISANDO PADRÕES`
@@ -115,6 +130,7 @@ git push origin deploy
      - `❌ Nenhum padrão detectado`
 
 3. **Comportamento Esperado**:
+
    - ✅ Sistema analisa continuamente
    - ✅ Logs mostram análise em andamento
    - ✅ Sinais aparecem apenas quando padrão forte detectado
@@ -132,6 +148,7 @@ git push origin deploy
 ## 🎯 Antes vs Depois
 
 ### ❌ Antes (Problema)
+
 ```
 Rodada 1 → Sinal ❌
 Rodada 2 → Sinal ❌
@@ -142,6 +159,7 @@ Rodada 5 → Sinal ❌
 ```
 
 ### ✅ Depois (Corrigido)
+
 ```
 Rodada 1-7 → Analisando... 📊
 Rodada 8 → Padrão forte detectado! ✅ Sinal enviado
@@ -170,7 +188,7 @@ self.min_rounds_for_analysis = 8  # 8 rodadas
 # Linha ~1388 - Sequências mínimas
 if len(recent_colors) >= 6:  # 6 consecutivas
 
-# Linha ~1477 - Predominância mínima  
+# Linha ~1477 - Predominância mínima
 if dominant_count / len(recent_colors) > 0.75:  # 75%
 
 # Linha ~1404 - Confiança sequências
@@ -202,6 +220,7 @@ base_confidence = 0.68  # 68%
 ## 🎉 Conclusão
 
 O sistema agora funciona como esperado:
+
 - ✅ Analisa múltiplas rodadas antes de decidir
 - ✅ Detecta apenas padrões fortes e confiáveis
 - ✅ Aguarda 3 minutos entre sinais

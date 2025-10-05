@@ -1,0 +1,106 @@
+/* Estilos para alertas e padrões em tempo real */
+.alert-item {
+  margin-bottom: 10px;
+  padding: 12px;
+  border-radius: 6px;
+  background-color: #1e1e1e;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.alert-item.hot-color {
+  border-left: 4px solid #ff9800;
+}
+
+.alert-item.cold-number {
+  border-left: 4px solid #03a9f4;
+}
+
+/* Estilos para os padrões em tempo real */
+.pattern-item {
+  margin-bottom: 10px;
+  padding: 12px;
+  border-radius: 6px;
+  background-color: #1e1e1e;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.pattern-message {
+  flex-grow: 1;
+  margin-right: 10px;
+}
+
+.pattern-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding-left: 10px;
+}
+
+/* Estilo compartilhado para números em alertas e padrões */
+.alert-result {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.result-header {
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  color: #ffcc00;
+}
+
+.result-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Estilo para os números circulares */
+.pattern-item .result-number,
+.alert-item .result-number {
+  font-size: 1.8em;
+  font-weight: bold;
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  text-align: center;
+  border-radius: 50%;
+  color: white;
+}
+
+.pattern-item .result-color,
+.alert-item .result-color {
+  font-size: 0.8em;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #ddd;
+}
+
+/* Cores para os resultados */
+.result-red {
+  background-color: #e53935;
+  color: white;
+}
+
+.result-black {
+  background-color: #212121;
+  color: white;
+}
+
+.result-green {
+  background-color: #4caf50;
+  color: white;
+}

@@ -1,0 +1,196 @@
+/* Estilos para os alertas de padrões */
+.pattern-alert {
+  margin-bottom: 10px;
+  padding: 12px;
+  border-radius: 6px;
+  background-color: #1e1e1e;
+  border-left: 4px solid #ffcc00;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.pattern-alert.alert-show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.pattern-alert.alert-hide {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+/* Cores baseadas na confiança */
+.pattern-alert.alert-high {
+  border-left-color: #4caf50;
+}
+
+.pattern-alert.alert-medium {
+  border-left-color: #ff9800;
+}
+
+.pattern-alert.alert-low {
+  border-left-color: #f44336;
+}
+
+.alert-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.alert-icon {
+  font-size: 1.2em;
+  margin-right: 5px;
+}
+
+.alert-title {
+  font-weight: bold;
+  flex-grow: 1;
+}
+
+.alert-confidence {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 0.8em;
+}
+
+.alert-close {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 1.2em;
+  padding: 0 5px;
+}
+
+.alert-close:hover {
+  color: #fff;
+}
+
+.alert-description {
+  font-size: 0.9em;
+  margin-bottom: 8px;
+  color: #ddd;
+}
+
+.alert-suggestion {
+  font-size: 0.85em;
+  padding: 5px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.alert-data {
+  font-size: 0.8em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.data-item {
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 3px 6px;
+  border-radius: 3px;
+}
+
+.data-key {
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+/* Estilo para o número do resultado */
+.alert-result {
+  margin: 12px 0;
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.result-header {
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  color: #ffcc00;
+}
+
+.result-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.result-number {
+  font-size: 2.5em;
+  font-weight: bold;
+  width: 50px;
+  height: 50px;
+  line-height: 50px;
+  text-align: center;
+  border-radius: 50%;
+  background-color: #333;
+  color: white;
+}
+
+.result-color {
+  font-size: 0.9em;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.result-red {
+  background-color: #e53935;
+  color: white;
+}
+
+.result-black {
+  background-color: #212121;
+  color: white;
+}
+
+.result-green {
+  background-color: #4caf50;
+  color: white;
+}
+
+/* Contador de alertas */
+.alert-counter {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background-color: #ff9800;
+  color: black;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.8em;
+}
+
+/* Animações */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.alert-new {
+  animation: pulse 0.5s ease-in-out;
+}

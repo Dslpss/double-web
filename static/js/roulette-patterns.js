@@ -68,13 +68,17 @@ function initializeComponents() {
  * Configura event listeners de botões e controles
  */
 function setupEventListeners() {
-  // Botão de limpar alertas
+  // Botão de limpar alertas antigos (mantém os 3 mais recentes)
   const clearBtn = document.getElementById("clearAlertsBtn");
   if (clearBtn) {
     clearBtn.addEventListener("click", () => {
       if (alertManager) {
-        alertManager.clearAlerts();
-        alertManager.showToast("Alertas limpos!", "success");
+        alertManager.clearOldAlerts(3); // Manter apenas os 3 mais recentes
+        alertManager.showToast(
+          "✅ Alertas antigos removidos (mantidos os 3 mais recentes)",
+          "success"
+        );
+        updateAlertCounter();
       }
     });
   }
@@ -85,6 +89,31 @@ function setupEventListeners() {
     settingsBtn.addEventListener("click", () => {
       showSettingsModal();
     });
+  }
+}
+
+/**
+ * Atualiza o contador de alertas ativos
+ */
+function updateAlertCounter() {
+  const countElement = document.getElementById("alert-count");
+  if (countElement && alertManager) {
+    const count = alertManager.activeAlerts.size;
+    countElement.textContent = count;
+
+    // Mudar cor baseado na quantidade
+    const counterBadge = document.getElementById("alert-counter");
+    if (counterBadge) {
+      if (count === 0) {
+        counterBadge.style.background = "#9E9E9E"; // Cinza
+      } else if (count < 5) {
+        counterBadge.style.background = "#4CAF50"; // Verde
+      } else if (count < 10) {
+        counterBadge.style.background = "#FF9800"; // Laranja
+      } else {
+        counterBadge.style.background = "#f44336"; // Vermelho
+      }
+    }
   }
 }
 
@@ -247,14 +276,19 @@ async function detectBasicPatterns() {
     const patterns = patternDetector.detectAllPatterns(lastResults);
     console.log(`✅ Detectados ${patterns.length} padrões básicos:`, patterns);
 
-    // Limpar alertas antigos e exibir novos padrões
-    if (alertManager) {
-      alertManager.clearAlerts();
-      console.log("🗑️ Alertas antigos limpos");
-    }
+    // NÃO limpar alertas - deixar acumular até o limite ou expirar por timeout
+    // Alertas agora permanecem visíveis por 5 minutos ou até atingir limite de 15
+    console.log(
+      `� Alertas ativos: ${
+        alertManager ? alertManager.activeAlerts.size : 0
+      }/15`
+    );
 
     currentAlerts = patterns;
     displayPatterns(patterns, "basic");
+
+    // Atualizar contador de alertas
+    setTimeout(updateAlertCounter, 100);
   } catch (error) {
     console.error("❌ Erro na detecção básica:", error);
   }
@@ -334,6 +368,38 @@ function displayPatterns(patterns, type) {
 
   // Exibir cada padrão (sem limpar os existentes)
   for (const pattern of significantPatterns) {
+    // Adicionar número do último resultado ao padrão
+    if (lastResults && lastResults.length > 0) {
+      pattern.numero = lastResults[0].numero;
+      pattern.cor = lastResults[0].cor;
+      console.log(
+        `📊 Adicionado número ${pattern.numero} (${pattern.cor}) ao padrão ${pattern.id}`
+      );
+
+      // Adicionar historico recente para contexto
+      pattern.historico = lastResults
+        .slice(0, 5)
+        .map((r) => r.numero)
+        .join(", ");
+    }
+
+    // Adicionar sugestão de aposta se não existir
+    if (!pattern.suggestion) {
+      const sugestoes = {
+        red: "Considerar apostar em VERMELHO na próxima rodada",
+        black: "Considerar apostar em PRETO na próxima rodada",
+      };
+
+      // Lógica simples: sugerir cor oposta à última
+      if (pattern.cor === "red") {
+        pattern.suggestion = sugestoes.black;
+      } else if (pattern.cor === "black") {
+        pattern.suggestion = sugestoes.red;
+      } else {
+        pattern.suggestion = "Aguardar próximo resultado para confirmar padrão";
+      }
+    }
+
     alertManager.showPattern(pattern);
 
     // Tocar som para padrões de alta confiança
