@@ -154,9 +154,11 @@ class BlazeAnalyzerEnhanced:
         
         # Controle para evitar sinais repetidos sem checagem
         self.last_signal_ts = 0
-        self.signal_cooldown_seconds = 30  # evitar re-sinalizar em menos de X segundos (aumentado para reduzir spam)
-        self.immediate_resignal_limit = 1  # quantas re-tentativas imediatas ao errar/acertar (0 = desativado)
+        self.signal_cooldown_seconds = 180  # 3 minutos entre sinais (análise mais cuidadosa)
+        self.min_rounds_for_analysis = 8  # Mínimo de 8 rodadas para analisar antes de enviar sinal
+        self.immediate_resignal_limit = 0  # Desabilitar re-sinais imediatos
         self._immediate_resignal_count = 0
+        self.last_pattern_detected_at = 0  # Timestamp do último padrão detectado
         
         self.data = []
         self.manual_data = []
@@ -1098,16 +1100,41 @@ class BlazeAnalyzerEnhanced:
         """
         Verifica se deve detectar padrões agora.
         Lógica inteligente baseada na frequência real do jogo e qualidade dos dados.
+        REQUER PELO MENOS 3 MINUTOS ENTRE SINAIS E ANÁLISE DE 8+ RODADAS.
         """
         try:
-            # Verificar se há dados suficientes
+            # Verificar se há dados suficientes para análise confiável
             data_to_analyze = self.manual_data if self.manual_data else self.data
-            if not data_to_analyze or len(data_to_analyze) < 3:
+            min_required = getattr(self, 'min_rounds_for_analysis', 8)
+            
+            if not data_to_analyze or len(data_to_analyze) < min_required:
+                logger.debug(f"Dados insuficientes para análise: {len(data_to_analyze) if data_to_analyze else 0}/{min_required} rodadas")
                 return False
             
             current_time = time.time()
             
-            # 1. Verificar se há dados muito recentes (cooldown básico)
+            # 1. COOLDOWN RIGOROSO: Verificar se passou tempo suficiente desde o último sinal
+            last_signal_time = getattr(self, 'last_pattern_detected_at', 0)
+            cooldown_seconds = getattr(self, 'signal_cooldown_seconds', 180)
+            time_since_last_signal = current_time - last_signal_time
+            
+            if time_since_last_signal < cooldown_seconds:
+                remaining = int(cooldown_seconds - time_since_last_signal)
+                logger.debug(f"⏳ Cooldown ativo: aguardando {remaining}s antes do próximo sinal (total: {cooldown_seconds}s)")
+                return False
+            
+            # 2. Verificar se há previsão pendente no banco
+            try:
+                db = getattr(self, 'db_manager', None)
+                if db:
+                    pending = db.get_last_unverified_prediction()
+                    if pending:
+                        logger.debug(f"⏸️ Previsão pendente no DB (id={pending.get('id')}): aguardando verificação")
+                        return False
+            except Exception as e:
+                logger.debug(f"Erro ao verificar previsões pendentes: {e}")
+            
+            # 3. Verificar se há dados muito recentes (cooldown baseado na frequência)
             if len(data_to_analyze) >= 3:
                 recent_results = data_to_analyze[-3:]
                 
@@ -1278,13 +1305,19 @@ class BlazeAnalyzerEnhanced:
             
             # Usar dados manuais (que incluem dados do PlayNabets)
             data_to_analyze = self.manual_data if self.manual_data else self.data
+            min_required = getattr(self, 'min_rounds_for_analysis', 8)
             
-            # ✅ CORRIGIDO: Requisito mínimo de 5 resultados para análise confiável
-            if not data_to_analyze or len(data_to_analyze) < 5:
-                logger.debug(f"Dados insuficientes para detecção de padrões: {len(data_to_analyze) if data_to_analyze else 0} resultados (mínimo: 5)")
+            # ✅ CORRIGIDO: Requisito mínimo de 8 resultados para análise confiável
+            if not data_to_analyze or len(data_to_analyze) < min_required:
+                logger.debug(f"Dados insuficientes para detecção de padrões: {len(data_to_analyze) if data_to_analyze else 0} resultados (mínimo: {min_required})")
                 return
             
-            logger.info(f"Detectando padrões em {len(data_to_analyze)} resultados")
+            # 📊 LOG VISUAL: Informar que está analisando padrões
+            logger.info("="*60)
+            logger.info(f"🔍 ANALISANDO PADRÕES: {len(data_to_analyze)} rodadas")
+            logger.info(f"⏱️  Tempo desde último sinal: {int(time.time() - getattr(self, 'last_pattern_detected_at', 0))}s")
+            logger.info(f"🎯 Cooldown configurado: {getattr(self, 'signal_cooldown_seconds', 180)}s (3 min)")
+            logger.info("="*60)
             
             # Flag para controlar se detectou algum padrão
             pattern_detected = False
@@ -1330,8 +1363,10 @@ class BlazeAnalyzerEnhanced:
                             except Exception as e:
                                 logger.exception(f'Erro ao salvar padrão no banco local: {e}')
                             
-                            logger.info(f"Padrão Double detectado: {pattern_name} -> {predicted_color}")
+                            logger.info(f"✅ Padrão Double detectado: {pattern_name} -> {predicted_color}")
                             pattern_detected = True
+                            # Marcar timestamp do padrão detectado para cooldown
+                            self.last_pattern_detected_at = time.time()
                             break  # Sair do loop após detectar um padrão
             except Exception as e:
                 logger.exception(f'Erro ao detectar padrões Double: {e}')
@@ -1363,20 +1398,22 @@ class BlazeAnalyzerEnhanced:
                             pattern_id=f"pattern_{int(time.time())}"
                         )
                         
-                        logger.info(f"Padrão geral detectado e notificado: {signal.get('recommended_color')} (conf: {signal.get('confidence', 0):.2f}) - Enviado: {pattern_sent}")
+                        logger.info(f"✅ Padrão geral detectado e notificado: {signal.get('recommended_color')} (conf: {signal.get('confidence', 0):.2f}) - Enviado: {pattern_sent}")
                         pattern_detected = True
+                        # Marcar timestamp do padrão detectado para cooldown
+                        self.last_pattern_detected_at = time.time()
             except Exception as e:
                 logger.exception(f'Erro ao detectar padrões gerais: {e}')
             
             # 3. Detectar padrões usando análise estatística simples
             try:
-                # AUMENTADO: requisito mínimo de 3 para 5 resultados (mais dados = mais confiável)
-                if len(data_to_analyze) >= 5:
-                    recent_data = data_to_analyze[-10:]  # Até 10 resultados
+                # AUMENTADO: requisito mínimo para 8 resultados (análise mais robusta)
+                if len(data_to_analyze) >= 8:
+                    recent_data = data_to_analyze[-12:]  # Até 12 resultados
                     recent_colors = [r.get('color', '') for r in recent_data]
                     
-                    # AUMENTADO: Detectar sequências de pelo menos 4 da mesma cor (era 3)
-                    if len(set(recent_colors)) == 1 and len(recent_colors) >= 4:
+                    # AUMENTADO: Detectar sequências de pelo menos 6 da mesma cor (padrão forte)
+                    if len(set(recent_colors)) == 1 and len(recent_colors) >= 6:
                         # Sequência de mesma cor
                         color = recent_colors[0]
                         
@@ -1391,8 +1428,8 @@ class BlazeAnalyzerEnhanced:
                             reasoning_mode = "Tendência de inversão (regressão à média)"
                         
                         # 🆕 CONFIANÇA ADAPTATIVA baseada em histórico de acertos
-                        base_confidence = 0.65
-                        sequence_bonus = (len(recent_colors) - 4) * 0.08
+                        base_confidence = 0.72  # Aumentado para 72% (mais conservador)
+                        sequence_bonus = (len(recent_colors) - 6) * 0.05  # Bônus por rodadas extras
                         
                         # Ajustar confiança baseado em performance histórica
                         pattern_accuracy = self.pattern_performance['sequence']['accuracy']
@@ -1435,11 +1472,13 @@ class BlazeAnalyzerEnhanced:
                             'timestamp': time.time()
                         })
                         
-                        logger.info(f"Sequência detectada e notificada: {len(recent_colors)} {color}s -> recomendar {predicted_color} ({self.prediction_mode}) - Enviado: {pattern_sent}")
+                        logger.info(f"✅ Sequência detectada: {len(recent_colors)} {color}s -> recomendar {predicted_color} ({self.prediction_mode}) - Enviado: {pattern_sent}")
                         pattern_detected = True
+                        # Marcar timestamp do padrão detectado para cooldown
+                        self.last_pattern_detected_at = time.time()
                     
                     # Se não há sequência uniforme, detectar predominância de cor
-                    if len(recent_colors) >= 6:
+                    if len(recent_colors) >= 8:
                         color_count = {}
                         for c in recent_colors:
                             color_count[c] = color_count.get(c, 0) + 1
@@ -1448,8 +1487,8 @@ class BlazeAnalyzerEnhanced:
                         dominant_color = max(color_count, key=color_count.get)
                         dominant_count = color_count[dominant_color]
                         
-                        # AUMENTADO: predominância de 60% para 70% (mais seletivo)
-                        if dominant_count / len(recent_colors) > 0.70:
+                        # AUMENTADO: predominância de 75% (muito mais seletivo)
+                        if dominant_count / len(recent_colors) > 0.75:
                             # 🆕 LÓGICA DE PREDIÇÃO: Modo 'opposite' ou 'continue'
                             if self.prediction_mode == 'continue':
                                 predicted_color = dominant_color
@@ -1460,8 +1499,8 @@ class BlazeAnalyzerEnhanced:
                             
                             # 🆕 CONFIANÇA ADAPTATIVA
                             dominance_ratio = dominant_count / len(recent_colors)
-                            base_confidence = 0.45
-                            dominance_bonus = (dominance_ratio - 0.70) * 1.2
+                            base_confidence = 0.68  # Aumentado para 68%
+                            dominance_bonus = (dominance_ratio - 0.75) * 2.0  # Bônus maior para dominâncias fortes
                             
                             # Ajustar baseado em performance
                             pattern_accuracy = self.pattern_performance['dominance']['accuracy']
@@ -1492,6 +1531,9 @@ class BlazeAnalyzerEnhanced:
                                 pattern_id=pattern_id
                             )
                             
+                            # Marcar timestamp do padrão detectado
+                            self.last_pattern_detected_at = time.time()
+                            
                             # 🆕 REGISTRAR NO HISTÓRICO
                             self._add_to_signal_history({
                                 'pattern_id': pattern_id,
@@ -1510,19 +1552,26 @@ class BlazeAnalyzerEnhanced:
             
             # Se detectou algum padrão, validar e resetar o sistema
             if pattern_detected:
-                logger.info("[PADRAO] PADRÃO DETECTADO - Validando qualidade do padrão")
+                logger.info("="*60)
+                logger.info("✅ PADRÃO DETECTADO - Validando qualidade")
                 
                 # Validar qualidade do padrão antes de resetar
                 if self._validate_pattern_quality(data_to_analyze):
-                    logger.info("[SUCESSO] Padrão validado - Iniciando RESET TOTAL do sistema")
+                    logger.info("✅ Padrão validado com sucesso!")
+                    logger.info(f"⏸️  Próximo sinal em {getattr(self, 'signal_cooldown_seconds', 180)}s (3 min)")
+                    logger.info("="*60)
                     # Registrar tempo da última detecção
                     self._last_pattern_time = time.time()
                     # ALTERADO: keep_context=False para reset TOTAL (esquecer histórico)
                     self._reset_system_after_pattern(keep_context=False)
                 else:
-                    logger.warning("[AVISO] Padrão rejeitado por baixa qualidade - continuando análise")
+                    logger.warning("⚠️  Padrão rejeitado por baixa qualidade - continuando análise")
+                    logger.info("="*60)
             else:
-                logger.debug("Nenhum padrão detectado nos dados atuais")
+                logger.info("="*60)
+                logger.info("❌ Nenhum padrão detectado - continuando análise...")
+                logger.info(f"📊 Analisadas {len(data_to_analyze)} rodadas (mínimo: {getattr(self, 'min_rounds_for_analysis', 8)})")
+                logger.info("="*60)
             
         except Exception as e:
             logger.exception(f'Erro geral na detecção de padrões: {e}')
