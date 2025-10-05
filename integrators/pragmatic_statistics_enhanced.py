@@ -39,6 +39,10 @@ class PragmaticStatisticsClientEnhanced:
         self.base_url = base_url or "https://games.pragmaticplaylive.net"
         self.history_endpoint = f"/api/ui/statisticHistory"
         
+        # Tentar obter JSESSIONID automaticamente se não fornecido
+        if not self.jsessionid:
+            self._try_get_railway_jsessionid()
+        
         # Lista de User-Agents para rotação
         self.user_agents = [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
@@ -61,6 +65,30 @@ class PragmaticStatisticsClientEnhanced:
         logger.info(f"📊 PragmaticStatisticsClientEnhanced inicializado para mesa {table_id}")
         logger.info(f"🔄 Proxies HTTP disponíveis: {len(self.http_proxies)}")
         logger.info(f"🔄 Proxies SOCKS disponíveis: {len(self.socks_proxies)}")
+        
+    def _try_get_railway_jsessionid(self):
+        """
+        Tenta obter JSESSIONID usando o gerenciador Railway
+        """
+        try:
+            # Importar apenas se necessário para evitar dependência circular
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+            
+            from railway_jsessionid_manager import get_railway_jsessionid
+            
+            jsessionid = get_railway_jsessionid()
+            if jsessionid:
+                self.jsessionid = jsessionid
+                logger.info("🚂 JSESSIONID obtido via Railway Manager")
+            else:
+                logger.info("📝 Nenhum JSESSIONID disponível - usando fallback")
+                
+        except ImportError:
+            logger.info("📦 Railway JSESSIONID Manager não disponível")
+        except Exception as e:
+            logger.error(f"❌ Erro ao obter JSESSIONID via Railway Manager: {e}")
         
     def set_jsessionid(self, jsessionid: str):
         """

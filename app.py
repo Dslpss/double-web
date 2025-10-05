@@ -2217,6 +2217,98 @@ def get_diagnostics():
     except Exception as e:
         return jsonify({'error': f'Diagnostics failed: {str(e)}'}), 500
 
+# 🚂 ENDPOINTS PARA JSESSIONID NO RAILWAY
+
+@app.route('/api/jsessionid/update', methods=['POST'])
+def update_jsessionid():
+    """
+    Endpoint para receber JSESSIONID de sistemas externos
+    """
+    try:
+        # Verificar autorização
+        auth_header = request.headers.get('Authorization')
+        expected_secret = os.environ.get('JSESSIONID_WEBHOOK_SECRET', 'railway_secret_2024')
+        
+        if not auth_header or auth_header != f'Bearer {expected_secret}':
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        data = request.get_json()
+        jsessionid = data.get('jsessionid')
+        
+        if not jsessionid:
+            return jsonify({'error': 'JSESSIONID required'}), 400
+        
+        # Salvar JSESSIONID usando o gerenciador
+        try:
+            from railway_jsessionid_manager import RailwayJSessionManager
+            manager = RailwayJSessionManager()
+            manager.save_jsessionid_to_cache(jsessionid)
+            
+            # Atualizar clientes globais se existirem
+            global roulette_integrator, statistics_enhanced_client
+            
+            if roulette_integrator and hasattr(roulette_integrator, 'set_jsessionid'):
+                roulette_integrator.set_jsessionid(jsessionid)
+                
+            if statistics_enhanced_client:
+                statistics_enhanced_client.set_jsessionid(jsessionid)
+            
+            return jsonify({
+                'success': True,
+                'message': 'JSESSIONID updated successfully',
+                'timestamp': datetime.now().isoformat(),
+                'jsessionid_preview': f"{jsessionid[:20]}..."
+            })
+            
+        except ImportError:
+            return jsonify({'error': 'Railway JSESSIONID Manager not available'}), 500
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/jsessionid/status', methods=['GET'])
+def jsessionid_status():
+    """
+    Endpoint para verificar status do JSESSIONID
+    """
+    try:
+        from railway_jsessionid_manager import RailwayJSessionManager
+        manager = RailwayJSessionManager()
+        
+        # Tentar obter JSESSIONID
+        jsessionid = manager.get_best_jsessionid()
+        
+        # Informações adicionais
+        global roulette_integrator, statistics_enhanced_client
+        
+        status = {
+            'has_jsessionid': jsessionid is not None,
+            'jsessionid_preview': jsessionid[:20] + '...' if jsessionid else None,
+            'cache_exists': os.path.exists(manager.storage_file),
+            'timestamp': datetime.now().isoformat(),
+            'railway_detected': os.environ.get('RAILWAY_ENVIRONMENT') is not None,
+            'clients': {
+                'roulette_integrator': {
+                    'available': roulette_integrator is not None,
+                    'has_jsessionid': bool(roulette_integrator and hasattr(roulette_integrator, 'jsessionid') and roulette_integrator.jsessionid)
+                },
+                'statistics_enhanced': {
+                    'available': statistics_enhanced_client is not None,
+                    'has_jsessionid': bool(statistics_enhanced_client and statistics_enhanced_client.jsessionid)
+                }
+            }
+        }
+        
+        return jsonify(status)
+        
+    except ImportError:
+        return jsonify({
+            'error': 'Railway JSESSIONID Manager not available',
+            'railway_detected': os.environ.get('RAILWAY_ENVIRONMENT') is not None
+        }), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # 🆕 ENDPOINTS PARA SISTEMA ADAPTATIVO
 
 @app.route('/api/pattern_performance', methods=['GET'])
