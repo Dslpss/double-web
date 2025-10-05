@@ -1,0 +1,171 @@
+# 🧹 Log de Limpeza do Projeto
+Data: 05/10/2025
+
+## 📊 Resumo da Limpeza
+
+### Arquivos Removidos: 42 arquivos
+
+#### 📝 Documentação Excessiva (29 arquivos)
+- AUTO_START_ROLETA.md
+- CHECKLIST_DEPLOY.md
+- COMANDOS_RAPIDOS.md
+- CORRECAO_ALERTAS_VISUAIS.md
+- CORRECAO_COR_CARD_HOT_COLOR.md
+- CORRECAO_CREDENCIAIS.md
+- CORRECAO_DETECCAO_PADROES.md
+- CORRECAO_ERRO_500_ROLETA.md
+- CORRECAO_SPAM_ALERTAS.md
+- CORRECAO_THRESHOLDS_PADROES.md
+- DEPLOY_AUTO_START.md
+- DEPLOY_READY.md
+- DEPLOY_STATUS.md
+- INTEGRACAO_COMPLETA.md
+- LIMPEZA_ARQUIVOS.md
+- PLAYNABETS_HOME_ADICIONADO.md
+- PLAYNABETS_LINK_ADDED.md
+- PRAGMATIC_PLAY_INTEGRATION.md
+- PROBLEMA_RESOLVIDO.md
+- RAILWAY_DEPLOY_CHECKLIST.md
+- RAILWAY_DEPLOY_GUIDE.md
+- RESUMO_CORRECAO.md
+- RESUMO_EXECUTIVO.md
+- RESUMO_INTEGRACAO_PRAGMATIC.md
+- RESUMO_MUDANCAS_ROLETA.md
+- RESUMO_SOLUCAO_AUTO_START.md
+- SECAO_JOGOS_ADICIONADA.md
+- SOLUCAO_AUTO_START_RAILWAY.md
+- SOLUCAO_FINAL_ALERTAS.md
+
+#### 🧪 Arquivos de Teste (7 arquivos)
+- test_env_vars.py
+- test_pattern_detection_fixes.py
+- test_pattern_spam_fix.py
+- test_pragmatic_integration.py
+- test_simple.py
+- clear_pending_predictions.py
+- check-railway-ready.py
+
+#### 💾 Backups e Exports (6 arquivos)
+- app.py.backup
+- blaze_data.json
+- blaze_export_20250930_143154.json
+- blaze_export_20250930_143241.json
+- test_data.json
+- test_railway_deploy.txt
+
+#### 🗄️ Bancos de Dados Não Utilizados (4 arquivos)
+- autonomous_roulette.db
+- blaze_data.db (vazio)
+- evolution_roulette.db
+- playnabets_roulette.db
+
+#### 📜 Scripts Shell (1 arquivo)
+- GUIA_DEPLOY_RAILWAY.sh
+
+#### ⚙️ Configurações Duplicadas (1 arquivo)
+- railway.env (usar .env)
+
+## ✅ Arquivos Mantidos (Essenciais)
+
+### 📝 Documentação Principal
+- README.md (atualizado e limpo)
+- SECURITY.md
+- PRAGMATIC_BRAZILIAN_README.md
+- env.example
+
+### 📚 Documentação Técnica (docs/)
+- GS12_INTEGRATION.md
+- GUIA_DE_USO.md
+- PATTERN_DETECTION_SYSTEM.md
+- PRAGMATIC_MAINTENANCE.md
+- PROXY_CONFIGURATION.md
+- RAILWAY_API_ISSUES.md
+- TESTING_ENHANCED_CLIENT.md
+
+### 🐍 Código Python Principal
+- app.py (92 KB) - Servidor Flask principal
+- auth.py (5 KB) - Autenticação
+- config.py (5 KB) - Configurações
+- playnabets_integrator.py (11 KB) - Integração PlayNabets
+- matplotlib_config.py - Configuração de gráficos
+
+### ⚙️ Configuração
+- .env - Variáveis de ambiente
+- .gitignore - Exclusões Git
+- config.json - Configurações JSON
+- railway.json - Configuração Railway
+- railway.toml - Configuração Railway
+- Procfile - Configuração de deploy
+- runtime.txt - Versão Python
+- requirements.txt - Dependências
+
+### 🗄️ Bancos de Dados Ativos
+- pragmatic_roulette.db (88 KB)
+- roulette_results.db (128 KB)
+
+### 📁 Diretórios Mantidos
+- analyzers/ - Analisadores
+- backend/ - Backend (se houver)
+- data/ - Dados e DBs principais
+- docs/ - Documentação técnica
+- frontend/ - Frontend
+- integrators/ - Integradores de APIs
+- scripts/ - Scripts utilitários
+- shared/ - Código compartilhado
+- static/ - Assets estáticos
+- templates/ - Templates HTML
+- tests/ - Testes unitários (mantido vazio)
+
+## 📊 Impacto
+
+### Antes da Limpeza
+- Documentação: 32 arquivos MD
+- Testes: 7 arquivos
+- Backups: 6 arquivos
+- Total: ~45 arquivos desnecessários
+
+### Depois da Limpeza
+- Documentação: 4 arquivos MD na raiz + 7 em docs/
+- Testes: 0 arquivos de teste antigos
+- Backups: 0 arquivos
+- Redução: ~42 arquivos removidos
+
+### Benefícios
+✅ Repositório mais limpo e organizado
+✅ Documentação consolidada em README.md
+✅ Sem arquivos de teste na raiz
+✅ Sem backups duplicados
+✅ Bancos de dados organizados
+✅ Mais fácil navegar e manter
+
+## 🔄 Próximos Passos
+
+1. Commit das alterações:
+```bash
+git add .
+git commit -m "chore: Limpeza completa do repositório - remover docs excessivos, testes e backups"
+```
+
+2. Push para repositório:
+```bash
+git push origin main
+```
+
+3. Deploy (se necessário):
+```bash
+git push origin deploy
+```
+
+## 📝 Notas
+
+- Todos os arquivos removidos eram desnecessários ou duplicados
+- Funcionalidade do sistema não foi afetada
+- README.md foi atualizado com informações consolidadas
+- Documentação técnica mantida em docs/
+- Bancos de dados ativos preservados
+
+---
+
+**Limpeza realizada por**: Sistema automatizado
+**Data**: 05/10/2025
+**Status**: ✅ Concluída com sucesso

@@ -1,221 +1,224 @@
-# 🔥 Blaze Double Analyzer - Web
+# 🎰 Blaze Double Analyzer
 
-Versão web completa do Blaze Double Analyzer com interface moderna, autenticação e comunicação em tempo real.
+Sistema inteligente de análise de padrões para Blaze Double com integração PlayNabets e Pragmatic Play Brazilian Roulette.
 
-## 🚀 Características
+## 🚀 Funcionalidades
 
-- **I## 📡 Integrações
+- 🎯 **Análise de Padrões em Tempo Real**: Detecta 68 padrões diferentes no Double
+- 🔔 **Sistema de Alertas Inteligente**: Notificações visuais apenas para padrões fortes (60%+ confiança)
+- 📊 **Dashboard Completo**: Interface web moderna para monitoramento
+- 🎲 **Multi-Jogos**: Suporte para Double, PlayNabets e Brazilian Roulette
+- 🤖 **Aprendizado Adaptativo**: Sistema melhora com o tempo
+- 📈 **Estatísticas Avançadas**: Análise de performance e taxa de acerto
+- 🔐 **Sistema de Autenticação**: Login e controle de acesso
 
-### Pragmatic Play
+## 📡 Integrações
 
-- **Roleta Brasileira**: Integração completa com a API da Roleta Brasileira
-- **GS12**: Acesso direto à API GS12 para obter resultados em tempo real
-- **Estatísticas**: API aprimorada de estatísticas com suporte a proxies e mecanismo de fallback
-- **Detecção de Manutenção**: Tratamento automático para períodos de manutenção
-
-Para mais detalhes, consulte:
-- [Documentação da Integração GS12](./docs/GS12_INTEGRATION.md)
-- [Lidando com Manutenções](./docs/PRAGMATIC_MAINTENANCE.md)
-- [Configuração de Proxies](./docs/PROXY_CONFIGURATION.md)
-- [Problemas com API no Railway](./docs/RAILWAY_API_ISSUES.md)
-- [Testando Cliente Aprimorado](./docs/TESTING_ENHANCED_CLIENT.md)
+### Blaze Double
+- Análise manual de resultados
+- Sistema de predição com 68 padrões
+- Alertas em tempo real
 
 ### PlayNaBets
+- Conexão WebSocket automática
+- Monitoramento em tempo real
+- Autenticação e gestão de sessão
 
-- **Autenticação**: Login e gestão de sessão
-- **Resultados**: Obtenção e processamento de resultados
+### Pragmatic Play (Brazilian Roulette)
+- Integração completa com API GS12
+- Estatísticas aprimoradas com fallback
+- Detecção automática de manutenção
+- Suporte a proxies
 
-## 📁 Próximos Passos
+Para mais detalhes:
+- [Integração GS12](./docs/GS12_INTEGRATION.md)
+- [Manutenções](./docs/PRAGMATIC_MAINTENANCE.md)
+- [Configuração de Proxies](./docs/PROXY_CONFIGURATION.md)
 
-1. **Conexão Real com Blaze**: Implementar WebSocket real
-2. **Autenticação**: Melhorar o sistema de usuários
-3. **Dashboard Avançado**: Gráficos e métricas adicionais
-4. **Mobile App**: Versão para dispositivos móveis
-5. **Deploy**: Otimização para hospedagem na nuveme Web Moderna**: Design responsivo com gradientes e efeitos visuais
-- **Dashboard Avançado**: Gráficos, métricas e visualizações em tempo real
-- **Sistema de Autenticação**: Login, registro e controle de acesso
-- **Tempo Real**: WebSocket para atualizações instantâneas
-- **API REST Completa**: Endpoints para integração e controle
-- **Reutilização Total**: Usa 100% da lógica do projeto original
-- **Validação de Alertas**: Sistema completo de validação de predições
-- **Gráficos Interativos**: Chart.js para visualizações avançadas
-- **Integradores de APIs**: Suporte para múltiplas plataformas de jogos
-- **Detecção de Manutenção**: Tratamento automático para períodos de manutenção das APIs
+## 📋 Requisitos
+
+- Python 3.12+
+- SQLite3
+- Navegador moderno (Chrome, Firefox, Edge)
+
+## 🔧 Instalação
+
+1. **Clone o repositório**
+2. **Instale as dependências**:
+```bash
+pip install -r requirements.txt
+```
+
+3. **Configure variáveis de ambiente**:
+```bash
+cp env.example .env
+# Edite .env com suas credenciais
+```
+
+4. **Execute o servidor**:
+```bash
+python app.py
+```
+
+5. **Acesse**: `http://localhost:5000`
+
+## ⚙️ Configuração
+
+### Variáveis de Ambiente (.env)
+
+```env
+# PlayNabets
+PLAYNABETS_USER=seu_usuario
+PLAYNABETS_PASS=sua_senha
+
+# Pragmatic Play
+PRAGMATIC_API_URL=https://api.pragmaticplay.net
+PRAGMATIC_CASINO_ID=seu_casino_id
+
+# Auto-start
+ROULETTE_AUTO_START=true
+
+# Segurança
+SECRET_KEY=sua_chave_secreta_aqui
+```
+
+**⚠️ IMPORTANTE**: Altere as credenciais padrão antes de usar em produção! Leia [SECURITY.md](SECURITY.md) para mais informações.
+
+## 🔔 Sistema de Alertas
+
+### Proteções Anti-Spam
+
+O sistema possui múltiplas proteções para evitar alertas falsos:
+
+- ✅ **Cooldown de 3 minutos** entre alertas
+- ✅ **Mínimo de 8 rodadas** para análise
+- ✅ **Threshold de 60%+** de confiança para notificações
+- ✅ **Threshold de 72%+** para padrões Double
+- ✅ **Validação de qualidade** dos dados
+- ✅ **Bloqueio por previsão pendente**
+
+### Como Funciona
+
+1. Sistema analisa resultados continuamente
+2. Detecta padrão forte (72%+ confiança)
+3. Verifica proteções (cooldown, dados suficientes, etc.)
+4. Se todas as verificações passam, **envia alerta**
+5. Aguarda 3 minutos antes do próximo sinal
+
+## 📊 Padrões Detectados
+
+### Tipos Principais
+
+- **Sequências**: Mesma cor 6+ vezes consecutivas
+- **Predominância**: Uma cor 75%+ em 8 rodadas
+- **Martingale**: Progressão após perdas
+- **Fibonacci**: Sequências numéricas
+- **Hot/Cold**: Números quentes e frios
+- **Red After Red**: Vermelho após vermelho
+- **Number Patterns**: Padrões específicos (1→Red, 14→Black, etc.)
+- **E mais 60+ padrões**
 
 ## 📁 Estrutura do Projeto
 
 ```
-blaze-web/
-├── backend/                 # Servidor Flask + WebSocket
-│   ├── app.py              # Aplicação principal
-│   ├── requirements.txt    # Dependências Python
-│   └── templates/         # Templates HTML
-│       └── index.html     # Interface principal
-├── frontend/               # Frontend (futuro)
-├── shared/                 # Código compartilhado
-│   ├── src/               # Módulos do projeto original
-│   └── blaze_analyzer_enhanced.py
-└── README.md
+double-web/
+├── app.py                    # Servidor Flask principal
+├── auth.py                   # Autenticação
+├── config.py                 # Configurações
+├── playnabets_integrator.py # Integração PlayNabets
+├── data/                     # Bancos de dados
+├── shared/                   # Módulos compartilhados
+│   ├── blaze_analyzer_enhanced.py
+│   └── src/
+│       ├── analysis/        # Detectores de padrão
+│       ├── ml/              # Machine Learning
+│       ├── notifications/   # Sistema de alertas
+│       └── database/        # Gerenciamento de dados
+├── integrators/             # Integradores de jogos
+├── frontend/                # Interface web
+├── templates/               # Templates HTML
+├── static/                  # CSS, JS, imagens
+└── docs/                    # Documentação
 ```
 
-## 🛠️ Instalação e Execução
-
-### 1. Instalar Dependências
-
-```bash
-cd backend
-pip install -r requirements.txt
-```
-
-### 2. Executar Servidor
-
-#### Versão Simples (sem WebSocket):
-
-```bash
-python simple_app.py
-```
-
-#### Versão Completa (com WebSocket):
-
-```bash
-python websocket_app.py
-```
-
-### 3. Acessar Interface
-
-- **Página Principal**: http://localhost:5000
-- **Login**: http://localhost:5000/login
-- **Dashboard**: http://localhost:5000/dashboard
-
-### 4. Credenciais de Teste
-
-⚠️ **IMPORTANTE**: Altere essas senhas antes de usar em produção!
-
-- **Admin**: `admin` / `admin123` (ALTERE EM PRODUÇÃO!)
-- **Usuário**: `user` / `user123` (ALTERE EM PRODUÇÃO!)
-
-### 5. Configuração de Segurança
-
-```bash
-# 1. Copie o arquivo de configuração
-cp env.example .env
-
-# 2. Edite as configurações sensíveis
-nano .env
-
-# 3. Gere uma nova chave secreta
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
-
-**Leia o arquivo [SECURITY.md](SECURITY.md) para instruções completas de segurança.**
-
-## 🔧 Funcionalidades
-
-### ✅ Implementadas
-
-- **Interface Web Responsiva**: Design moderno com CSS Grid e Flexbox
-- **Dashboard Avançado**: Gráficos interativos com Chart.js
-- **Sistema de Autenticação**: Login, registro e controle de acesso
-- **WebSocket em Tempo Real**: Atualizações instantâneas
-- **API REST Completa**: Endpoints para todos os dados
-- **Reutilização Total**: 100% da lógica do projeto original
-- **Validação de Alertas**: Sistema completo de validação
-- **Métricas em Tempo Real**: Precisão, confiança, padrões ativos
-- **Gráficos Dinâmicos**: Distribuição de cores e tendências
-
-### 🔄 Em Desenvolvimento
-
-- **Conexão Real com Blaze**: WebSocket real (atualmente simulado)
-- **Notificações Push**: Alertas no navegador
-- **Cache e Performance**: Otimizações avançadas
-- **Deploy na Nuvem**: Hospedagem profissional
-
-## 📡 API Endpoints
+## 📡 API Endpoints Principais
 
 ### Páginas Web
-
-- `GET /` - Página principal
-- `GET /login` - Página de login
-- `GET /dashboard` - Dashboard avançado
-
-### Status
-
-- `GET /api/status` - Status do sistema
-
-### Autenticação
-
-- `POST /api/auth/login` - Realizar login
-- `POST /api/auth/logout` - Realizar logout
-- `POST /api/auth/register` - Registrar usuário
-- `GET /api/auth/me` - Informações do usuário atual
+- `GET /` - Página inicial (Double)
+- `GET /login` - Login
+- `GET /dashboard` - Dashboard
+- `GET /playnabets` - PlayNabets
+- `GET /roulette` - Brazilian Roulette
 
 ### Resultados
+- `POST /api/add_result` - Adicionar resultado manual
+- `GET /api/poll/results` - Obter resultados recentes
+- `GET /api/poll/analysis` - Obter análise atual
 
-- `GET /api/results` - Últimos resultados
-- `POST /api/add_result` - Adicionar resultado manual (requer auth)
+### Double
+- `GET /api/double/history` - Histórico
+- `GET /api/double/patterns` - Padrões detectados
+- `GET /api/double/stats` - Estatísticas
 
-### Análise
+### Roleta Pragmatic
+- `POST /api/roulette/start` - Iniciar monitoramento
+- `POST /api/roulette/stop` - Parar monitoramento
+- `GET /api/roulette/status` - Status da conexão
 
-- `GET /api/analysis` - Análise atual
-- `GET /api/predictions` - Predições ativas
+### PlayNabets
+- `POST /api/playnabets/connect` - Conectar WebSocket
+- `POST /api/playnabets/disconnect` - Desconectar
+- `GET /api/playnabets/status` - Status
 
-### Admin (requer admin)
+Para documentação completa da API, consulte [GUIA_DE_USO.md](docs/GUIA_DE_USO.md)
 
-- `GET /api/admin/users` - Listar usuários
+## 🚀 Deploy (Railway)
 
-## 🔌 WebSocket Events
+1. Conecte o repositório ao Railway
+2. Configure variáveis de ambiente no dashboard
+3. Deploy automático a cada push
+4. Monitore logs: `railway logs -f`
 
-### Cliente → Servidor
+## 🐛 Troubleshooting
 
-- `request_analysis` - Solicitar análise
-- `request_results` - Solicitar resultados
+### Alertas não aparecem
+1. Verifique se há predições pendentes no banco
+2. Confira se cooldown não está ativo (3 min)
+3. Verifique logs para mensagens de bloqueio
 
-### Servidor → Cliente
+### Conexão PlayNabets falha
+1. Verifique credenciais no `.env`
+2. Teste login manualmente
+3. Verifique logs de erro
 
-- `new_result` - Novo resultado
-- `analysis_update` - Análise atualizada
-- `results_update` - Resultados atualizados
-- `error` - Erro no sistema
+### Erro 500 na API
+1. Verifique logs do servidor
+2. Confirme banco de dados acessível
+3. Valide configurações no `.env`
 
-## Tecnologias
+## 📚 Documentação Adicional
 
-### Backend
+- [Guia de Uso Completo](docs/GUIA_DE_USO.md)
+- [Sistema de Detecção de Padrões](docs/PATTERN_DETECTION_SYSTEM.md)
+- [Configuração de Proxy](docs/PROXY_CONFIGURATION.md)
+- [Manutenção Pragmatic](docs/PRAGMATIC_MAINTENANCE.md)
+- [Segurança](SECURITY.md)
 
-- **Flask**: Framework web Python
-- **Flask-SocketIO**: WebSocket para tempo real
-- **Flask-CORS**: CORS para integração
-- **Eventlet**: Servidor assíncrono
+## 🔐 Segurança
 
-### Frontend
+- ✅ Autenticação JWT
+- ✅ Variáveis de ambiente para credenciais
+- ✅ Rate limiting
+- ✅ Validação de dados
+- ✅ Sanitização de inputs
 
-- **HTML5**: Estrutura semântica
-- **CSS3**: Estilos modernos com gradientes
-- **JavaScript**: Lógica da interface
-- **Socket.IO**: Cliente WebSocket
+**⚠️ Nunca commite credenciais no código!**
 
-## 🔄 Reutilização do Código Original
+## 📝 Licença
 
-O projeto web reutiliza **100%** da lógica do projeto original:
-
-- ✅ **Análise de Padrões**: `src/analysis/`
-- ✅ **Sistema de ML**: `src/ml/`
-- ✅ **Validação de Predições**: `src/ml/prediction_validator.py`
-- ✅ **Banco de Dados**: `src/database/db_manager.py`
-- ✅ **Sistema de Alertas**: `src/notifications/alert_system.py`
-- ✅ **Analyzer Principal**: `blaze_analyzer_enhanced.py`
-
-## Próximos Passos
-
-1. **Conexão Real com Blaze**: Implementar WebSocket real
-2. **Autenticação**: Sistema de usuários
-3. **Dashboard Avançado**: Gráficos e métricas
-4. **Mobile App**: Versão para dispositivos móveis
-5. **Deploy**: Hospedagem na nuvem
-
-## 📞 Suporte
-
-Para dúvidas ou problemas, abra uma issue no repositório original.
+Uso pessoal apenas.
 
 ---
 
-**Desenvolvido com ❤️ reutilizando toda a lógica do projeto original!**
+**Versão**: 2.0  
+**Última Atualização**: Outubro 2025

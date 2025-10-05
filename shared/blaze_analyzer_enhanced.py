@@ -13,6 +13,7 @@ import time
 import pandas as pd
 import os
 from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any
 
 import matplotlib.pyplot as plt
 from shared.src.api.blaze_official_api import BlazeOfficialAPI
@@ -23,6 +24,7 @@ from shared.src.notifications.alert_system import AlertSystem
 from shared.src.notifications.pattern_notifier import notify_pattern, notify_result, get_notifier
 from shared.src.database.local_storage_db import local_db
 from shared.src.analysis.double_patterns import DoublePatternDetector
+from shared.src.analysis.telegram_bot_logic import TelegramBotLogic, get_telegram_logic
 from shared.src.ml.adaptive_integrator import AdaptiveIntegrator
 from shared.src.ml.prediction_validator import PredictionValidator
 from shared.src.ml.prediction_feedback import PredictionFeedback
@@ -186,9 +188,15 @@ class BlazeAnalyzerEnhanced:
             'general_patterns': 0.72
         }
         
-        # 🆕 MODO DE PREDIÇÃO: 'opposite' ou 'continue'
-        self.prediction_mode = 'opposite'  # Padrão: apostar na cor oposta
+        # 🆕 MODO DE PREDIÇÃO: 'opposite', 'continue' ou 'telegram_bot'
+        self.prediction_mode = 'telegram_bot'  # NOVO: Modo estilo bot do Telegram
+        # Modo 'opposite' = apostar na cor oposta (regressão à média)
         # Modo 'continue' = apostar na mesma cor (hot hand)
+        # Modo 'telegram_bot' = lógica simples dos bots de sinal do Telegram
+        
+        # 🤖 INICIALIZAR LÓGICA DO BOT TELEGRAM
+        self.telegram_bot_logic = TelegramBotLogic()
+        self.telegram_bot_mode = True  # Ativar modo bot por padrão
         
         # 🆕 HISTÓRICO DE SINAIS PARA ANÁLISE
         self.signal_history = []  # Últimos 50 sinais
@@ -987,18 +995,49 @@ class BlazeAnalyzerEnhanced:
     
     def set_prediction_mode(self, mode: str):
         """
-        Define o modo de predição: 'opposite' ou 'continue'.
+        Define o modo de predição.
         
         Args:
-            mode: 'opposite' (apostar na cor oposta) ou 'continue' (continuar na mesma cor)
+            mode: 'opposite', 'continue' ou 'telegram_bot'
         """
-        if mode not in ['opposite', 'continue']:
-            logger.error(f"Modo inválido: {mode}. Use 'opposite' ou 'continue'")
+        valid_modes = ['opposite', 'continue', 'telegram_bot']
+        if mode not in valid_modes:
+            logger.error(f"Modo inválido: {mode}. Use: {', '.join(valid_modes)}")
             return False
         
         self.prediction_mode = mode
-        logger.info(f"🎯 Modo de predição alterado para: {mode}")
+        
+        # Ativar/desativar modo bot
+        if mode == 'telegram_bot':
+            self.telegram_bot_mode = True
+            logger.info("🤖 Modo BOT TELEGRAM ativado")
+        else:
+            self.telegram_bot_mode = False
+            logger.info(f"🎯 Modo de predição alterado para: {mode}")
+        
         return True
+    
+    def set_bot_cooldown(self, seconds: int):
+        """Define cooldown do bot (60-300 segundos)"""
+        if hasattr(self, 'telegram_bot_logic'):
+            self.telegram_bot_logic.set_cooldown(seconds)
+            logger.info(f"🤖 Cooldown do bot ajustado para {seconds}s")
+            return True
+        return False
+    
+    def set_bot_gale(self, enabled: bool, max_gales: int = 2):
+        """Configura sistema de Gale do bot"""
+        if hasattr(self, 'telegram_bot_logic'):
+            self.telegram_bot_logic.set_gale(enabled, max_gales)
+            logger.info(f"🤖 Gale {'ativado' if enabled else 'desativado'} - Máx: {max_gales}")
+            return True
+        return False
+    
+    def get_bot_stats(self) -> Dict[str, Any]:
+        """Retorna estatísticas do bot"""
+        if hasattr(self, 'telegram_bot_logic'):
+            return self.telegram_bot_logic.get_stats()
+        return {}
     
     def _reset_system_after_pattern(self, keep_context=True):
         """
@@ -1120,8 +1159,10 @@ class BlazeAnalyzerEnhanced:
             
             if time_since_last_signal < cooldown_seconds:
                 remaining = int(cooldown_seconds - time_since_last_signal)
-                logger.debug(f"⏳ Cooldown ativo: aguardando {remaining}s antes do próximo sinal (total: {cooldown_seconds}s)")
+                logger.info(f"⏳ COOLDOWN ATIVO: aguardando {remaining}s antes do próximo sinal (total: {cooldown_seconds}s)")
                 return False
+            else:
+                logger.info(f"✅ Cooldown expirado ({int(time_since_last_signal)}s desde último sinal) - pode detectar padrões")
             
             # 2. Verificar se há previsão pendente no banco
             try:
@@ -1129,10 +1170,12 @@ class BlazeAnalyzerEnhanced:
                 if db:
                     pending = db.get_last_unverified_prediction()
                     if pending:
-                        logger.debug(f"⏸️ Previsão pendente no DB (id={pending.get('id')}): aguardando verificação")
+                        logger.info(f"⏸️ PREVISÃO PENDENTE no DB (id={pending.get('id')}): aguardando verificação antes de novo sinal")
                         return False
+                    else:
+                        logger.info("✅ Nenhuma previsão pendente - pode detectar padrões")
             except Exception as e:
-                logger.debug(f"Erro ao verificar previsões pendentes: {e}")
+                logger.warning(f"Erro ao verificar previsões pendentes: {e}")
             
             # 3. Verificar se há dados muito recentes (cooldown baseado na frequência)
             if len(data_to_analyze) >= 3:
@@ -1296,7 +1339,7 @@ class BlazeAnalyzerEnhanced:
     def _detect_and_notify_patterns(self):
         """
         Detecta padrões nos dados atuais e gera notificações.
-        Após detectar um padrão, reseta completamente o sistema para reiniciar análise.
+        🤖 MODO TELEGRAM BOT: Usa lógica simples dos bots de sinal
         """
         try:
             # Verificar se deve detectar padrões agora
@@ -1305,6 +1348,65 @@ class BlazeAnalyzerEnhanced:
             
             # Usar dados manuais (que incluem dados do PlayNabets)
             data_to_analyze = self.manual_data if self.manual_data else self.data
+            
+            # 🤖 MODO TELEGRAM BOT ATIVADO
+            if getattr(self, 'telegram_bot_mode', False):
+                # Usar lógica simplificada do bot do Telegram
+                min_required = 3  # Bot precisa apenas de 3 resultados
+                
+                if not data_to_analyze or len(data_to_analyze) < min_required:
+                    logger.debug(f"[BOT MODE] Dados insuficientes: {len(data_to_analyze) if data_to_analyze else 0}/{min_required}")
+                    return
+                
+                logger.info("="*60)
+                logger.info(f"🤖 BOT MODE - Analisando {len(data_to_analyze)} rodadas")
+                logger.info(f"⏱️  Cooldown: {self.telegram_bot_logic.signal_cooldown}s")
+                logger.info("="*60)
+                
+                # Gerar sinal estilo Telegram
+                signal = self.telegram_bot_logic.generate_telegram_style_signal(data_to_analyze)
+                
+                if signal:
+                    # Notificar usando o sistema de notificações
+                    pattern_sent = notify_pattern(
+                        pattern_type=f"🤖 BOT: {signal['pattern_type']}",
+                        detected_number=signal['last_number'],
+                        predicted_color=signal['bet_color'],
+                        confidence=signal['confidence'],
+                        reasoning=signal['reasoning'],
+                        pattern_id=f"telegram_bot_{int(time.time())}"
+                    )
+                    
+                    logger.info("="*60)
+                    logger.info(f"✅ SINAL ENVIADO - {signal['bet_color_pt']}")
+                    logger.info(f"📊 Padrão: {signal['detected_pattern']}")
+                    logger.info(f"💰 Gale: Até {signal['gale']} tentativas")
+                    logger.info(f"⚡ Confiança: {signal['confidence']:.0%}")
+                    logger.info("="*60)
+                    
+                    # Marcar timestamp
+                    self.last_pattern_detected_at = time.time()
+                    
+                    # Enviar para sistema de alertas também
+                    try:
+                        if hasattr(self, 'alert_system') and self.alert_system:
+                            self.alert_system.set_alert({
+                                'color': signal['bet_color'],
+                                'confidence': signal['confidence'],
+                                'method': 'telegram_bot',
+                                'message': signal['message'],
+                                'pattern_type': signal['pattern_type'],
+                                'gale': signal['gale']
+                            })
+                    except Exception as e:
+                        logger.error(f"Erro ao enviar para alert_system: {e}")
+                    
+                    return  # Sair após enviar sinal
+                else:
+                    logger.info("❌ [BOT MODE] Nenhum padrão claro detectado")
+                    return
+            
+            # ⚙️ MODO AVANÇADO (Original) - Desabilitado se bot mode ativo
             min_required = getattr(self, 'min_rounds_for_analysis', 8)
             
             # ✅ CORRIGIDO: Requisito mínimo de 8 resultados para análise confiável

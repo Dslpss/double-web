@@ -468,6 +468,69 @@ def add_result():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ===== BOT MODE ENDPOINTS =====
+
+@app.route('/api/bot/mode', methods=['POST'])
+def set_bot_mode():
+    """Define o modo do bot (telegram_bot, opposite, continue)"""
+    try:
+        data = request.get_json()
+        mode = data.get('mode', 'telegram_bot')
+        
+        if analyzer:
+            success = analyzer.set_prediction_mode(mode)
+            return jsonify({
+                'success': success,
+                'mode': mode,
+                'bot_active': analyzer.telegram_bot_mode
+            })
+        else:
+            return jsonify({'error': 'Analyzer não disponível'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/bot/config', methods=['POST'])
+def configure_bot():
+    """Configura parâmetros do bot"""
+    try:
+        data = request.get_json()
+        cooldown = data.get('cooldown')
+        gale_enabled = data.get('gale_enabled')
+        max_gales = data.get('max_gales', 2)
+        
+        if analyzer:
+            results = {}
+            
+            if cooldown is not None:
+                results['cooldown'] = analyzer.set_bot_cooldown(cooldown)
+            
+            if gale_enabled is not None:
+                results['gale'] = analyzer.set_bot_gale(gale_enabled, max_gales)
+            
+            return jsonify({
+                'success': True,
+                'configured': results,
+                'current_config': analyzer.get_bot_stats()
+            })
+        else:
+            return jsonify({'error': 'Analyzer não disponível'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/bot/stats', methods=['GET'])
+def get_bot_stats():
+    """Retorna estatísticas do bot"""
+    try:
+        if analyzer:
+            stats = analyzer.get_bot_stats()
+            stats['mode'] = analyzer.prediction_mode
+            stats['bot_active'] = getattr(analyzer, 'telegram_bot_mode', False)
+            return jsonify(stats)
+        else:
+            return jsonify({'error': 'Analyzer não disponível'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # ===== POLLING ENDPOINTS (SIMULAM WEBSOCKET) =====
 
 @app.route('/api/poll/results')

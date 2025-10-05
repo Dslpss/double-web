@@ -140,10 +140,9 @@ class PatternNotifier:
         if self._is_in_cooldown(pattern_type):
             return False
         
-        # Reduzir confiança mínima para detectar mais padrões (aceitar qualquer confiança acima de 25%)
-        min_confidence = min(0.25, self.min_confidence)
-        
-        if not self.enabled or confidence < min_confidence:
+        # ✅ CORRIGIDO: Usar confiança mínima configurada (não reduzir para 25%)
+        # Isso garante que apenas padrões fortes sejam notificados
+        if not self.enabled or confidence < self.min_confidence:
             return False
         
         # Criar notificação
