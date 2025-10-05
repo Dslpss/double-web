@@ -39,9 +39,9 @@ class PragmaticStatisticsClientEnhanced:
         self.base_url = base_url or "https://games.pragmaticplaylive.net"
         self.history_endpoint = f"/api/ui/statisticHistory"
         
-        # Tentar obter JSESSIONID automaticamente se não fornecido
+        # Se não foi fornecido JSESSIONID, tentar obter do sistema existente
         if not self.jsessionid:
-            self._try_get_railway_jsessionid()
+            self._try_get_jsessionid_from_system()
         
         # Lista de User-Agents para rotação
         self.user_agents = [
@@ -66,29 +66,41 @@ class PragmaticStatisticsClientEnhanced:
         logger.info(f"🔄 Proxies HTTP disponíveis: {len(self.http_proxies)}")
         logger.info(f"🔄 Proxies SOCKS disponíveis: {len(self.socks_proxies)}")
         
-    def _try_get_railway_jsessionid(self):
+    def _try_get_jsessionid_from_system(self):
         """
-        Tenta obter JSESSIONID usando o gerenciador Railway
+        Tenta obter JSESSIONID do sistema existente (roulette_integrator)
         """
         try:
-            # Importar apenas se necessário para evitar dependência circular
+            # Tentar importar do app principal
             import sys
             import os
-            sys.path.append(os.path.dirname(os.path.dirname(__file__)))
             
-            from railway_jsessionid_manager import get_railway_jsessionid
+            # Adicionar diretório pai ao path se necessário
+            parent_dir = os.path.dirname(os.path.dirname(__file__))
+            if parent_dir not in sys.path:
+                sys.path.append(parent_dir)
             
-            jsessionid = get_railway_jsessionid()
-            if jsessionid:
-                self.jsessionid = jsessionid
-                logger.info("🚂 JSESSIONID obtido via Railway Manager")
-            else:
-                logger.info("📝 Nenhum JSESSIONID disponível - usando fallback")
-                
-        except ImportError:
-            logger.info("📦 Railway JSESSIONID Manager não disponível")
+            # Tentar obter do integrador principal
+            try:
+                from app import roulette_integrator
+                if roulette_integrator and hasattr(roulette_integrator, 'jsessionid') and roulette_integrator.jsessionid:
+                    self.jsessionid = roulette_integrator.jsessionid
+                    logger.info("🔑 JSESSIONID obtido do roulette_integrator existente")
+                    return
+            except ImportError:
+                logger.info("📦 Não foi possível importar roulette_integrator do app")
+            
+            # Método alternativo: verificar se o ambiente Railway tem JSESSIONID
+            railway_jsessionid = os.environ.get('RAILWAY_JSESSIONID') or os.environ.get('PRAGMATIC_JSESSIONID')
+            if railway_jsessionid:
+                self.jsessionid = railway_jsessionid
+                logger.info("🚂 JSESSIONID obtido das variáveis de ambiente Railway")
+                return
+            
+            logger.info("📝 Nenhum JSESSIONID disponível no sistema - usará fallback quando necessário")
+            
         except Exception as e:
-            logger.error(f"❌ Erro ao obter JSESSIONID via Railway Manager: {e}")
+            logger.error(f"❌ Erro ao obter JSESSIONID do sistema: {e}")
         
     def set_jsessionid(self, jsessionid: str):
         """

@@ -339,11 +339,6 @@ def roulette():
     """Roleta Brasileira Pragmatic Play."""
     return render_template('roulette.html')
 
-@app.route('/roulette/api-test')
-def roulette_api_test():
-    """Página de teste da API da Roleta Brasileira."""
-    return render_template('roulette_api_test.html')
-
 # ===== API ENDPOINTS =====
 
 @app.route('/api/status')
@@ -1307,9 +1302,11 @@ def roulette_results():
 
 @app.route('/api/roulette/statistics')
 def roulette_statistics():
-    """Estatísticas da Roleta Brasileira usando a API direta de estatísticas."""
+    """Estatísticas da Roleta Brasileira usando sistema automático de JSESSIONID."""
     try:
         global roulette_integrator, statistics_client_available, statistics_enhanced_available
+        
+        print("🎰 [ROULETTE STATS] Requisição de estatísticas recebida")
         
         # Verificar se algum cliente de estatísticas está disponível
         if not (statistics_client_available or statistics_enhanced_available):
@@ -1319,40 +1316,33 @@ def roulette_statistics():
                 'error': 'Nenhum módulo de estatísticas está disponível'
             }), 500
         
-        # Verificar se o integrador principal está inicializado (necessário para o JSESSIONID)
-        if roulette_integrator is None:
-            return jsonify({
-                'success': False,
-                'message': 'Integrador principal não inicializado',
-                'error': 'É necessário inicializar o integrador principal para obter o JSESSIONID'
-            }), 500
-            
-        # Verificar se o integrador tem JSESSIONID
-        if roulette_integrator.jsessionid is None:
-            return jsonify({
-                'success': False,
-                'message': 'JSESSIONID não disponível',
-                'error': 'É necessário fazer login no integrador principal'
-            }), 500
+        # USAR SISTEMA AUTOMÁTICO: Inicializar se necessário
+        if not roulette_integrator:
+            print("🔄 Sistema automático não inicializado, tentando inicializar...")
+            result = init_roulette_integrator()
+            if not result.get('success'):
+                print("⚠️ Falha na inicialização automática - usando dados sintéticos")
+        
+        # Tentar obter JSESSIONID do sistema automático
+        jsessionid = None
+        if roulette_integrator and hasattr(roulette_integrator, 'jsessionid'):
+            jsessionid = roulette_integrator.jsessionid
+            print(f"🔑 JSESSIONID do sistema automático: {'✅ Disponível' if jsessionid else '❌ Não disponível'}")
         
         # Obter o número de jogos solicitados (máximo 500)
         num_games = request.args.get('games', default=100, type=int)
         num_games = min(500, max(10, num_games))  # Entre 10 e 500 jogos
         
-        # Determinar qual cliente de estatísticas usar (priorizar o aprimorado)
-        global statistics_client, statistics_enhanced_client
-        processed_results = None
-        client_type = "enhanced" if statistics_enhanced_available else "standard"
-        is_real_data = True
+        print(f"📊 Solicitando {num_games} jogos...")
         
-        # Tentar usar o cliente aprimorado primeiro (mais resiliente)
+        # Usar cliente aprimorado (mais robusto com fallback)
         if statistics_enhanced_available:
             try:
-                if statistics_enhanced_client is None or statistics_enhanced_client.jsessionid != roulette_integrator.jsessionid:
-                    # JSESSIONID diferente ou cliente não inicializado, criar um novo
-                    stats_client = PragmaticStatisticsClientEnhanced(jsessionid=roulette_integrator.jsessionid)
-                else:
-                    stats_client = statistics_enhanced_client
+                # SEMPRE criar novo cliente para garantir JSESSIONID atualizado
+                stats_client = PragmaticStatisticsClientEnhanced(
+                    table_id="rwbrzportrwa16rg",
+                    jsessionid=jsessionid
+                )
                 
                 # Usar o método de alto nível que já tem fallback para dados simulados
                 processed_results = stats_client.get_history(games_count=num_games)
@@ -1360,36 +1350,36 @@ def roulette_statistics():
                 # Verificar se são dados simulados
                 if processed_results and processed_results[0].get('simulated', False):
                     is_real_data = False
+                    print("📊 Usando dados sintéticos (fallback do cliente aprimorado)")
+                
             except Exception as e:
-                print(f"Erro ao usar cliente aprimorado: {e}")
+                print(f"❌ Erro ao usar cliente aprimorado: {e}")
                 processed_results = None
         
         # Fallback para o cliente padrão se necessário
-        if processed_results is None and statistics_client_available:
+        if processed_results is None and statistics_client_available and jsessionid:
             try:
                 client_type = "standard"
+                print("🔄 Tentando cliente padrão com JSESSIONID automático...")
                 
-                if statistics_client is None or statistics_client.jsessionid != roulette_integrator.jsessionid:
-                    # JSESSIONID diferente ou cliente não inicializado, criar um novo
-                    stats_client = PragmaticStatisticsClient(jsessionid=roulette_integrator.jsessionid)
-                else:
-                    stats_client = statistics_client
+                stats_client = PragmaticStatisticsClient(jsessionid=jsessionid)
                 
                 # Buscar histórico de estatísticas
                 status_code, response_data = stats_client.fetch_history(games_count=num_games)
                 
                 if status_code == 200 and response_data:
                     processed_results = stats_client.process_history(response_data)
+                    print("✅ Cliente padrão obteve dados reais")
                 else:
-                    print(f"Cliente padrão falhou com status {status_code}")
+                    print(f"❌ Cliente padrão falhou com status {status_code}")
             except Exception as e:
-                print(f"Erro ao usar cliente padrão: {e}")
+                print(f"❌ Erro ao usar cliente padrão: {e}")
         
-        # Verificar se temos resultados
+        # Último recurso: dados sintéticos
         if not processed_results:
-            # Último recurso: usar dados sintéticos
+            print("🎲 Usando dados sintéticos como último recurso")
             if statistics_enhanced_available:
-                stats_client = statistics_enhanced_client or PragmaticStatisticsClientEnhanced()
+                stats_client = PragmaticStatisticsClientEnhanced()
                 processed_results = stats_client.generate_realistic_data(count=num_games)
                 client_type = "synthetic"
                 is_real_data = False
@@ -1417,6 +1407,8 @@ def roulette_statistics():
         
         # Obter os 5 números mais frequentes
         top_numbers = sorted(numbers.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        print(f"✅ Retornando {len(processed_results)} resultados ({client_type}) - Dados reais: {is_real_data}")
         
         # Retornar resultados e estatísticas
         return jsonify({
@@ -1529,190 +1521,6 @@ def roulette_analysis():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-# ===== ENDPOINTS APRIMORADOS PARA TESTE DA API =====
-
-@app.route('/api/roulette/statistics/enhanced')
-def roulette_statistics_enhanced():
-    """
-    Estatísticas aprimoradas da Roleta Brasileira com fallback robusto
-    """
-    try:
-        global roulette_integrator, statistics_enhanced_client
-        
-        # Verificar se o cliente aprimorado está disponível
-        if not statistics_enhanced_available:
-            return jsonify({
-                'success': False,
-                'message': 'Cliente de estatísticas aprimorado não disponível',
-                'error': 'Módulo não importado'
-            }), 500
-        
-        # Verificar se temos JSESSIONID (múltiplas estratégias)
-        jsessionid = None
-        
-        # Estratégia 1: Do integrador principal
-        if roulette_integrator and hasattr(roulette_integrator, 'jsessionid'):
-            jsessionid = roulette_integrator.jsessionid
-            print(f"🔑 JSESSIONID do integrador principal: {jsessionid[:20] + '...' if jsessionid else 'None'}")
-        
-        # Estratégia 2: Do Railway Manager (sempre tentar)
-        if not jsessionid:
-            try:
-                from railway_jsessionid_manager import get_railway_jsessionid
-                jsessionid = get_railway_jsessionid()
-                if jsessionid:
-                    print(f"🚂 JSESSIONID do Railway Manager: {jsessionid[:20]}...")
-                else:
-                    print("⚠️ Railway Manager não retornou JSESSIONID")
-            except Exception as e:
-                print(f"❌ Erro ao obter JSESSIONID do Railway Manager: {e}")
-        
-        # Estratégia 3: Tentar inicializar integrador se ainda não tem
-        if not jsessionid:
-            try:
-                if not roulette_integrator:
-                    init_success = init_roulette_integrator()
-                    if init_success and roulette_integrator:
-                        jsessionid = roulette_integrator.jsessionid
-                        print(f"🔄 JSESSIONID do init integrador: {jsessionid[:20] + '...' if jsessionid else 'None'}")
-            except Exception as e:
-                print(f"⚠️ Erro ao obter JSESSIONID via init: {e}")
-        
-        print(f"📊 JSESSIONID final para cliente: {'Presente (' + jsessionid[:20] + '...)' if jsessionid else 'Ausente'}")
-        
-        # Obter número de jogos solicitados
-        num_games = request.args.get('games', default=100, type=int)
-        num_games = min(500, max(10, num_games))
-        
-        # SEMPRE criar novo cliente para garantir JSESSIONID mais recente
-        print(f"🔄 Criando novo cliente enhanced com JSESSIONID...")
-        statistics_enhanced_client = PragmaticStatisticsClientEnhanced(
-            table_id="rwbrzportrwa16rg",
-            jsessionid=jsessionid
-        )
-        
-        # Buscar dados
-        print(f"📊 Buscando {num_games} jogos com cliente aprimorado...")
-        results = statistics_enhanced_client.get_history(num_games)
-        
-        # Verificar se são dados simulados
-        is_real_data = results and not results[0].get('simulated', False)
-        
-        # Calcular estatísticas
-        stats = {
-            'colors': {'red': 0, 'black': 0, 'green': 0},
-            'numbers': {},
-            'total_games': len(results),
-            'data_source': 'real' if is_real_data else 'simulated'
-        }
-        
-        for result in results:
-            # Contar cores
-            color = result.get('color', '').lower()
-            if color in stats['colors']:
-                stats['colors'][color] += 1
-            
-            # Contar números
-            number = result.get('number')
-            if number is not None:
-                stats['numbers'][str(number)] = stats['numbers'].get(str(number), 0) + 1
-        
-        # Top 5 números mais frequentes
-        top_numbers = sorted(stats['numbers'].items(), key=lambda x: x[1], reverse=True)[:5]
-        stats['top_numbers'] = top_numbers
-        
-        return jsonify({
-            'success': True,
-            'results': results,
-            'statistics': stats,
-            'total': len(results),
-            'is_real_data': is_real_data,
-            'has_jsessionid': bool(jsessionid),
-            'client_type': 'enhanced',
-            'timestamp': int(time.time())
-        })
-        
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'fallback_used': True,
-            'results': []
-        }), 500
-
-@app.route('/api/roulette/test_connection')
-def test_roulette_connection():
-    """
-    Testa a conexão com a API da Pragmatic Play
-    """
-    try:
-        global roulette_integrator, statistics_enhanced_client
-        
-        # Informações de diagnóstico
-        diagnostics = {
-            'roulette_integrator': {
-                'available': roulette_integrator is not None,
-                'has_jsessionid': False,
-                'jsessionid_preview': None
-            },
-            'statistics_client': {
-                'available': statistics_enhanced_available,
-                'initialized': statistics_enhanced_client is not None
-            },
-            'api_test': None
-        }
-        
-        # Verificar integrador principal
-        if roulette_integrator:
-            has_session = hasattr(roulette_integrator, 'jsessionid') and roulette_integrator.jsessionid
-            diagnostics['roulette_integrator']['has_jsessionid'] = has_session
-            
-            if has_session:
-                jsessionid = roulette_integrator.jsessionid
-                diagnostics['roulette_integrator']['jsessionid_preview'] = f"{jsessionid[:20]}..."
-                
-                # Testar API com JSESSIONID
-                if statistics_enhanced_available:
-                    test_client = PragmaticStatisticsClientEnhanced(jsessionid=jsessionid)
-                    api_test = test_client.test_connection()
-                    diagnostics['api_test'] = api_test
-        
-        # Se não tem JSESSIONID, tentar inicializar
-        if not diagnostics['roulette_integrator']['has_jsessionid']:
-            try:
-                init_success = init_roulette_integrator()
-                if init_success and roulette_integrator:
-                    diagnostics['roulette_integrator']['available'] = True
-                    diagnostics['roulette_integrator']['has_jsessionid'] = bool(roulette_integrator.jsessionid)
-                    
-                    if roulette_integrator.jsessionid:
-                        jsessionid = roulette_integrator.jsessionid
-                        diagnostics['roulette_integrator']['jsessionid_preview'] = f"{jsessionid[:20]}..."
-                        
-                        # Testar API
-                        if statistics_enhanced_available:
-                            test_client = PragmaticStatisticsClientEnhanced(jsessionid=jsessionid)
-                            api_test = test_client.test_connection()
-                            diagnostics['api_test'] = api_test
-                            
-            except Exception as e:
-                diagnostics['init_error'] = str(e)
-        
-        return jsonify({
-            'success': True,
-            'diagnostics': diagnostics,
-            'timestamp': int(time.time())
-        })
-        
-    except Exception as e:
         return jsonify({
             'success': False,
             'error': str(e)
@@ -2219,98 +2027,6 @@ def get_diagnostics():
         
     except Exception as e:
         return jsonify({'error': f'Diagnostics failed: {str(e)}'}), 500
-
-# 🚂 ENDPOINTS PARA JSESSIONID NO RAILWAY
-
-@app.route('/api/jsessionid/update', methods=['POST'])
-def update_jsessionid():
-    """
-    Endpoint para receber JSESSIONID de sistemas externos
-    """
-    try:
-        # Verificar autorização
-        auth_header = request.headers.get('Authorization')
-        expected_secret = os.environ.get('JSESSIONID_WEBHOOK_SECRET', 'railway_secret_2024')
-        
-        if not auth_header or auth_header != f'Bearer {expected_secret}':
-            return jsonify({'error': 'Unauthorized'}), 401
-        
-        data = request.get_json()
-        jsessionid = data.get('jsessionid')
-        
-        if not jsessionid:
-            return jsonify({'error': 'JSESSIONID required'}), 400
-        
-        # Salvar JSESSIONID usando o gerenciador
-        try:
-            from railway_jsessionid_manager import RailwayJSessionManager
-            manager = RailwayJSessionManager()
-            manager.save_jsessionid_to_cache(jsessionid)
-            
-            # Atualizar clientes globais se existirem
-            global roulette_integrator, statistics_enhanced_client
-            
-            if roulette_integrator and hasattr(roulette_integrator, 'set_jsessionid'):
-                roulette_integrator.set_jsessionid(jsessionid)
-                
-            if statistics_enhanced_client:
-                statistics_enhanced_client.set_jsessionid(jsessionid)
-            
-            return jsonify({
-                'success': True,
-                'message': 'JSESSIONID updated successfully',
-                'timestamp': datetime.now().isoformat(),
-                'jsessionid_preview': f"{jsessionid[:20]}..."
-            })
-            
-        except ImportError:
-            return jsonify({'error': 'Railway JSESSIONID Manager not available'}), 500
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/jsessionid/status', methods=['GET'])
-def jsessionid_status():
-    """
-    Endpoint para verificar status do JSESSIONID
-    """
-    try:
-        from railway_jsessionid_manager import RailwayJSessionManager
-        manager = RailwayJSessionManager()
-        
-        # Tentar obter JSESSIONID
-        jsessionid = manager.get_best_jsessionid()
-        
-        # Informações adicionais
-        global roulette_integrator, statistics_enhanced_client
-        
-        status = {
-            'has_jsessionid': jsessionid is not None,
-            'jsessionid_preview': jsessionid[:20] + '...' if jsessionid else None,
-            'cache_exists': os.path.exists(manager.storage_file),
-            'timestamp': datetime.now().isoformat(),
-            'railway_detected': os.environ.get('RAILWAY_ENVIRONMENT') is not None,
-            'clients': {
-                'roulette_integrator': {
-                    'available': roulette_integrator is not None,
-                    'has_jsessionid': bool(roulette_integrator and hasattr(roulette_integrator, 'jsessionid') and roulette_integrator.jsessionid)
-                },
-                'statistics_enhanced': {
-                    'available': statistics_enhanced_client is not None,
-                    'has_jsessionid': bool(statistics_enhanced_client and statistics_enhanced_client.jsessionid)
-                }
-            }
-        }
-        
-        return jsonify(status)
-        
-    except ImportError:
-        return jsonify({
-            'error': 'Railway JSESSIONID Manager not available',
-            'railway_detected': os.environ.get('RAILWAY_ENVIRONMENT') is not None
-        }), 500
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 # 🆕 ENDPOINTS PARA SISTEMA ADAPTATIVO
 
