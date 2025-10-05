@@ -14,10 +14,16 @@ def send_jsessionid_to_railway():
     """
     # Configurações
     railway_url = "https://baze-double-web-production.up.railway.app"
-    webhook_secret = "seu_secret_aqui"  # Configure isso no Railway
+    webhook_secret = "railway_secret_2024"  # Secret definido no app.py
     
     # JSESSIONID que você tem funcionando localmente
-    # COLE AQUI SEU JSESSIONID REAL
+    print("🔑 COMO OBTER SEU JSESSIONID:")
+    print("1. Abra DevTools (F12) no browser")
+    print("2. Vá em Application > Cookies") 
+    print("3. Procure site da Pragmatic Play")
+    print("4. Copie o valor do JSESSIONID")
+    print("=" * 50)
+    
     jsessionid = input("Cole seu JSESSIONID funcionando: ").strip()
     
     if not jsessionid:

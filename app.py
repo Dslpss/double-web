@@ -1552,46 +1552,49 @@ def roulette_statistics_enhanced():
                 'error': 'Módulo não importado'
             }), 500
         
-        # Verificar se temos JSESSIONID (tentar obter do integrador principal)
+        # Verificar se temos JSESSIONID (múltiplas estratégias)
         jsessionid = None
+        
+        # Estratégia 1: Do integrador principal
         if roulette_integrator and hasattr(roulette_integrator, 'jsessionid'):
             jsessionid = roulette_integrator.jsessionid
+            print(f"🔑 JSESSIONID do integrador principal: {jsessionid[:20] + '...' if jsessionid else 'None'}")
         
+        # Estratégia 2: Do Railway Manager (sempre tentar)
         if not jsessionid:
-            # Tentar inicializar o integrador para obter JSESSIONID
+            try:
+                from railway_jsessionid_manager import get_railway_jsessionid
+                jsessionid = get_railway_jsessionid()
+                if jsessionid:
+                    print(f"🚂 JSESSIONID do Railway Manager: {jsessionid[:20]}...")
+                else:
+                    print("⚠️ Railway Manager não retornou JSESSIONID")
+            except Exception as e:
+                print(f"❌ Erro ao obter JSESSIONID do Railway Manager: {e}")
+        
+        # Estratégia 3: Tentar inicializar integrador se ainda não tem
+        if not jsessionid:
             try:
                 if not roulette_integrator:
                     init_success = init_roulette_integrator()
                     if init_success and roulette_integrator:
                         jsessionid = roulette_integrator.jsessionid
-                
-                if not jsessionid:
-                    return jsonify({
-                        'success': False,
-                        'message': 'JSESSIONID não disponível',
-                        'error': 'É necessário fazer login no sistema',
-                        'fallback_used': True,
-                        'results': []
-                    }), 401
-                    
+                        print(f"🔄 JSESSIONID do init integrador: {jsessionid[:20] + '...' if jsessionid else 'None'}")
             except Exception as e:
-                # Mesmo sem JSESSIONID, o cliente pode usar dados simulados
-                print(f"⚠️ Erro ao obter JSESSIONID: {e}")
+                print(f"⚠️ Erro ao obter JSESSIONID via init: {e}")
+        
+        print(f"📊 JSESSIONID final para cliente: {'Presente (' + jsessionid[:20] + '...)' if jsessionid else 'Ausente'}")
         
         # Obter número de jogos solicitados
         num_games = request.args.get('games', default=100, type=int)
         num_games = min(500, max(10, num_games))
         
-        # Inicializar ou atualizar cliente
-        if statistics_enhanced_client is None:
-            statistics_enhanced_client = PragmaticStatisticsClientEnhanced(
-                table_id="rwbrzportrwa16rg",
-                jsessionid=jsessionid
-            )
-        else:
-            # Atualizar JSESSIONID se mudou
-            if jsessionid and jsessionid != statistics_enhanced_client.jsessionid:
-                statistics_enhanced_client.set_jsessionid(jsessionid)
+        # SEMPRE criar novo cliente para garantir JSESSIONID mais recente
+        print(f"🔄 Criando novo cliente enhanced com JSESSIONID...")
+        statistics_enhanced_client = PragmaticStatisticsClientEnhanced(
+            table_id="rwbrzportrwa16rg",
+            jsessionid=jsessionid
+        )
         
         # Buscar dados
         print(f"📊 Buscando {num_games} jogos com cliente aprimorado...")
