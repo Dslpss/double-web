@@ -49,6 +49,15 @@ except ImportError as e:
     traceback.print_exc()
     analyzer_available = False
 
+# Importar sistema de padrões personalizados
+try:
+    from shared.src.analysis.custom_patterns import CustomPatternManager, CustomPattern, PatternTrigger, PatternAction
+    custom_patterns_available = True
+    print("✅ Sistema de padrões personalizados importado com sucesso")
+except ImportError as e:
+    print(f"❌ Erro ao importar sistema de padrões personalizados: {e}")
+    custom_patterns_available = False
+
 # Importar módulos de autenticação e PlayNabets
 try:
     from auth import require_auth, login, logout, register, get_user_info
@@ -106,6 +115,7 @@ playnabets_integrator = None
 roulette_integrator = None
 statistics_client = None  # Cliente para API de estatísticas da Pragmatic Play
 statistics_enhanced_client = None  # Cliente aprimorado para API de estatísticas
+custom_pattern_manager = None  # Gerenciador de padrões personalizados
 ws_connected = False
 ws_thread = None
 last_results = []
@@ -132,6 +142,14 @@ def init_analyzer(clear_session_data=True):
             print("Tentando inicializar BlazeAnalyzerEnhanced...")
             analyzer = BlazeAnalyzerEnhanced(use_official_api=False)
             print("✅ Analyzer inicializado com sucesso!")
+            
+            # Configurar callback web para padrões personalizados
+            if hasattr(analyzer, 'configure_web_callback'):
+                success = analyzer.configure_web_callback(web_notification_callback)
+                if success:
+                    print("✅ Callback web configurado no analyzer!")
+                else:
+                    print("⚠️ Falha ao configurar callback web no analyzer")
             
             # Limpar dados da sessão anterior se solicitado
             if clear_session_data:
@@ -1726,6 +1744,532 @@ def roulette_all_patterns():
             'error': str(e)
         }), 500
 
+# ===== PADRÕES PERSONALIZADOS =====
+
+@app.route('/api/custom-patterns', methods=['GET'])
+def get_custom_patterns():
+    """Retorna todos os padrões personalizados."""
+    try:
+        if not custom_pattern_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Sistema de padrões personalizados não disponível'
+            }), 500
+        
+        patterns = custom_pattern_manager.get_all_patterns()
+        patterns_data = []
+        
+        for pattern in patterns:
+            patterns_data.append({
+                'pattern_id': pattern.pattern_id,
+                'name': pattern.name,
+                'description': pattern.description,
+                'trigger_type': pattern.trigger_type.value if hasattr(pattern.trigger_type, 'value') else pattern.trigger_type,
+                'trigger_config': pattern.trigger_config,
+                'action': pattern.action.value if hasattr(pattern.action, 'value') else pattern.action,
+                'action_config': pattern.action_config,
+                'confidence_threshold': pattern.confidence_threshold,
+                'cooldown_minutes': pattern.cooldown_minutes,
+                'enabled': pattern.enabled,
+                'created_at': pattern.created_at.isoformat(),
+                'updated_at': pattern.updated_at.isoformat(),
+                'success_count': pattern.success_count,
+                'failure_count': pattern.failure_count,
+                'last_triggered': pattern.last_triggered.isoformat() if pattern.last_triggered else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'patterns': patterns_data,
+            'total': len(patterns_data)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/custom-patterns', methods=['POST'])
+def create_custom_pattern():
+    """Cria um novo padrão personalizado."""
+    try:
+        if not custom_pattern_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Sistema de padrões personalizados não disponível'
+            }), 500
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'Dados não fornecidos'
+            }), 400
+        
+        # Validar dados obrigatórios
+        required_fields = ['name', 'trigger_type', 'action']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'success': False,
+                    'error': f'Campo obrigatório: {field}'
+                }), 400
+        
+        # Criar padrão
+        pattern = CustomPattern(
+            pattern_id=f"custom_{int(time.time() * 1000)}",
+            name=data['name'],
+            description=data.get('description', ''),
+            trigger_type=PatternTrigger(data['trigger_type']),
+            trigger_config=data.get('trigger_config', {}),
+            action=PatternAction(data['action']),
+            action_config=data.get('action_config', {}),
+            confidence_threshold=data.get('confidence_threshold', 0.7),
+            cooldown_minutes=data.get('cooldown_minutes', 5),
+            enabled=data.get('enabled', True)
+        )
+        
+        if custom_pattern_manager.add_pattern(pattern):
+            return jsonify({
+                'success': True,
+                'message': 'Padrão criado com sucesso',
+                'pattern_id': pattern.pattern_id
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Erro ao criar padrão'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/custom-patterns/<pattern_id>', methods=['PUT'])
+def update_custom_pattern(pattern_id):
+    """Atualiza um padrão personalizado existente."""
+    try:
+        if not custom_pattern_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Sistema de padrões personalizados não disponível'
+            }), 500
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'Dados não fornecidos'
+            }), 400
+        
+        # Preparar updates
+        updates = {}
+        allowed_fields = [
+            'name', 'description', 'trigger_type', 'trigger_config',
+            'action', 'action_config', 'confidence_threshold',
+            'cooldown_minutes', 'enabled'
+        ]
+        
+        for field in allowed_fields:
+            if field in data:
+                if field in ['trigger_type', 'action']:
+                    updates[field] = data[field]
+                else:
+                    updates[field] = data[field]
+        
+        if custom_pattern_manager.update_pattern(pattern_id, updates):
+            # Buscar o padrão atualizado
+            updated_pattern = None
+            for pattern in custom_pattern_manager.get_all_patterns():
+                if pattern.pattern_id == pattern_id:
+                    updated_pattern = pattern
+                    break
+            
+            response_data = {
+                'success': True,
+                'message': 'Padrão atualizado com sucesso'
+            }
+            
+            if updated_pattern:
+                response_data['pattern'] = {
+                    'pattern_id': updated_pattern.pattern_id,
+                    'name': updated_pattern.name,
+                    'description': updated_pattern.description,
+                    'trigger_type': updated_pattern.trigger_type.value if hasattr(updated_pattern.trigger_type, 'value') else updated_pattern.trigger_type,
+                    'trigger_config': updated_pattern.trigger_config,
+                    'action': updated_pattern.action.value if hasattr(updated_pattern.action, 'value') else updated_pattern.action,
+                    'action_config': updated_pattern.action_config,
+                    'confidence_threshold': updated_pattern.confidence_threshold,
+                    'cooldown_minutes': updated_pattern.cooldown_minutes,
+                    'enabled': updated_pattern.enabled,
+                    'created_at': updated_pattern.created_at.isoformat(),
+                    'updated_at': updated_pattern.updated_at.isoformat(),
+                    'success_count': updated_pattern.success_count,
+                    'failure_count': updated_pattern.failure_count,
+                    'last_triggered': updated_pattern.last_triggered.isoformat() if updated_pattern.last_triggered else None
+                }
+            
+            return jsonify(response_data)
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Padrão não encontrado ou erro na atualização'
+            }), 404
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/custom-patterns/<pattern_id>', methods=['DELETE'])
+def delete_custom_pattern(pattern_id):
+    """Remove um padrão personalizado."""
+    try:
+        if not custom_pattern_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Sistema de padrões personalizados não disponível'
+            }), 500
+        
+        if custom_pattern_manager.delete_pattern(pattern_id):
+            return jsonify({
+                'success': True,
+                'message': 'Padrão removido com sucesso'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Padrão não encontrado'
+            }), 404
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/custom-patterns/<pattern_id>/stats', methods=['GET'])
+def get_custom_pattern_stats(pattern_id):
+    """Retorna estatísticas de um padrão personalizado."""
+    try:
+        if not custom_pattern_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Sistema de padrões personalizados não disponível'
+            }), 500
+        
+        stats = custom_pattern_manager.get_pattern_stats(pattern_id)
+        if stats:
+            return jsonify({
+                'success': True,
+                'stats': stats
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Padrão não encontrado'
+            }), 404
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/custom-patterns/check', methods=['POST'])
+def check_custom_patterns():
+    """Verifica se algum padrão personalizado foi ativado nos resultados recentes."""
+    try:
+        if not custom_pattern_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Sistema de padrões personalizados não disponível'
+            }), 500
+        
+        # Obter resultados recentes
+        if analyzer and hasattr(analyzer, 'get_recent_results'):
+            results = analyzer.get_recent_results(50)
+        else:
+            results = last_results[:50] if last_results else []
+        
+        if not results:
+            return jsonify({
+                'success': True,
+                'triggered_patterns': [],
+                'message': 'Nenhum resultado disponível para análise'
+            })
+        
+        # Verificar padrões
+        triggered_patterns = custom_pattern_manager.check_patterns(results)
+        
+        # Processar resultados
+        patterns_data = []
+        for trigger in triggered_patterns:
+            pattern = trigger['pattern']
+            patterns_data.append({
+                'pattern_id': pattern.pattern_id,
+                'name': pattern.name,
+                'description': pattern.description,
+                'confidence': trigger['confidence'],
+                'reasoning': trigger['reasoning'],
+                'suggestion': trigger['suggestion'],
+                'action': pattern.action.value,
+                'action_config': pattern.action_config
+            })
+            
+            # Enviar notificação se disponível
+            if NOTIFICATIONS_AVAILABLE:
+                notify_pattern(
+                    pattern_type=f"Custom: {pattern.name}",
+                    detected_number=results[0]['number'] if results else 0,
+                    predicted_color=pattern.action_config.get('color', 'red'),
+                    confidence=trigger['confidence'],
+                    reasoning=trigger['reasoning'],
+                    pattern_id=pattern.pattern_id
+                )
+        
+        return jsonify({
+            'success': True,
+            'triggered_patterns': patterns_data,
+            'total_triggered': len(patterns_data),
+            'results_analyzed': len(results)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/custom-patterns/status', methods=['GET'])
+def get_custom_patterns_status():
+    """Verifica o status do sistema de padrões personalizados."""
+    try:
+        status = {
+            'custom_pattern_manager_available': custom_pattern_manager is not None,
+            'analyzer_available': analyzer is not None,
+            'analyzer_has_custom_manager': False,
+            'notifier_available': False,
+            'web_callback_configured': False,
+            'patterns_count': 0,
+            'enabled_patterns_count': 0
+        }
+        
+        if analyzer:
+            status['analyzer_has_custom_manager'] = hasattr(analyzer, 'custom_pattern_manager') and analyzer.custom_pattern_manager is not None
+            if hasattr(analyzer, 'notifier') and analyzer.notifier:
+                status['notifier_available'] = True
+                status['web_callback_configured'] = analyzer.notifier.web_callback is not None
+        
+        if custom_pattern_manager:
+            patterns = custom_pattern_manager.get_all_patterns()
+            enabled_patterns = custom_pattern_manager.get_enabled_patterns()
+            status['patterns_count'] = len(patterns)
+            status['enabled_patterns_count'] = len(enabled_patterns)
+        
+        return jsonify({
+            'success': True,
+            'status': status
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/custom-patterns/export', methods=['GET'])
+def export_custom_patterns():
+    """Exporta todos os padrões personalizados para arquivo JSON."""
+    try:
+        if not custom_pattern_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Sistema de padrões personalizados não disponível'
+            }), 500
+        
+        filename = f"custom_patterns_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        filepath = os.path.join('data', filename)
+        
+        if custom_pattern_manager.export_patterns(filepath):
+            return jsonify({
+                'success': True,
+                'message': 'Padrões exportados com sucesso',
+                'filename': filename,
+                'filepath': filepath
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Erro ao exportar padrões'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/custom-patterns/import', methods=['POST'])
+def import_custom_patterns():
+    """Importa padrões personalizados de arquivo JSON."""
+    try:
+        if not custom_pattern_manager:
+            return jsonify({
+                'success': False,
+                'error': 'Sistema de padrões personalizados não disponível'
+            }), 500
+        
+        if 'file' not in request.files:
+            return jsonify({
+                'success': False,
+                'error': 'Nenhum arquivo fornecido'
+            }), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({
+                'success': False,
+                'error': 'Nome do arquivo vazio'
+            }), 400
+        
+        if not file.filename.endswith('.json'):
+            return jsonify({
+                'success': False,
+                'error': 'Arquivo deve ser JSON'
+            }), 400
+        
+        # Salvar arquivo temporariamente
+        temp_filename = f"temp_import_{int(time.time())}.json"
+        temp_path = os.path.join('data', temp_filename)
+        file.save(temp_path)
+        
+        # Importar padrões
+        if custom_pattern_manager.import_patterns(temp_path):
+            # Remover arquivo temporário
+            os.remove(temp_path)
+            
+            return jsonify({
+                'success': True,
+                'message': 'Padrões importados com sucesso'
+            })
+        else:
+            # Remover arquivo temporário mesmo em caso de erro
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            
+            return jsonify({
+                'success': False,
+                'error': 'Erro ao importar padrões'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# ===== CONFIGURAÇÕES DE ALERTAS =====
+
+# Arquivo para armazenar configurações de alerta
+ALERT_SETTINGS_FILE = os.path.join('data', 'alert_settings.json')
+
+def load_alert_settings():
+    """Carrega configurações de alerta do arquivo."""
+    try:
+        if os.path.exists(ALERT_SETTINGS_FILE):
+            with open(ALERT_SETTINGS_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Erro ao carregar configurações de alerta: {e}")
+    
+    # Configurações padrão
+    return {
+        'systemAlerts': True,
+        'customAlerts': True,
+        'timestamp': datetime.now().isoformat()
+    }
+
+def save_alert_settings(settings):
+    """Salva configurações de alerta no arquivo."""
+    try:
+        # Garantir que o diretório existe
+        os.makedirs(os.path.dirname(ALERT_SETTINGS_FILE), exist_ok=True)
+        
+        with open(ALERT_SETTINGS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(settings, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        print(f"Erro ao salvar configurações de alerta: {e}")
+        return False
+
+@app.route('/api/alert-settings', methods=['POST'])
+def save_alert_settings_endpoint():
+    """Salva as configurações de tipos de alertas do usuário."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'Dados não fornecidos'
+            }), 400
+        
+        # Validar estrutura dos dados
+        required_fields = ['systemAlerts', 'customAlerts']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'success': False,
+                    'error': f'Campo obrigatório ausente: {field}'
+                }), 400
+        
+        # Preparar configurações para salvar
+        alert_settings = {
+            'systemAlerts': bool(data['systemAlerts']),
+            'customAlerts': bool(data['customAlerts']),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        # Salvar em arquivo
+        if save_alert_settings(alert_settings):
+            return jsonify({
+                'success': True,
+                'message': 'Configurações de alerta salvas com sucesso',
+                'settings': alert_settings
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Falha ao salvar configurações'
+            }), 500
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/alert-settings', methods=['GET'])
+def get_alert_settings_endpoint():
+    """Recupera as configurações de alertas do usuário."""
+    try:
+        settings = load_alert_settings()
+        
+        return jsonify({
+            'success': True,
+            'settings': settings
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 # ===== BANCO DE DADOS LOCAL =====
 
 @app.route('/api/db/stats', methods=['GET'])
@@ -2477,6 +3021,11 @@ def roulette_enhanced():
     """Página da roleta com interface melhorada."""
     return render_template('roulette_enhanced.html')
     
+@app.route('/custom-patterns')
+def custom_patterns_page():
+    """Página de gerenciamento de padrões personalizados."""
+    return render_template('custom_patterns.html')
+
 @app.route('/gs12-test')
 def gs12_test():
     """Página de teste da API GS12."""
@@ -2484,6 +3033,13 @@ def gs12_test():
 
 if __name__ == '__main__':
     print("🚀 Iniciando Blaze Web Backend (Versao Polling)...")
+    
+    # Inicializar gerenciador de padrões personalizados
+    if custom_patterns_available:
+        custom_pattern_manager = CustomPatternManager()
+        print("✅ Gerenciador de padrões personalizados inicializado")
+    else:
+        print("❌ Sistema de padrões personalizados não disponível")
     
     # Inicializar analyzer
     print("📊 Inicializando analyzer...")

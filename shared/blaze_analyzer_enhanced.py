@@ -35,6 +35,7 @@ from shared.src.ml.reassessment_callbacks import (
     DualPatternDetectorReassessmentCallback,
     AdaptiveLearnerReassessmentCallback
 )
+from shared.src.analysis.custom_patterns import CustomPatternManager
 import logging
 
 # Configurar logging
@@ -92,6 +93,25 @@ class BlazeAnalyzerEnhanced:
             }
         })
         
+        # Inicializar notifier para padrões personalizados
+        try:
+            from shared.src.notifications.pattern_notifier import get_notifier
+            self.notifier = get_notifier()
+            logger.info("✅ Notifier para padrões personalizados inicializado")
+            
+            # Tentar configurar callback web se disponível
+            try:
+                import app
+                if hasattr(app, 'web_notification_callback'):
+                    self.notifier.set_web_callback(app.web_notification_callback)
+                    logger.info("✅ Callback web configurado no notifier do analyzer")
+            except Exception as e:
+                logger.info(f"ℹ️ Callback web não configurado automaticamente: {e}")
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao inicializar notifier: {e}")
+            self.notifier = None
+        
         # Inicializar sistema de aprendizado adaptativo
         adaptive_config = {
             'auto_learning': True,
@@ -137,6 +157,14 @@ class BlazeAnalyzerEnhanced:
             'history_size': 1000
         }
         self.dual_pattern_detector = DualColorPatternDetector(dual_pattern_config)
+        
+        # Inicializar gerenciador de padrões personalizados
+        try:
+            self.custom_pattern_manager = CustomPatternManager()
+            logger.info("✅ Gerenciador de padrões personalizados inicializado")
+        except Exception as e:
+            logger.error(f"❌ Erro ao inicializar gerenciador de padrões personalizados: {e}")
+            self.custom_pattern_manager = None
         
         # Inicializar sistema de reavaliação de padrões
         reassessment_config = {
@@ -206,6 +234,25 @@ class BlazeAnalyzerEnhanced:
         self._load_existing_data()
         
         logger.info("Blaze Analyzer Enhanced inicializado")
+    
+    def configure_web_callback(self, callback_function):
+        """
+        Configura o callback web para notificações de padrões personalizados.
+        
+        Args:
+            callback_function: Função de callback para receber notificações web
+        """
+        try:
+            if self.notifier:
+                self.notifier.set_web_callback(callback_function)
+                logger.info("✅ Callback web configurado no analyzer")
+                return True
+            else:
+                logger.warning("⚠️ Notifier não disponível para configurar callback")
+                return False
+        except Exception as e:
+            logger.error(f"❌ Erro ao configurar callback web: {e}")
+            return False
     
     def _load_existing_data(self) -> None:
         """Carrega dados existentes do banco de dados na inicialização."""
@@ -858,6 +905,190 @@ class BlazeAnalyzerEnhanced:
             logger.exception(f'Erro ao detectar padrões após adicionar resultado: {e}')
         
         return self.manual_data
+
+    def _format_data_for_custom_patterns(self, data: list) -> list:
+        """
+        Converte dados para o formato esperado pelos padrões personalizados.
+        
+        Args:
+            data (list): Lista de dados do Double
+            
+        Returns:
+            list: Dados formatados com chaves 'number' e 'color'
+        """
+        formatted_data = []
+        
+        for item in data:
+            # Extrair número e cor do item
+            number = item.get('number', item.get('roll', item.get('result', 0)))
+            color = item.get('color', item.get('cor', ''))
+            
+            # Se não tiver cor, determinar baseado no número
+            if not color:
+                color = self._get_color_from_number(number)
+            
+            formatted_item = {
+                'number': int(number),
+                'color': color.lower() if color else 'unknown',
+                'timestamp': item.get('timestamp', item.get('time', 0)),
+                'round_id': item.get('round_id', item.get('id', '')),
+                'original_data': item  # Manter dados originais para referência
+            }
+            
+            formatted_data.append(formatted_item)
+        
+        return formatted_data
+    
+    def _get_color_from_number(self, number: int) -> str:
+        """
+        Determina a cor baseada no número do Double.
+        
+        Args:
+            number (int): Número do Double (0-14)
+            
+        Returns:
+            str: Cor correspondente
+        """
+        if number == 0:
+            return 'white'
+        elif number in [1, 3, 5, 7, 9, 12, 14]:
+            return 'red'
+        elif number in [2, 4, 6, 8, 10, 11, 13]:
+            return 'black'
+        else:
+            return 'unknown'
+
+    def _send_custom_pattern_alerts(self, triggered_patterns: list):
+        """
+        Envia alertas imediatos para padrões personalizados ativados.
+        
+        Args:
+            triggered_patterns (list): Lista de padrões personalizados ativados
+        """
+        try:
+            logger.info(f"🔔 Processando {len(triggered_patterns)} padrões personalizados ativados")
+            
+            for pattern_info in triggered_patterns:
+                pattern = pattern_info.get('pattern')
+                if not pattern:
+                    logger.error("❌ Padrão sem dados válidos encontrado")
+                    continue
+                    
+                logger.info(f"📋 Processando padrão: {pattern.name}")
+                
+                # Extrair cor sugerida da sugestão
+                suggestion = pattern_info.get('suggestion', '')
+                predicted_color = 'unknown'
+                if 'red' in suggestion.lower():
+                    predicted_color = 'red'
+                elif 'black' in suggestion.lower():
+                    predicted_color = 'black'
+                elif 'white' in suggestion.lower():
+                    predicted_color = 'white'
+                
+                # Criar alerta com prioridade máxima
+                alert_data = {
+                    'pattern_type': 'CUSTOM_PATTERN',
+                    'pattern_name': pattern.name,
+                    'detected_number': 0,  # Padrões personalizados não dependem de número específico
+                    'predicted_color': predicted_color,
+                    'confidence': pattern_info.get('confidence', 0.9),
+                    'reasoning': pattern_info.get('reasoning', 'Padrão personalizado ativado'),
+                    'pattern_id': pattern.pattern_id,
+                    'priority': 'ABSOLUTE',
+                    'is_custom_pattern': True
+                }
+                
+                logger.info(f"🎯 Enviando alerta: {alert_data['pattern_name']} -> {predicted_color.upper()}")
+                
+                # Enviar notificação imediata
+                self._send_immediate_custom_alert(alert_data)
+                
+        except Exception as e:
+            logger.error(f"❌ Erro ao enviar alertas de padrões personalizados: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _send_immediate_custom_alert(self, alert_data: dict):
+        """
+        Envia alerta imediato para padrão personalizado.
+        
+        Args:
+            alert_data (dict): Dados do alerta
+        """
+        try:
+            # Log especial para padrões personalizados
+            logger.info("="*80)
+            logger.info("🎯 PADRÃO PERSONALIZADO ATIVADO - ALERTA ABSOLUTO!")
+            logger.info("="*80)
+            logger.info(f"📋 Padrão: {alert_data['pattern_name']}")
+            logger.info(f"🎯 Sugestão: {alert_data['predicted_color'].upper()}")
+            logger.info(f"📊 Confiança: {alert_data['confidence']:.1%}")
+            logger.info(f"💡 Razão: {alert_data['reasoning']}")
+            logger.info("="*80)
+            
+            # Usar o sistema de notificações existente com prioridade máxima
+            if hasattr(self, 'notifier') and self.notifier:
+                logger.info("📤 Enviando notificação via notifier...")
+                self.notifier.notify_pattern_detected(
+                    pattern_type=f"CUSTOM: {alert_data['pattern_name']}",
+                    detected_number=alert_data['detected_number'],
+                    predicted_color=alert_data['predicted_color'],
+                    confidence=alert_data['confidence'],
+                    reasoning=alert_data['reasoning'],
+                    pattern_id=alert_data['pattern_id']
+                )
+                logger.info("✅ Notificação enviada via notifier")
+            else:
+                logger.warning("⚠️ Notifier não disponível")
+            
+            # Usar sistema de alertas como backup
+            if hasattr(self, 'alert_system') and self.alert_system:
+                logger.info("📤 Enviando alerta via alert_system...")
+                alert_dict = {
+                    'pattern_type': alert_data['pattern_type'],
+                    'pattern_name': alert_data['pattern_name'], 
+                    'detected_number': alert_data['detected_number'],
+                    'predicted_color': alert_data['predicted_color'],
+                    'confidence': alert_data['confidence'],
+                    'reasoning': alert_data['reasoning'],
+                    'timestamp': time.time(),
+                    'is_custom_pattern': True
+                }
+                self.alert_system.send_alert(alert_dict)
+                logger.info("✅ Alerta enviado via alert_system")
+            else:
+                logger.warning("⚠️ Alert system não disponível")
+            
+            logger.info("="*80)
+            logger.info("🚨 NOTIFICAÇÃO ENVIADA COM PRIORIDADE MÁXIMA!")
+            logger.info("="*80)
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao enviar alerta imediato: {e}")
+            import traceback
+            traceback.print_exc()
+            
+        except Exception as e:
+            logger.error(f"Erro ao enviar alerta imediato: {e}")
+
+    def record_custom_pattern_result(self, pattern_id: str, was_successful: bool, result_data: dict):
+        """
+        Registra o resultado de um padrão personalizado.
+
+        Args:
+            pattern_id (str): ID do padrão personalizado
+            was_successful (bool): Se o padrão foi bem-sucedido
+            result_data (dict): Dados do resultado
+        """
+        try:
+            if self.custom_pattern_manager:
+                self.custom_pattern_manager.record_pattern_result(pattern_id, was_successful, result_data)
+                logger.info(f"Resultado de padrão personalizado registrado: {pattern_id} - {'Sucesso' if was_successful else 'Falha'}")
+            else:
+                logger.warning("Gerenciador de padrões personalizados não disponível")
+        except Exception as e:
+            logger.error(f"Erro ao registrar resultado de padrão personalizado: {e}")
 
     def register_prediction_update_callback(self, func):
         """Registra um callback que receberá (pred_id, correct, result_id) quando uma previsão for atualizada no DB."""
@@ -1703,6 +1934,29 @@ class BlazeAnalyzerEnhanced:
         # Análise de padrões Double específicos
         double_patterns = self.double_pattern_detector.detect_all_patterns(data_to_analyze)
         
+        # Verificar padrões personalizados (PRIORIDADE MÁXIMA)
+        custom_patterns = []
+        if self.custom_pattern_manager:
+            try:
+                # Converter dados para formato esperado pelos padrões personalizados
+                formatted_data = self._format_data_for_custom_patterns(data_to_analyze)
+                triggered_custom_patterns = self.custom_pattern_manager.check_patterns(formatted_data)
+                custom_patterns = triggered_custom_patterns
+                
+                # Se há padrões personalizados ativados, dar prioridade absoluta
+                if triggered_custom_patterns:
+                    logger.info(f"🎯 PADRÕES PERSONALIZADOS ATIVADOS: {len(triggered_custom_patterns)}")
+                    for pattern in triggered_custom_patterns:
+                        logger.info(f"   ✅ {pattern.get('name', 'Padrão')}: {pattern.get('suggestion', 'Alerta')}")
+                    
+                    # Enviar notificações imediatas para padrões personalizados
+                    self._send_custom_pattern_alerts(triggered_custom_patterns)
+                else:
+                    logger.info(f"Verificados padrões personalizados: {len(triggered_custom_patterns)} ativados")
+            except Exception as e:
+                logger.error(f"Erro ao verificar padrões personalizados: {e}")
+                custom_patterns = []
+        
         # Análise estatística
         statistical_analysis = self._perform_statistical_analysis(data_to_analyze)
         
@@ -1758,19 +2012,33 @@ class BlazeAnalyzerEnhanced:
         except Exception:
             pass
 
+        # Se há padrões personalizados ativados, dar prioridade absoluta
+        if custom_patterns:
+            # Padrões personalizados têm prioridade absoluta
+            pattern_triggers = custom_patterns
+            strong_triggers = custom_patterns
+            logger.info("🎯 PADRÕES PERSONALIZADOS - PRIORIDADE ABSOLUTA ATIVADA!")
+        else:
+            # Usar padrões normais se não há padrões personalizados
+            pattern_triggers = pattern_triggers
+            strong_triggers = strong_triggers
+
         comprehensive_analysis = {
             'timestamp': datetime.now().isoformat(),
             'data_source': 'manual' if use_manual_data else 'api',
             'total_results': len(data_to_analyze),
             'pattern_analysis': pattern_analysis,
             'double_patterns': double_patterns,
+            'custom_patterns': custom_patterns,
             'statistical_analysis': statistical_analysis,
             'temporal_analysis': temporal_analysis,
             'predictions': adjusted_predictions,
             'sequence_analysis': sequence_analysis,
             'recommendations': self._generate_recommendations(data_to_analyze),
             'pattern_triggers': pattern_triggers,
-            'strong_triggers': strong_triggers
+            'strong_triggers': strong_triggers,
+            'has_custom_patterns': len(custom_patterns) > 0,  # Flag para indicar se há padrões personalizados
+            'custom_patterns_priority': len(custom_patterns) > 0  # Flag de prioridade
         }
         
         # Cache da análise

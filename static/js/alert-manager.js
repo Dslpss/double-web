@@ -18,10 +18,42 @@ class AlertManager {
   }
 
   /**
+   * Verifica se o tipo de alerta está habilitado
+   */
+  isAlertTypeEnabled(alertType) {
+    try {
+      const settings = localStorage.getItem("alertSettings");
+      if (settings) {
+        const alertSettings = JSON.parse(settings);
+        if (alertType === "system") {
+          return alertSettings.systemAlerts !== false;
+        } else if (alertType === "custom") {
+          return alertSettings.customAlerts !== false;
+        }
+      }
+      // Por padrão, ambos estão habilitados
+      return true;
+    } catch (error) {
+      console.warn("Erro ao verificar configurações de alerta:", error);
+      return true; // Em caso de erro, sempre mostrar
+    }
+  }
+
+  /**
    * Exibe um padrão detectado como alerta
    */
   showPattern(pattern) {
     if (!this.container) return;
+
+    // Verificar se o tipo de alerta está habilitado
+    const alertType = pattern.isCustomPattern ? "custom" : "system";
+    if (!this.isAlertTypeEnabled(alertType)) {
+      console.log(
+        `Alerta ${alertType} desabilitado. Padrão não será exibido:`,
+        pattern.type || pattern.name
+      );
+      return;
+    }
 
     const patternId = pattern.id || `pattern-${Date.now()}`;
 

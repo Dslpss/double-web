@@ -231,8 +231,30 @@
           </ul>
         </a>
 
+        <!-- Card Padrões Personalizados -->
+        <a href="/custom-patterns" class="game-card">
+          <div class="game-badge">Avançado</div>
+          <div class="game-icon">⚙️</div>
+          <div class="game-title">Padrões Personalizados</div>
+          <div class="game-description">
+            Crie e gerencie seus próprios padrões de detecção personalizados
+            para o Double
+          </div>
+          <ul class="game-features">
+            <li>Criação de padrões customizados</li>
+            <li>Gatilhos personalizados</li>
+            <li>Ações automáticas</li>
+            <li>Estatísticas de performance</li>
+            <li>Importação/Exportação</li>
+          </ul>
+        </a>
+
         <!-- Card PlayNabets -->
-        <a href="https://playnabets.com/cadastro?refId=NjMzMTRyZWZJZA==" target="_blank" class="game-card">
+        <a
+          href="https://playnabets.com/cadastro?refId=NjMzMTRyZWZJZA=="
+          target="_blank"
+          class="game-card"
+        >
           <div class="game-badge exclusivo">Exclusivo</div>
           <div class="game-icon">🚀</div>
           <div class="game-title">Cadastrar na PlayNabets</div>
@@ -262,13 +284,13 @@
       // Adicionar efeitos de hover suaves
       document.addEventListener("DOMContentLoaded", function () {
         const cards = document.querySelectorAll(".game-card");
-        
-        cards.forEach(card => {
-          card.addEventListener("mouseenter", function() {
+
+        cards.forEach((card) => {
+          card.addEventListener("mouseenter", function () {
             this.style.transform = "translateY(-10px) scale(1.02)";
           });
-          
-          card.addEventListener("mouseleave", function() {
+
+          card.addEventListener("mouseleave", function () {
             this.style.transform = "translateY(0) scale(1)";
           });
         });

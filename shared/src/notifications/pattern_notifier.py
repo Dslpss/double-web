@@ -8,9 +8,27 @@ Sistema de notificações para padrões detectados no Blaze Double
 import os
 import sys
 import time
+import json
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
+
+def load_alert_settings():
+    """Carrega configurações de alerta do arquivo."""
+    try:
+        alert_settings_file = os.path.join('data', 'alert_settings.json')
+        if os.path.exists(alert_settings_file):
+            with open(alert_settings_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Erro ao carregar configurações de alerta: {e}")
+    
+    # Configurações padrão
+    return {
+        'systemAlerts': True,
+        'customAlerts': True,
+        'timestamp': datetime.now().isoformat()
+    }
 
 # Cores para terminal
 class Colors:
@@ -65,7 +83,7 @@ class PatternNotifier:
             'default': 300        # 5 minutos para outros padrões
         })
         
-        print(f"🔔 PatternNotifier inicializado - Cooldown: {self.cooldown_duration}s")
+        print(f"PatternNotifier inicializado - Cooldown: {self.cooldown_duration}s")
     
     def _clear_screen(self):
         """Limpa a tela do terminal"""
@@ -136,8 +154,26 @@ class PatternNotifier:
         Returns:
             bool: True se notificação foi exibida
         """
+        # Verificar configurações de alerta antes de processar
+        try:
+            alert_settings = load_alert_settings()
+            
+            # Determinar se é um padrão personalizado ou do sistema
+            is_custom_pattern = "CUSTOM:" in pattern_type.upper()
+            
+            # Verificar se o tipo de alerta está habilitado
+            if is_custom_pattern and not alert_settings.get('customAlerts', True):
+                return False
+            elif not is_custom_pattern and not alert_settings.get('systemAlerts', True):
+                return False
+                
+        except Exception as e:
+            print(f"Erro ao verificar configurações de alerta: {e}")
+            # Em caso de erro, continuar com comportamento padrão
+        
         # 🆕 Verificar cooldown antes de processar
         if self._is_in_cooldown(pattern_type):
+            return False
             return False
         
         # ✅ CORRIGIDO: Usar confiança mínima configurada (não reduzir para 25%)

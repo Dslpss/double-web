@@ -754,6 +754,7 @@
         >
         <a href="/playnabets" class="btn btn-success">Controle PlayNabets</a>
         <a href="/dashboard" class="btn btn-primary">Dashboard</a>
+        <a href="/custom-patterns" class="btn btn-warning">⚙️ Padrões</a>
       </div>
 
       <div class="input-group">
@@ -1112,6 +1113,19 @@
 
       // Funções de notificações
       function loadNotifications() {
+        // Verificar se alertas personalizados estão habilitados
+        const alertSettings = JSON.parse(
+          localStorage.getItem("alertSettings") || '{"customAlerts": true}'
+        );
+        if (!alertSettings.customAlerts) {
+          const container = document.getElementById("notificationsContainer");
+          if (container) {
+            container.innerHTML =
+              '<div class="loading" style="text-align: center; padding: 20px; color: #666;">Alertas personalizados desabilitados</div>';
+          }
+          return;
+        }
+
         fetch("/api/notifications/web")
           .then((response) => response.json())
           .then((data) => {
@@ -1149,6 +1163,19 @@
       let activeNotification = null;
 
       function displayNotifications(notifications) {
+        // Verificar se alertas personalizados estão habilitados
+        const alertSettings = JSON.parse(
+          localStorage.getItem("alertSettings") || '{"customAlerts": true}'
+        );
+        if (!alertSettings.customAlerts) {
+          const container = document.getElementById("notificationsContainer");
+          if (container) {
+            container.innerHTML =
+              '<div class="loading" style="text-align: center; padding: 20px; color: #666;">Alertas personalizados desabilitados</div>';
+          }
+          return;
+        }
+
         // Filtrar apenas notificações de padrão detectado
         const patternNotifications = notifications.filter(
           (n) => n.type === "pattern_detected"

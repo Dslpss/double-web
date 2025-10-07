@@ -22,6 +22,50 @@ const CONFIG = {
   notificationsEnabled: true,
 };
 
+// ==================== FUNÇÕES DE CONFIGURAÇÃO ====================
+
+/**
+ * Verifica se alertas do sistema estão habilitados
+ */
+function isSystemAlertsEnabled() {
+  try {
+    const settings = localStorage.getItem("alertSettings");
+    if (settings) {
+      const alertSettings = JSON.parse(settings);
+      return alertSettings.systemAlerts !== false;
+    }
+    // Por padrão, alertas do sistema estão habilitados
+    return true;
+  } catch (error) {
+    console.warn(
+      "Erro ao verificar configurações de alerta do sistema:",
+      error
+    );
+    return true; // Em caso de erro, sempre exibir
+  }
+}
+
+/**
+ * Verifica se alertas customizados estão habilitados
+ */
+function isCustomAlertsEnabled() {
+  try {
+    const settings = localStorage.getItem("alertSettings");
+    if (settings) {
+      const alertSettings = JSON.parse(settings);
+      return alertSettings.customAlerts !== false;
+    }
+    // Por padrão, alertas customizados estão habilitados
+    return true;
+  } catch (error) {
+    console.warn(
+      "Erro ao verificar configurações de alerta customizado:",
+      error
+    );
+    return true; // Em caso de erro, sempre exibir
+  }
+}
+
 // ==================== INICIALIZAÇÃO ====================
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -233,6 +277,15 @@ function stopPatternDetection() {
  */
 async function detectBasicPatterns() {
   console.log("🔍 detectBasicPatterns() iniciada...");
+
+  // Verificar se alertas do sistema estão habilitados
+  if (!isSystemAlertsEnabled()) {
+    console.log(
+      "⏸️ Alertas do sistema desabilitados - pulando detecção básica"
+    );
+    return;
+  }
+
   try {
     // Buscar resultados da API
     const response = await fetch("/api/roulette/patterns/basic");
@@ -299,6 +352,15 @@ async function detectBasicPatterns() {
  */
 async function detectAdvancedPatterns() {
   console.log("🔬 detectAdvancedPatterns() iniciada...");
+
+  // Verificar se alertas do sistema estão habilitados
+  if (!isSystemAlertsEnabled()) {
+    console.log(
+      "⏸️ Alertas do sistema desabilitados - pulando detecção avançada"
+    );
+    return;
+  }
+
   try {
     // Buscar análise avançada da API Python
     const response = await fetch("/api/roulette/patterns/advanced");

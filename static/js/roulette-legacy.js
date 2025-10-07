@@ -6,6 +6,38 @@
 let colorChart = null;
 let updateInterval = null;
 let isMonitoring = false;
+let customPatternsInterval = null;
+
+// Funções de verificação de configuração de alertas
+function isSystemAlertsEnabled() {
+  try {
+    const settings = JSON.parse(
+      localStorage.getItem("alertSettings") || '{"systemAlerts": true}'
+    );
+    return settings.systemAlerts !== false;
+  } catch (error) {
+    console.error(
+      "Erro ao verificar configuração de alertas do sistema:",
+      error
+    );
+    return true; // Default para ativo em caso de erro
+  }
+}
+
+function isCustomAlertsEnabled() {
+  try {
+    const settings = JSON.parse(
+      localStorage.getItem("alertSettings") || '{"customAlerts": true}'
+    );
+    return settings.customAlerts !== false;
+  } catch (error) {
+    console.error(
+      "Erro ao verificar configuração de alertas personalizados:",
+      error
+    );
+    return true; // Default para ativo em caso de erro
+  }
+}
 
 // Inicializar ao carregar a página
 window.addEventListener("DOMContentLoaded", () => {
@@ -40,6 +72,9 @@ async function checkStatus() {
       if (window.roulettePatterns) {
         window.roulettePatterns.startDetection();
       }
+
+      // Iniciar verificação de padrões personalizados
+      startCustomPatternsCheck();
     } else if (data.auto_start_failed && data.auto_start_enabled) {
       // Só mostra erro se auto-start estava habilitado
       console.warn("⚠️ Falha ao inicializar automaticamente:", data.message);
@@ -117,6 +152,10 @@ async function stopMonitoring() {
       isMonitoring = false;
       updateStatusUI(false);
       stopAutoUpdate();
+
+      // Parar verificação de padrões personalizados
+      stopCustomPatternsCheck();
+
       alert("✅ Monitoramento parado!");
 
       // Parar detecção de padrões se disponível
@@ -362,6 +401,16 @@ function updatePatterns(results) {
 
 // Atualizar alertas
 function updateAlerts(results) {
+  // Verificar se alertas do sistema estão habilitados
+  if (!isSystemAlertsEnabled()) {
+    const container = document.getElementById("alertsContainer");
+    if (container) {
+      container.innerHTML =
+        '<div class="empty-state"><p>Alertas do sistema desabilitados</p></div>';
+    }
+    return;
+  }
+
   const container = document.getElementById("alertsContainer");
   if (!container || !results || results.length < 10) return;
 
@@ -505,5 +554,255 @@ function showNotification(message, type = "info") {
     }, 300);
   }, 5000);
 }
+
+// ===== PADRÕES PERSONALIZADOS =====
+
+function startCustomPatternsCheck() {
+  if (customPatternsInterval) {
+    clearInterval(customPatternsInterval);
+  }
+
+  // Verificar padrões personalizados a cada 10 segundos
+  customPatternsInterval = setInterval(checkCustomPatterns, 10000);
+  console.log("🔍 Verificação de padrões personalizados iniciada");
+}
+
+function stopCustomPatternsCheck() {
+  if (customPatternsInterval) {
+    clearInterval(customPatternsInterval);
+    customPatternsInterval = null;
+    console.log("🛑 Verificação de padrões personalizados parada");
+  }
+}
+
+async function checkCustomPatterns() {
+  try {
+    // Verificar se alertas customizados estão habilitados
+    if (!isCustomAlertsEnabled()) {
+      console.log(
+        "⏸️ Alertas customizados desabilitados - pulando verificação"
+      );
+      return;
+    }
+
+    const response = await fetch("/api/custom-patterns/check", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (data.success && data.triggered_patterns.length > 0) {
+      console.log(
+        `🎯 ${data.triggered_patterns.length} padrão(ões) personalizado(s) ativado(s)`
+      );
+
+      // Processar cada padrão ativado
+      data.triggered_patterns.forEach((pattern) => {
+        showCustomPatternAlert(pattern);
+      });
+    }
+  } catch (error) {
+    console.error("Erro ao verificar padrões personalizados:", error);
+  }
+}
+
+function showCustomPatternAlert(pattern) {
+  // ALERTA ABSOLUTO - PRIORIDADE MÁXIMA
+  const alertHtml = `
+    <div class="custom-pattern-alert ABSOLUTE-PRIORITY" style="
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+      color: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 15px 50px rgba(255,107,107,0.5);
+      z-index: 99999;
+      max-width: 400px;
+      animation: customPatternPulse 0.8s ease-out;
+      border: 3px solid #ff4757;
+    ">
+      <div style="display: flex; align-items: center; margin-bottom: 15px;">
+        <div style="font-size: 32px; margin-right: 15px; animation: bounce 1s infinite;">🚨</div>
+        <div>
+          <h3 style="margin: 0; font-size: 20px; font-weight: bold;">PADRÃO PERSONALIZADO!</h3>
+          <small style="opacity: 0.9; font-size: 14px;">${pattern.name}</small>
+        </div>
+      </div>
+
+      <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+        <div style="margin-bottom: 10px;">
+          <strong style="font-size: 16px;">🎯 SUGESTÃO:</strong> 
+          <span style="font-size: 18px; font-weight: bold; text-transform: uppercase;">${
+            pattern.suggestion
+          }</span>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <strong>📊 Confiança:</strong> 
+          <span style="color: #ffd700; font-weight: bold;">${Math.round(
+            pattern.confidence * 100
+          )}%</span>
+        </div>
+
+        <div>
+          <strong>💡 Razão:</strong> ${pattern.reasoning}
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px;">
+        <button onclick="this.parentElement.parentElement.remove()" style="
+          background: rgba(255,255,255,0.3);
+          border: 2px solid white;
+          color: white;
+          padding: 10px 20px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: bold;
+          transition: all 0.3s;
+        " onmouseover="this.style.background='rgba(255,255,255,0.5)'" 
+           onmouseout="this.style.background='rgba(255,255,255,0.3)'">Fechar</button>
+
+        <button onclick="window.open('/custom-patterns', '_blank')" style="
+          background: #ffd700;
+          border: 2px solid #ffd700;
+          color: #333;
+          padding: 10px 20px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: bold;
+          transition: all 0.3s;
+        " onmouseover="this.style.background='#ffed4e'" 
+           onmouseout="this.style.background='#ffd700'">Gerenciar</button>
+      </div>
+    </div>
+  `;
+
+  // Adicionar CSS da animação se não existir
+  if (!document.getElementById("custom-pattern-styles")) {
+    const style = document.createElement("style");
+    style.id = "custom-pattern-styles";
+    style.textContent = `
+      @keyframes slideInRight {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      
+      @keyframes customPatternPulse {
+        0% {
+          transform: scale(0.8) translateX(100%);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.05) translateX(0);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1) translateX(0);
+          opacity: 1;
+        }
+      }
+      
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {
+          transform: translateY(0);
+        }
+        40% {
+          transform: translateY(-10px);
+        }
+        60% {
+          transform: translateY(-5px);
+        }
+      }
+      
+      .ABSOLUTE-PRIORITY {
+        animation: customPatternPulse 0.8s ease-out !important;
+        z-index: 99999 !important;
+      }
+      
+      .ABSOLUTE-PRIORITY:hover {
+        transform: scale(1.02);
+        transition: transform 0.3s ease;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Adicionar alerta ao DOM
+  document.body.insertAdjacentHTML("beforeend", alertHtml);
+
+  // Reproduzir som de alerta especial
+  playCustomPatternAlertSound();
+
+  // Remover automaticamente após 30 segundos (mais tempo para padrões personalizados)
+  setTimeout(() => {
+    const alert = document.querySelector(
+      ".custom-pattern-alert.ABSOLUTE-PRIORITY"
+    );
+    if (alert) {
+      alert.style.animation = "customPatternPulse 0.5s ease-in reverse";
+      setTimeout(() => alert.remove(), 500);
+    }
+  }, 30000);
+}
+
+// Função para reproduzir som especial de padrão personalizado
+function playCustomPatternAlertSound() {
+  try {
+    // Criar contexto de áudio
+    const audioContext = new (window.AudioContext ||
+      window.webkitAudioContext)();
+
+    // Frequências para um som de alerta especial
+    const frequencies = [800, 1000, 1200, 800]; // Sequência de tons
+    let currentFreq = 0;
+
+    function playTone(frequency, duration) {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+      oscillator.type = "sine";
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.01,
+        audioContext.currentTime + duration
+      );
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + duration);
+    }
+
+    // Reproduzir sequência de tons
+    frequencies.forEach((freq, index) => {
+      setTimeout(() => {
+        playTone(freq, 0.2);
+      }, index * 200);
+    });
+  } catch (error) {
+    console.log("Som de alerta personalizado não disponível:", error);
+  }
+}
+
+// Parar verificação quando a página for fechada
+window.addEventListener("beforeunload", () => {
+  stopCustomPatternsCheck();
+});
 
 console.log("✅ Roulette Legacy Functions loaded");
