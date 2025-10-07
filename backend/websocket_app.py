@@ -31,8 +31,14 @@ except ImportError as e:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configurar eventlet
-eventlet.monkey_patch()
+# Configurar eventlet com configurações específicas para Windows
+eventlet.monkey_patch(
+    socket=True,
+    select=True,
+    thread=True,
+    time=True,
+    os=True
+)
 
 # Criar aplicação Flask
 app = Flask(__name__)
@@ -473,14 +479,18 @@ if __name__ == '__main__':
             app,
             host=host,
             port=port,
-            debug=debug,
+            debug=False,  # Sempre desabilitar debug em produção
             use_reloader=False,  # Desabilitar reloader para evitar problemas com threads
-            log_output=True
+            log_output=True,
+            allow_unsafe_werkzeug=True  # Permitir execução em produção
         )
         
     except KeyboardInterrupt:
         logger.info("🛑 Interrompido pelo usuário")
     except Exception as e:
         logger.error(f"❌ Erro fatal: {e}")
+        logger.error(f"❌ Tipo do erro: {type(e).__name__}")
+        import traceback
+        logger.error(f"❌ Traceback completo: {traceback.format_exc()}")
     finally:
         cleanup_app()
